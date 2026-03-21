@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
+import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
 import {
-  getExercicesModulesPartages,
   getMathsThemesEvaluationsPartages,
   getOperationsSeriesPartages,
 } from "../../../../data/maths-partages";
 import { getOperationsSerie, type OperationSerieId } from "../../../../data/maths-operations";
+import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +30,12 @@ export default function EnfantMathsEvaluationPartiePage() {
   useEffect(() => {
     setEvaluationsPartagees(getMathsThemesEvaluationsPartages());
     setOperationsPartagees(getOperationsSeriesPartages());
-    setModulesExercicesPartages(getExercicesModulesPartages());
+    const s = getEnfantSession();
+    if (!s) {
+      setModulesExercicesPartages([]);
+      return;
+    }
+    getModulesAccessiblesPourEleve(s.id).then(setModulesExercicesPartages);
   }, []);
 
   const isNombres = partieId === "nombres";

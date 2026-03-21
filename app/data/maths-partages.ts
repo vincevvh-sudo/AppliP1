@@ -2,7 +2,8 @@
  * Partage des exercices et évaluations maths aux élèves (localStorage, comme complément au français/Supabase).
  * Thème "nombres-1-5" : partage exercices et/ou évaluations à tous.
  * Séries "Opérations 1" à "15" : partage indépendant par série (clés "1" … "15").
- * Modules hors nombres (centimètre-mètre, solides, etc.) : voir maths-exercices-modules.ts
+ * Modules hors nombres : partage principal via Supabase (maths-modules-partages-storage.ts).
+ * Le champ localStorage exercicesModules sert de secours si la table n’existe pas encore.
  */
 
 import type { MathsExerciceModuleId } from "./maths-exercices-modules";

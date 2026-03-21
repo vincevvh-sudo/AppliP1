@@ -13,7 +13,7 @@ import {
   type SolideId,
   TITRE_SOLIDES_EVALUATION,
 } from "../../../data/solides-evaluation-data";
-import { isExerciceModuleShared } from "../../../data/maths-partages";
+import { moduleEstAccessiblePourEleve } from "../../../data/maths-modules-partages-storage";
 
 const IconMaths = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -61,9 +61,9 @@ export default function EnfantSolidesPage() {
 
   useEffect(() => {
     if (!session) return;
-    if (!isExerciceModuleShared("solides")) {
-      router.replace("/enfant/maths/exercice/solide-figure");
-    }
+    void moduleEstAccessiblePourEleve("solides", session.id).then((ok) => {
+      if (!ok) router.replace("/enfant/maths/exercice/solide-figure");
+    });
   }, [session, router]);
 
   const allRelierDone = useMemo(

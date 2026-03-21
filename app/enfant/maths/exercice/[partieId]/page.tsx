@@ -6,7 +6,9 @@ import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
-import { getExercicesModulesPartages, getMathsThemesExercicesPartages } from "../../../../data/maths-partages";
+import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
+import { getMathsThemesExercicesPartages } from "../../../../data/maths-partages";
+import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,12 +21,22 @@ export default function EnfantMathsExercicePartiePage() {
   const partieId = params?.partieId as string;
   const [exercicesPartages, setExercicesPartages] = useState<string[]>([]);
   const [modulesPartages, setModulesPartages] = useState<string[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
   const modulesDef = partie ? getExerciceModulesForPartie(partie.id) : [];
 
   useEffect(() => {
     setExercicesPartages(getMathsThemesExercicesPartages());
-    setModulesPartages(getExercicesModulesPartages());
+    const s = getEnfantSession();
+    if (!s) {
+      setModulesPartages([]);
+      setModulesLoading(false);
+      return;
+    }
+    getModulesAccessiblesPourEleve(s.id).then((ids) => {
+      setModulesPartages(ids);
+      setModulesLoading(false);
+    });
   }, []);
 
   const isNombres = partieId === "nombres";
@@ -80,11 +92,13 @@ export default function EnfantMathsExercicePartiePage() {
             : "Exercices partagés par ton maître ou ta maîtresse depuis son espace."}
         </p>
 
-        {empty ? (
+        {!isNombres && modulesLoading ? (
+          <p className="mt-6 text-[#2d4a3e]/70">Chargement…</p>
+        ) : empty ? (
           <p className="mt-6 text-[#2d4a3e]/70">
             {isNombres
               ? "Aucun exercice partagé pour le moment. Demande à ton maître ou ta maîtresse."
-              : "Aucun exercice de cette partie n’est partagé pour le moment. Demande à ton maître ou ta maîtresse d’activer le partage (Exercice → cette partie)."}
+              : "Aucun exercice de cette partie n’est partagé pour toi pour le moment. Demande à ton maître ou ta maîtresse de te sélectionner dans le partage (Exercice → cette partie)."}
           </p>
         ) : isNombres ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">

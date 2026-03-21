@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../components/PartageMathsModuleForm";
 import { TITRE_CENTIMETRE_METRE } from "../../../data/centimetre-metre-data";
 import { QUESTIONS_CENTIMETRE_METRE } from "../../../data/centimetre-metre-data";
 
@@ -44,6 +45,13 @@ export default function EnseignantCentimetreMetrePage() {
           >
             Voir l&apos;exercice (enfant)
           </Link>
+        </div>
+
+        <div className="mt-8">
+          <PartageMathsModuleForm
+            moduleId="centimetre-metre"
+            titreAide="Coche les élèves concernés puis enregistre. Table Supabase : maths_exercices_modules_partages."
+          />
         </div>
 
         <div className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">

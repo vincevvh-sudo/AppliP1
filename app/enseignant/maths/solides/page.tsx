@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../components/PartageMathsModuleForm";
 import {
   OBJETS_A_RELier,
   SOLIDES,
@@ -50,6 +51,14 @@ export default function EnseignantSolidesPage() {
           Évaluation en 2 parties : relier des objets au bon solide (8 items) puis répondre Vrai/Faux (8 phrases).
           La cotation est sur 10, et le résultat est enregistré dans <code>exercice_resultats</code>.
         </p>
+
+        <div className="mt-8">
+          <PartageMathsModuleForm
+            moduleId="vocabulaire-spatial"
+            moduleIdsGroup={["vocabulaire-spatial", "solides"]}
+            titreAide="Même liste d’élèves pour Vocabulaire spatial et Solides. Tu peux aussi gérer le partage depuis la page Vocabulaire spatial."
+          />
+        </div>
 
         <div className="mt-6">
           <Link

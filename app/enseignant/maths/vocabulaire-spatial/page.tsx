@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../components/PartageMathsModuleForm";
 import { getElevesBulletin, type EleveBulletin } from "../../../data/bulletin-storage";
 import {
   getScoresVocabulaireSpatial,
@@ -96,8 +97,17 @@ export default function EnseignantVocabulaireSpatialPage() {
           Choisis un élève, saisis 0 ou 1 par phrase (1 point par phrase). L&apos;évaluation est sur 10. Si l&apos;élève est lié à l&apos;app, il reçoit son score directement.
         </p>
 
-        {/* Liste des élèves */}
         <div className="mt-6">
+          <PartageMathsModuleForm
+            moduleId="vocabulaire-spatial"
+            moduleIdsGroup={["vocabulaire-spatial", "solides"]}
+            compact
+            titreAide="Partage aux élèves de l’app (même liste pour les deux tests espace / géométrie). Exécute le SQL Supabase si besoin."
+          />
+        </div>
+
+        {/* Liste des élèves */}
+        <div className="mt-8">
           <h2 className="font-display text-lg text-[#2d4a3e]">Élèves</h2>
           {eleves.length === 0 ? (
             <p className="mt-2 text-sm text-[#2d4a3e]/70">

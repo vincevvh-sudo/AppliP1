@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
-import { isExerciceModuleShared } from "../../../data/maths-partages";
+import { moduleEstAccessiblePourEleve } from "../../../data/maths-modules-partages-storage";
+import { getEnfantSession } from "../../../../utils/enfant-session";
 import {
   TITRE_SUITE_LOGIQUE,
   ITEMS_SUITE_LOGIQUE,
@@ -107,13 +108,20 @@ export default function EnfantSuiteLogiquePage() {
   const [termine, setTermine] = useState(false);
 
   useEffect(() => {
-    const ok = isExerciceModuleShared("suite-logique");
-    if (!ok) {
-      router.replace("/enfant/maths/exercice/traitement-donnees");
+    const s = getEnfantSession();
+    if (!s) {
+      router.replace("/enfant");
       setAllowed(false);
-    } else {
-      setAllowed(true);
+      return;
     }
+    void moduleEstAccessiblePourEleve("suite-logique", s.id).then((ok) => {
+      if (!ok) {
+        router.replace("/enfant/maths/exercice/traitement-donnees");
+        setAllowed(false);
+      } else {
+        setAllowed(true);
+      }
+    });
   }, [router]);
 
   const item = ITEMS_SUITE_LOGIQUE[step] as ItemSuiteLogique;

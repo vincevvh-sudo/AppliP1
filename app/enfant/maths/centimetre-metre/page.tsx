@@ -12,7 +12,7 @@ import {
   type Unite,
 } from "../../../data/centimetre-metre-data";
 import { saveCentimetreMetreResult } from "../../../data/centimetre-metre-storage";
-import { isExerciceModuleShared } from "../../../data/maths-partages";
+import { moduleEstAccessiblePourEleve } from "../../../data/maths-modules-partages-storage";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -39,9 +39,9 @@ export default function EnfantCentimetreMetrePage() {
 
   useEffect(() => {
     if (!session) return;
-    if (!isExerciceModuleShared("centimetre-metre")) {
-      router.replace("/enfant/maths/exercice/grandeur");
-    }
+    void moduleEstAccessiblePourEleve("centimetre-metre", session.id).then((ok) => {
+      if (!ok) router.replace("/enfant/maths/exercice/grandeur");
+    });
   }, [session, router]);
 
   const setAnswer = useCallback((index: number, value: Unite) => {

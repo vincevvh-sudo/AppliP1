@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../components/PartageMathsModuleForm";
 import { TITRE_SUITE_LOGIQUE, ITEMS_SUITE_LOGIQUE } from "../../../data/suite-logique";
 
 export default function EnseignantSuiteLogiquePage() {
@@ -35,6 +36,13 @@ export default function EnseignantSuiteLogiquePage() {
           >
             Ouvrir l&apos;exercice (vue élève) ↗
           </a>
+        </div>
+
+        <div className="mt-8">
+          <PartageMathsModuleForm
+            moduleId="suite-logique"
+            titreAide="Les élèves cochés verront l&apos;exercice dans l&apos;arbre des mathématiques (Traitement de données)."
+          />
         </div>
 
         <div className="mt-10 rounded-xl border-2 border-[#2d4a3e]/20 bg-white/95 p-6 shadow-lg">

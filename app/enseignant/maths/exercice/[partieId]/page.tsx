@@ -1,15 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../../components/PartageMathsModuleForm";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
-import {
-  getExerciceModulesForPartie,
-  type MathsExerciceModuleId,
-} from "../../../../data/maths-exercices-modules";
-import { isExerciceModuleShared, setExerciceModuleShared } from "../../../../data/maths-partages";
+import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,25 +18,6 @@ export default function EnseignantMathsExercicePartiePage() {
   const partieId = params?.partieId as string;
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
   const modules = partie ? getExerciceModulesForPartie(partie.id) : [];
-  const [partage, setPartage] = useState<Record<string, boolean>>({});
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const next: Record<string, boolean> = {};
-    for (const m of modules) {
-      next[m.id] = isExerciceModuleShared(m.id);
-    }
-    setPartage(next);
-    setHydrated(true);
-  }, [modules]);
-
-  const toggle = useCallback((id: MathsExerciceModuleId) => {
-    setPartage((p) => {
-      const next = !p[id];
-      setExerciceModuleShared(id, next);
-      return { ...p, [id]: next };
-    });
-  }, []);
 
   if (!partie) {
     return (
@@ -57,6 +34,7 @@ export default function EnseignantMathsExercicePartiePage() {
   }
 
   const isNombres = partieId === "nombres";
+  const isSolide = partieId === "solide-figure";
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -80,7 +58,7 @@ export default function EnseignantMathsExercicePartiePage() {
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           {isNombres
             ? "Choisis un thème (feuilles d'exercices), puis partage exercices / évaluations depuis chaque thème."
-            : "Coche les exercices que les enfants peuvent ouvrir dans leur arbre (Exercice). Même navigateur : réglages enregistrés sur cet ordinateur."}
+            : "Choisis les élèves qui peuvent accéder à chaque exercice dans l'arbre des mathématiques (côté enfant). Si la table Supabase n'est pas créée, exécute le fichier SQL indiqué dans les messages d'erreur."}
         </p>
 
         {isNombres && partie.themes.length > 0 ? (
@@ -97,37 +75,69 @@ export default function EnseignantMathsExercicePartiePage() {
             ))}
           </div>
         ) : !isNombres && modules.length > 0 ? (
-          <div className="mt-6 space-y-4">
-            {!hydrated ? (
-              <p className="text-sm text-[#2d4a3e]/70">Chargement…</p>
+          <div className="mt-8 space-y-8">
+            {isSolide ? (
+              <>
+                <section className="rounded-2xl border border-[#4a7c5a]/30 bg-[#e8f5e9]/40 p-5">
+                  <h2 className="font-display text-lg text-[#2d4a3e]">Espace / géométrie — les deux tests</h2>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                    Vocabulaire spatial et Solides : même liste d&apos;élèves pour les deux activités.
+                  </p>
+                  <div className="mt-4">
+                    <PartageMathsModuleForm
+                      moduleId="vocabulaire-spatial"
+                      moduleIdsGroup={["vocabulaire-spatial", "solides"]}
+                    />
+                  </div>
+                </section>
+                {modules.map((m) => (
+                  <section key={m.id} className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
+                    <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
+                    <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={m.hrefEnseignant}
+                        className="rounded-xl bg-[#c4a8e8]/80 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]"
+                      >
+                        Ouvrir (enseignant)
+                      </Link>
+                      <Link
+                        href={m.hrefEnfant}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#2d4a3e]/20"
+                      >
+                        Voir côté enfant ↗
+                      </Link>
+                    </div>
+                  </section>
+                ))}
+              </>
             ) : (
               modules.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-display text-lg text-[#2d4a3e]">{m.titre}</p>
-                    <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
+                <section key={m.id} className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
+                  <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
+                  <div className="mt-4">
+                    <PartageMathsModuleForm moduleId={m.id} />
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-[#2d4a3e]">
-                      <input
-                        type="checkbox"
-                        checked={partage[m.id] ?? false}
-                        onChange={() => toggle(m.id)}
-                        className="h-4 w-4 rounded border-[#2d4a3e]/40"
-                      />
-                      Partager avec les enfants
-                    </label>
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <Link
                       href={m.hrefEnseignant}
                       className="rounded-xl bg-[#c4a8e8]/80 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]"
                     >
                       Ouvrir (enseignant)
                     </Link>
+                    <Link
+                      href={m.hrefEnfant}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#2d4a3e]/20"
+                    >
+                      Voir côté enfant ↗
+                    </Link>
                   </div>
-                </div>
+                </section>
               ))
             )}
           </div>
