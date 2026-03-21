@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
-import { getMathsThemesEvaluationsPartages } from "../../../../data/maths-partages";
+import {
+  getMathsThemesEvaluationsPartages,
+  getOperationsSeriesPartages,
+} from "../../../../data/maths-partages";
+import { getOperationsSerie, type OperationSerieId } from "../../../../data/maths-operations";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,10 +21,12 @@ export default function EnfantMathsEvaluationPartiePage() {
   const params = useParams();
   const partieId = params?.partieId as string;
   const [evaluationsPartagees, setEvaluationsPartagees] = useState<string[]>([]);
+  const [operationsPartagees, setOperationsPartagees] = useState<string[]>([]);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
 
   useEffect(() => {
     setEvaluationsPartagees(getMathsThemesEvaluationsPartages());
+    setOperationsPartagees(getOperationsSeriesPartages());
   }, []);
 
   const isNombres = partieId === "nombres";
@@ -81,22 +87,30 @@ export default function EnfantMathsEvaluationPartiePage() {
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Opérations</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                10 calculs par série. Écris la réponse, puis passe au calcul suivant.
+                10 calculs par série. Écris la réponse, puis passe au calcul suivant. Ton enseignant partage les séries
+                depuis son espace (Arithmétique → Opérations).
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Link
-                  href="/enfant/maths/operations/1"
-                  className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
-                >
-                  <span className="font-semibold text-[#2d4a3e]">Opérations 1</span>
-                </Link>
-                <Link
-                  href="/enfant/maths/operations/2"
-                  className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
-                >
-                  <span className="font-semibold text-[#2d4a3e]">Opérations 2</span>
-                </Link>
-              </div>
+              {operationsPartagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série d&apos;opérations partagée pour le moment. Demande à ton maître ou ta maîtresse d&apos;activer
+                  les séries dans l&apos;espace enseignant.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {operationsPartagees.map((sid) => {
+                    const { titre } = getOperationsSerie(sid as OperationSerieId);
+                    return (
+                      <Link
+                        key={sid}
+                        href={`/enfant/maths/operations/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">

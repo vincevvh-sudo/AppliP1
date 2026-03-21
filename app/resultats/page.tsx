@@ -2,9 +2,11 @@
 
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getEnfantSession } from "../../utils/enfant-session";
 
 /**
- * Redirection vers /enseignant/resultats pour intégrer les résultats dans l'espace enseignant.
+ * Redirection : les enfants connectés → leurs résultats personnels (/enfant/resultats).
+ * Sinon → espace enseignant (lien court /resultats pour les profs).
  */
 function ResultatsRedirectInner() {
   const router = useRouter();
@@ -12,6 +14,11 @@ function ResultatsRedirectInner() {
   const eleve = searchParams.get("eleve");
 
   useEffect(() => {
+    const enfant = getEnfantSession();
+    if (enfant) {
+      router.replace("/enfant/resultats");
+      return;
+    }
     const url = eleve ? `/enseignant/resultats?eleve=${eleve}` : "/enseignant/resultats";
     router.replace(url);
   }, [router, eleve]);

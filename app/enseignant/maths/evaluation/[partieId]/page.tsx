@@ -72,7 +72,8 @@ export default function EnseignantMathsEvaluationPartiePage() {
               >
                 <p className="font-display text-lg text-[#2d4a3e]">Opérations</p>
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  Deux séries de 10 additions (Opérations&nbsp;1 et Opérations&nbsp;2).
+                  Séries 1 à 15 : choisir lesquelles partager avec les enfants (cases à cocher), puis prévisualisation
+                  vue élève.
                 </p>
               </Link>
             </div>

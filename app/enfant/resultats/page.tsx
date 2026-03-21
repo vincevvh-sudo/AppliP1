@@ -47,12 +47,14 @@ export default function EnfantResultatsPage() {
       router.replace("/enfant");
       return;
     }
+    const sid = String(session.id);
     Promise.all([
-      getResultatsByEleve(String(session.id)),
-      getBulletinsByEleve(String(session.id)),
+      getResultatsByEleve(sid),
+      getBulletinsByEleve(sid),
     ]).then(([resData, bullData]) => {
-      setResultats(resData);
-      setBulletins(bullData ?? []);
+      // Filtre défensif : n'afficher que les lignes de l'élève connecté (même si la requête ou le RLS renvoyaient autre chose).
+      setResultats(resData.filter((r) => String(r.eleve_id) === sid));
+      setBulletins((bullData ?? []).filter((b) => String(b.eleve_id) === sid));
       setLoading(false);
     });
   }, [router]);

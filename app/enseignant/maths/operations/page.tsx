@@ -1,7 +1,14 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import {
+  OPERATIONS_SERIE_IDS_PARTAGEABLES,
+  isOperationSerieShared,
+  setAllOperationsSeriesShared,
+  setOperationSerieShared,
+} from "../../../data/maths-partages";
 import {
   TITRE_OPERATIONS,
   OPERATIONS_SERIE_1,
@@ -22,6 +29,40 @@ import {
 } from "../../../data/maths-operations";
 
 export default function EnseignantMathsOperationsPage() {
+  const [partage, setPartage] = useState<Record<string, boolean>>({});
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const next: Record<string, boolean> = {};
+    for (const id of OPERATIONS_SERIE_IDS_PARTAGEABLES) {
+      next[id] = isOperationSerieShared(id);
+    }
+    setPartage(next);
+    setHydrated(true);
+  }, []);
+
+  const toggleSerie = useCallback((id: string) => {
+    setPartage((p) => {
+      const next = !p[id];
+      setOperationSerieShared(id, next);
+      return { ...p, [id]: next };
+    });
+  }, []);
+
+  const shareAll = useCallback(() => {
+    setAllOperationsSeriesShared(true);
+    const next: Record<string, boolean> = {};
+    for (const id of OPERATIONS_SERIE_IDS_PARTAGEABLES) next[id] = true;
+    setPartage(next);
+  }, []);
+
+  const shareNone = useCallback(() => {
+    setAllOperationsSeriesShared(false);
+    const next: Record<string, boolean> = {};
+    for (const id of OPERATIONS_SERIE_IDS_PARTAGEABLES) next[id] = false;
+    setPartage(next);
+  }, []);
+
   return (
     <main className="relative min-h-screen overflow-hidden text-[#1f2933]">
       <ForetMagiqueBackground />
@@ -38,24 +79,71 @@ export default function EnseignantMathsOperationsPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-3xl px-5 py-10">
-        <h1 className="font-display text-2xl text-[#1f2933]">Opérations (additions)</h1>
+        <h1 className="font-display text-2xl text-[#1f2933]">Opérations (additions, soustractions…)</h1>
         <p className="mt-2 text-sm text-[#1f2933]/80">
-          Deux séries de 10 calculs chacune. L&apos;enfant écrit la réponse. S&apos;il se trompe, il passe au calcul suivant.
-          À la fin, il voit son score et les bonnes réponses.
+          10 calculs par série. Choisis quelles séries sont visibles pour les enfants dans{" "}
+          <strong>Évaluation → Arithmétique → Opérations</strong> (même navigateur : le partage est enregistré sur cet
+          ordinateur).
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"].map((id) => (
-            <a
-              key={id}
-              href={`/enfant/maths/operations/${id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block rounded-xl bg-[#c4a8e8] px-4 py-2 text-sm font-semibold text-[#1f2933] transition hover:bg-[#c4a8e8]/90"
-            >
-              Ouvrir Opérations {id} (vue élève) ↗
-            </a>
-          ))}
+          <button
+            type="button"
+            onClick={shareAll}
+            className="rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3d6b4d]"
+          >
+            Tout partager avec les enfants
+          </button>
+          <button
+            type="button"
+            onClick={shareNone}
+            className="rounded-xl bg-[#1f2933]/10 px-4 py-2 text-sm font-semibold text-[#1f2933] transition hover:bg-[#1f2933]/20"
+          >
+            Ne plus rien partager
+          </button>
+        </div>
+
+        <p className="mt-4 text-xs text-[#1f2933]/65">
+          Par défaut, les séries 1 et 2 sont partagées (comportement précédent). Active 3 à 15 ci-dessous pour les rendre
+          visibles côté élève.
+        </p>
+
+        <div className="mt-6 space-y-3">
+          {hydrated ? (
+            OPERATIONS_SERIE_IDS_PARTAGEABLES.map((id) => (
+              <div
+                key={id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#1f2933]/15 bg-white/95 px-4 py-3 shadow-sm"
+              >
+                <span className="font-medium text-[#1f2933]">Opérations {id}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-[#1f2933]">
+                    <input
+                      type="checkbox"
+                      checked={partage[id] ?? false}
+                      onChange={() => toggleSerie(id)}
+                      className="h-4 w-4 rounded border-[#1f2933]/40"
+                    />
+                    Partager avec les enfants
+                  </label>
+                  <a
+                    href={`/enseignant/maths/operations/eleve/${id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-[#4a7c5a] underline-offset-2 hover:underline"
+                  >
+                    Prévisualiser (vue élève) ↗
+                  </a>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-[#1f2933]/70">Chargement…</p>
+          )}
+        </div>
+
+        <div className="mt-10 flex flex-wrap gap-2 text-sm text-[#1f2933]/80">
+          <span>Aperçu des calculs (enseignant) :</span>
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -227,4 +315,3 @@ export default function EnseignantMathsOperationsPage() {
     </main>
   );
 }
-

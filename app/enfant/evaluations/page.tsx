@@ -7,9 +7,10 @@ import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { getNiveauxEvalPartagesPourEleve } from "../../data/sons-partages";
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE_MOTS } from "../../data/dictee-mots-data";
-import { getMathsThemesEvaluationsPartages } from "../../data/maths-partages";
+import { getMathsThemesEvaluationsPartages, getOperationsSeriesPartages } from "../../data/maths-partages";
 import { getSonById, getNiveauById } from "../../data/sons-data";
 import { PARTIES_MATHS } from "../../data/maths-data";
+import { getOperationsSerie, type OperationSerieId } from "../../data/maths-operations";
 import { getEnfantSession } from "../../../utils/enfant-session";
 
 const IconLeaf = () => (
@@ -53,6 +54,7 @@ export default function EnfantEvaluationsPage() {
   const [evalFrancais, setEvalFrancais] = useState<EvalFrancais[]>([]);
   const [evalDicteesMots, setEvalDicteesMots] = useState<EvalDicteeMots[]>([]);
   const [evalMaths, setEvalMaths] = useState<EvalMaths[]>([]);
+  const [evalOpsSeries, setEvalOpsSeries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function EnfantEvaluationsPage() {
         if (themeId && theme) maths.push({ themeId, titre: theme.titre });
       }
       setEvalMaths(maths);
+      setEvalOpsSeries(getOperationsSeriesPartages());
       setLoading(false);
     });
   }, [router]);
@@ -309,9 +312,25 @@ export default function EnfantEvaluationsPage() {
                     </Link>
                   </li>
                 ))}
+                {evalOpsSeries.length > 0 &&
+                  evalOpsSeries.map((sid) => {
+                      const { titre } = getOperationsSerie(sid as OperationSerieId);
+                      return (
+                        <li key={`op-${sid}`}>
+                          <Link
+                            href={`/enfant/maths/operations/${sid}`}
+                            className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                          >
+                            <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
               </ul>
-              {evalMaths.length === 0 && (
-                <p className="mt-2 text-sm text-[#2d4a3e]/60">Aucune autre évaluation mathématiques partagée pour le moment.</p>
+              {evalMaths.length === 0 && evalOpsSeries.length === 0 && (
+                <p className="mt-2 text-sm text-[#2d4a3e]/60">
+                  Aucune évaluation « nombres » ou opérations partagée pour le moment (en plus des liens ci-dessus).
+                </p>
               )}
             </section>
 
