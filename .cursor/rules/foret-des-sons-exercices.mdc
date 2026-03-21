@@ -1,0 +1,21 @@
+---
+description: Ne pas modifier les exercices de la Forêt des sons — ils sont figés.
+globs: app/**/JeuxSons.tsx, app/data/sons-data.ts, app/data/eval-data.ts, app/data/mots-phono*.ts
+---
+
+# Forêt des sons — exercices non modifiables
+
+Les exercices suivants de la **Forêt des sons** sont considérés comme **parfaits et figés**. Ne pas en modifier le contenu ni le comportement :
+
+- **Phono 1**
+- **Phono 2**
+- **Phono Image 1**
+- **Phono Image 2**
+- **Évaluation 1**
+- **Évaluation 2**
+- **Évaluation 3**
+- **Évaluation 4**
+
+Fichiers concernés (logique et données de ces exercices) : `app/components/JeuxSons.tsx`, `app/data/sons-data.ts`, `app/data/eval-data.ts`, `app/data/mots-phono.ts`, `app/data/mots-phono-image.ts`.
+
+Les changements sur d’autres parties du projet (nouveaux écrans, partage, UI enseignant/enfant, etc.) restent autorisés ; ne pas toucher à la logique interne ni aux listes de mots/sons de ces 8 types d’exercices.

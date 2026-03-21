@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-geist-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.font-cursive {
+  font-family: var(--font-cursive), "Comic Sans MS", "Bradley Hand", cursive;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Bulletin : impression / PDF */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: #fff;
+  }
+  main {
+    background: none;
+  }
+  .bulletin-layout {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+  }
+  /* Conteneur flex du bulletin : une seule colonne en impression */
+  #bulletin-print-area {
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0.5rem;
+    max-width: 100%;
+    width: 100%;
+  }
+  #bulletin-print-area section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #bulletin-print-area table {
+    font-size: 0.6rem;
+    width: 100%;
+  }
+  #bulletin-print-area textarea {
+    border: 1px solid #ccc;
+    background: #fff;
+    min-height: 2.5em;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-month-page {
+    /* On évite de forcer un saut de page après chaque mois pour
+       pouvoir mettre plusieurs mois sur une même feuille si la place le permet. */
+    break-after: auto;
+    page-break-after: auto;
+  }
+  /* Ne jamais imprimer le bloc "Commentaire du mois" quand il est vide */
+  .commentaire-mois-empty {
+    display: none !important;
+  }
+  /* En impression : masquer les cellules de commentaire vides (pas de boîte vide) */
+  .comment-cell-empty-print {
+    padding: 0 !important;
+    border: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+  /* Rendre les lignes des tableaux plus compactes en impression */
+  #bulletin-print-area td,
+  #bulletin-print-area th {
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.1rem !important;
+  }
+  /* Réduire encore la taille des visages en mode impression */
+  .bulletin-face-selector button {
+    height: 1.1rem !important;
+    width: 1.1rem !important;
+    font-size: 0.8rem !important;
+  }
+}

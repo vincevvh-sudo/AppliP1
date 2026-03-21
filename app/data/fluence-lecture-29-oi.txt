@@ -1,0 +1,16 @@
+Lecture 29, oi
+• Lis le texte suivant :
+
+En début de soirée, papa commença à lire une 9
+histoire à Benoit et Héloïse. 14
+« Il était une fois un petit roi prénommé Benoît. 23
+Il vivait dans un bois avec sa sœur Héloïse qui 33
+savait parler aux oiseaux ! Ce petit roi, quant à 42
+lui, mangeait toujours des petits pois et 49
+buvait tous les jours du jus de poire... 57
+- Comme moi ! dit Héloïse amusée. 62
+- Tais-toi, dit Benoît. Ecoute l'histoire de papa. » 71
+
+Nombre de mots lus en une minute
+Chronotest (temps de lecture du texte entier)
+Nombre d'erreurs sur le texte entier
