@@ -47,7 +47,9 @@ export default function EnfantMathsExercicePage() {
                   {partie.themes.length} thème{partie.themes.length > 1 ? "s" : ""}
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-[#2d4a3e]/60">Bientôt disponible</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/60">
+                  Grandeur, espace ou données : exercices activables par l&apos;enseignant
+                </p>
               )}
             </Link>
           ))}

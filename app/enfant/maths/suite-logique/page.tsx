@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { isExerciceModuleShared } from "../../../data/maths-partages";
 import {
   TITRE_SUITE_LOGIQUE,
   ITEMS_SUITE_LOGIQUE,
@@ -98,9 +100,21 @@ function GlaceGroupe({ variant }: { variant: number }) {
 }
 
 export default function EnfantSuiteLogiquePage() {
+  const router = useRouter();
+  const [allowed, setAllowed] = useState<boolean | null>(null);
   const [step, setStep] = useState(0);
   const [reponses, setReponses] = useState<(number | null)[]>(ITEMS_SUITE_LOGIQUE.map(() => null));
   const [termine, setTermine] = useState(false);
+
+  useEffect(() => {
+    const ok = isExerciceModuleShared("suite-logique");
+    if (!ok) {
+      router.replace("/enfant/maths/exercice/traitement-donnees");
+      setAllowed(false);
+    } else {
+      setAllowed(true);
+    }
+  }, [router]);
 
   const item = ITEMS_SUITE_LOGIQUE[step] as ItemSuiteLogique;
   const total = ITEMS_SUITE_LOGIQUE.length;
@@ -127,6 +141,17 @@ export default function EnfantSuiteLogiquePage() {
         return acc + (r === correct ? 1 : 0);
       }, 0)
     : null;
+
+  if (allowed !== true) {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-12 text-center text-[#2d4a3e]/80">
+          {allowed === null ? <p>Chargement…</p> : <p>Redirection…</p>}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">

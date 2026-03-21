@@ -2,7 +2,11 @@
  * Partage des exercices et évaluations maths aux élèves (localStorage, comme complément au français/Supabase).
  * Thème "nombres-1-5" : partage exercices et/ou évaluations à tous.
  * Séries "Opérations 1" à "15" : partage indépendant par série (clés "1" … "15").
+ * Modules hors nombres (centimètre-mètre, solides, etc.) : voir maths-exercices-modules.ts
  */
+
+import type { MathsExerciceModuleId } from "./maths-exercices-modules";
+import { MATHS_EXERCICES_MODULES } from "./maths-exercices-modules";
 
 const STORAGE_KEY = "maths-partages";
 
@@ -33,12 +37,15 @@ export type MathsPartageState = {
   "nombres-6-10": { exercices: boolean; evaluations: boolean };
   /** Partage par série d'opérations (clés "1" … "15"). */
   operations: Record<string, boolean>;
+  /** Exercices interactifs (grandeur, espace, traitement de données) — par id de module. */
+  exercicesModules: Record<string, boolean>;
 };
 
 const defaultState: MathsPartageState = {
   "nombres-1-5": { exercices: false, evaluations: false },
   "nombres-6-10": { exercices: false, evaluations: false },
   operations: {},
+  exercicesModules: {},
 };
 
 /** Comportement historique : opérations 1 et 2 étaient visibles sans mécanisme de partage. */
@@ -51,18 +58,23 @@ function defaultOperationsLegacy(): Record<string, boolean> {
 }
 
 function load(): MathsPartageState {
-  if (typeof window === "undefined") return { ...defaultState, operations: defaultOperationsLegacy() };
+  if (typeof window === "undefined")
+    return { ...defaultState, operations: defaultOperationsLegacy(), exercicesModules: {} };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...defaultState, operations: defaultOperationsLegacy() };
+    if (!raw) return { ...defaultState, operations: defaultOperationsLegacy(), exercicesModules: {} };
     const parsed = JSON.parse(raw) as Partial<MathsPartageState>;
     const hasStoredOps = parsed.operations && typeof parsed.operations === "object";
     const operations = hasStoredOps
       ? { ...defaultOperationsLegacy(), ...parsed.operations }
       : defaultOperationsLegacy();
-    return { ...defaultState, ...parsed, operations };
+    const exercicesModules =
+      parsed.exercicesModules && typeof parsed.exercicesModules === "object"
+        ? { ...parsed.exercicesModules }
+        : {};
+    return { ...defaultState, ...parsed, operations, exercicesModules };
   } catch {
-    return { ...defaultState, operations: defaultOperationsLegacy() };
+    return { ...defaultState, operations: defaultOperationsLegacy(), exercicesModules: {} };
   }
 }
 
@@ -143,4 +155,25 @@ export function setAllOperationsSeriesShared(partager: boolean): void {
   }
   state.operations = next;
   save(state);
+}
+
+const MODULE_IDS = new Set(MATHS_EXERCICES_MODULES.map((m) => m.id));
+
+export function isExerciceModuleShared(moduleId: MathsExerciceModuleId | string): boolean {
+  const state = load();
+  return Boolean(state.exercicesModules?.[moduleId]);
+}
+
+export function setExerciceModuleShared(moduleId: MathsExerciceModuleId, partager: boolean): void {
+  if (!MODULE_IDS.has(moduleId)) return;
+  const state = load();
+  if (!state.exercicesModules) state.exercicesModules = {};
+  state.exercicesModules[moduleId] = partager;
+  save(state);
+}
+
+/** Pour l'enfant : ids des modules d'exercices accessibles. */
+export function getExercicesModulesPartages(): MathsExerciceModuleId[] {
+  const state = load();
+  return MATHS_EXERCICES_MODULES.filter((m) => state.exercicesModules?.[m.id]).map((m) => m.id);
 }

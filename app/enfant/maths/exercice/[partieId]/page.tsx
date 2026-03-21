@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
-import { getMathsThemesExercicesPartages } from "../../../../data/maths-partages";
+import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
+import { getExercicesModulesPartages, getMathsThemesExercicesPartages } from "../../../../data/maths-partages";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,10 +18,13 @@ export default function EnfantMathsExercicePartiePage() {
   const params = useParams();
   const partieId = params?.partieId as string;
   const [exercicesPartages, setExercicesPartages] = useState<string[]>([]);
+  const [modulesPartages, setModulesPartages] = useState<string[]>([]);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
+  const modulesDef = partie ? getExerciceModulesForPartie(partie.id) : [];
 
   useEffect(() => {
     setExercicesPartages(getMathsThemesExercicesPartages());
+    setModulesPartages(getExercicesModulesPartages());
   }, []);
 
   const isNombres = partieId === "nombres";
@@ -31,17 +35,25 @@ export default function EnfantMathsExercicePartiePage() {
       ? partie.themes.filter((t) => (t.id === "1-5" && hasNombres15) || (t.id === "6-10" && hasNombres610))
       : partie?.themes ?? [];
 
+  const modulesVisibles = modulesDef.filter((m) => modulesPartages.includes(m.id));
+
   if (!partie) {
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
         <ForetMagiqueBackground />
         <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
           <p>Partie introuvable.</p>
-          <Link href="/enfant/maths/exercice" className="mt-4 inline-block text-[#4a7c5a]">← Exercice</Link>
+          <Link href="/enfant/maths/exercice" className="mt-4 inline-block text-[#4a7c5a]">
+            ← Exercice
+          </Link>
         </div>
       </main>
     );
   }
+
+  const emptyNombres = isNombres && themesToShow.length === 0;
+  const emptyModules = !isNombres && modulesDef.length > 0 && modulesVisibles.length === 0;
+  const empty = isNombres ? emptyNombres : modulesDef.length === 0 ? true : emptyModules;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -62,13 +74,19 @@ export default function EnfantMathsExercicePartiePage() {
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e]">{partie.titre}</h1>
-        <p className="mt-2 text-sm text-[#2d4a3e]/75">Choisis un thème (exercices partagés par ton maître ou ta maîtresse).</p>
+        <p className="mt-2 text-sm text-[#2d4a3e]/75">
+          {isNombres
+            ? "Choisis un thème (exercices partagés par ton maître ou ta maîtresse)."
+            : "Exercices partagés par ton maître ou ta maîtresse depuis son espace."}
+        </p>
 
-        {themesToShow.length === 0 ? (
+        {empty ? (
           <p className="mt-6 text-[#2d4a3e]/70">
-            {isNombres ? "Aucun exercice partagé pour le moment. Demande à ton maître ou ta maîtresse." : "Bientôt disponible."}
+            {isNombres
+              ? "Aucun exercice partagé pour le moment. Demande à ton maître ou ta maîtresse."
+              : "Aucun exercice de cette partie n’est partagé pour le moment. Demande à ton maître ou ta maîtresse d’activer le partage (Exercice → cette partie)."}
           </p>
-        ) : (
+        ) : isNombres ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {themesToShow.map((theme) => (
               <Link
@@ -78,6 +96,19 @@ export default function EnfantMathsExercicePartiePage() {
               >
                 <p className="font-display text-lg text-[#2d4a3e]">{theme.titre}</p>
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">Exercices</p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {modulesVisibles.map((m) => (
+              <Link
+                key={m.id}
+                href={m.hrefEnfant}
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">{m.titre}</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
               </Link>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
 import { getEnfantSession } from "../../../../utils/enfant-session";
 import { getVocabulaireSpatialByEleve } from "../../../data/vocabulaire-spatial-storage";
 import { TITRE_VOCABULAIRE_SPATIAL, libelleMaitrise } from "../../../data/vocabulaire-spatial-data";
+import { isExerciceModuleShared } from "../../../data/maths-partages";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -33,6 +34,13 @@ export default function EnfantVocabulaireSpatialPage() {
     }
     getVocabulaireSpatialByEleve(eleveId).then((r) => setResult(r ?? null));
   }, [router]);
+
+  useEffect(() => {
+    if (!session) return;
+    if (!isExerciceModuleShared("vocabulaire-spatial")) {
+      router.replace("/enfant/maths/exercice/solide-figure");
+    }
+  }, [session, router]);
 
   if (!session) return null;
 

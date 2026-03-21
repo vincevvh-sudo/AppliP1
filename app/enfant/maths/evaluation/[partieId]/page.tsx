@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import {
+  getExercicesModulesPartages,
   getMathsThemesEvaluationsPartages,
   getOperationsSeriesPartages,
 } from "../../../../data/maths-partages";
@@ -22,11 +23,13 @@ export default function EnfantMathsEvaluationPartiePage() {
   const partieId = params?.partieId as string;
   const [evaluationsPartagees, setEvaluationsPartagees] = useState<string[]>([]);
   const [operationsPartagees, setOperationsPartagees] = useState<string[]>([]);
+  const [modulesExercicesPartages, setModulesExercicesPartages] = useState<string[]>([]);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
 
   useEffect(() => {
     setEvaluationsPartagees(getMathsThemesEvaluationsPartages());
     setOperationsPartagees(getOperationsSeriesPartages());
+    setModulesExercicesPartages(getExercicesModulesPartages());
   }, []);
 
   const isNombres = partieId === "nombres";
@@ -73,15 +76,22 @@ export default function EnfantMathsEvaluationPartiePage() {
         </p>
 
         {partieId === "traitement-donnees" ? (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Link
-              href="/enfant/maths/suite-logique"
-              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-            >
-              <p className="font-display text-lg text-[#2d4a3e]">Suite logique</p>
-              <p className="mt-1 text-sm text-[#2d4a3e]/70">Choisis la forme qui continue la suite.</p>
-            </Link>
-          </div>
+          modulesExercicesPartages.includes("suite-logique") ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Link
+                href="/enfant/maths/suite-logique"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Suite logique</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Choisis la forme qui continue la suite.</p>
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-6 text-sm text-[#2d4a3e]/70">
+              L&apos;exercice « Suite logique » n&apos;est pas partagé pour le moment. Demande à ton enseignant
+              d&apos;activer le partage (Exercice → Traitement de données).
+            </p>
+          )
         ) : partieId === "nombres" ? (
           <>
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">
@@ -137,21 +147,49 @@ export default function EnfantMathsEvaluationPartiePage() {
           </>
         ) : partieId === "solide-figure" ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Link
-              href="/enfant/maths/vocabulaire-spatial"
-              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-            >
-              <p className="font-display text-lg text-[#2d4a3e]">Vocabulaire spatial</p>
-              <p className="mt-1 text-sm text-[#2d4a3e]/70">Résultat de ton évaluation (score sur 10).</p>
-            </Link>
-            <Link
-              href="/enfant/maths/solides"
-              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-            >
-              <p className="font-display text-lg text-[#2d4a3e]">Solides</p>
-              <p className="mt-1 text-sm text-[#2d4a3e]/70">Relier + Vrai/Faux (score sur 10).</p>
-            </Link>
+            {modulesExercicesPartages.includes("vocabulaire-spatial") ? (
+              <Link
+                href="/enfant/maths/vocabulaire-spatial"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Vocabulaire spatial</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Résultat de ton évaluation (score sur 10).</p>
+              </Link>
+            ) : null}
+            {modulesExercicesPartages.includes("solides") ? (
+              <Link
+                href="/enfant/maths/solides"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Solides</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Relier + Vrai/Faux (score sur 10).</p>
+              </Link>
+            ) : null}
+            {!modulesExercicesPartages.includes("vocabulaire-spatial") &&
+            !modulesExercicesPartages.includes("solides") ? (
+              <p className="col-span-full text-sm text-[#2d4a3e]/70">
+                Aucun exercice d&apos;espace / géométrie partagé pour le moment. Demande à ton enseignant d&apos;activer
+                le partage (Exercice → Espace et géométrie).
+              </p>
+            ) : null}
           </div>
+        ) : partieId === "grandeur" ? (
+          modulesExercicesPartages.includes("centimetre-metre") ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Link
+                href="/enfant/maths/centimetre-metre"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Centimètre ou mètre</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">20 questions : m ou cm.</p>
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-6 text-sm text-[#2d4a3e]/70">
+              L&apos;exercice « Centimètre ou mètre » n&apos;est pas partagé pour le moment. Demande à ton enseignant
+              d&apos;activer le partage (Exercice → Grandeur).
+            </p>
+          )
         ) : themesToShow.length === 0 ? (
           <p className="mt-6 text-[#2d4a3e]/70">Bientôt disponible.</p>
         ) : (
