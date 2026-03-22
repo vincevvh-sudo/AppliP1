@@ -95,7 +95,7 @@ export default function EnfantMathsEvaluationPartiePage() {
           ) : (
             <p className="mt-6 text-sm text-[#2d4a3e]/70">
               L&apos;exercice « Suite logique » n&apos;est pas partagé pour le moment. Demande à ton enseignant
-              d&apos;activer le partage (Exercice → Traitement de données).
+              d&apos;activer le partage (Évaluation ou Exercice → Traitement de données, puis cocher les élèves).
             </p>
           )
         ) : partieId === "nombres" ? (
@@ -193,7 +193,7 @@ export default function EnfantMathsEvaluationPartiePage() {
           ) : (
             <p className="mt-6 text-sm text-[#2d4a3e]/70">
               L&apos;exercice « Centimètre ou mètre » n&apos;est pas partagé pour le moment. Demande à ton enseignant
-              d&apos;activer le partage (Exercice → Grandeur).
+              d&apos;activer le partage (Évaluation ou Exercice → Grandeur, puis cocher les élèves).
             </p>
           )
         ) : themesToShow.length === 0 ? (

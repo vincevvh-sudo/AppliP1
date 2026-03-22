@@ -22,7 +22,8 @@ export default function EnseignantEvaluationEcouterPage() {
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e]">Évaluation écouter</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/80">
-          Exercices d&apos;écoute : cocher Vrai ou Faux selon l&apos;histoire.
+          Ouvre chaque exercice pour prévisualiser la vue élève et <strong>partager l&apos;évaluation</strong> à tous les
+          élèves ou à ceux que tu choisis (bloc « Partager aux élèves » en bas de page).
         </p>
 
         <div className="mt-8 space-y-4">
@@ -31,7 +32,7 @@ export default function EnseignantEvaluationEcouterPage() {
             className="block rounded-xl border-2 border-[#4a7c5a]/30 bg-white/90 p-5 shadow-md transition hover:border-[#4a7c5a] hover:bg-[#f0f7f2]"
           >
             <span className="font-display text-lg text-[#2d4a3e]">Le chevalier de la nuit</span>
-            <p className="mt-1 text-sm text-[#2d4a3e]/70">10 phrases Vrai/Faux — prévisualiser ou partager aux élèves</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">10 phrases Vrai/Faux — prévisualiser et partager sur la page</p>
           </Link>
           <Link
             href="/enseignant/sons/evaluation/ecouter-lire/ecouter/consignes-1"

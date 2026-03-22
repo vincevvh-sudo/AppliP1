@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
+import { PartageMathsModuleForm } from "../../../../components/PartageMathsModuleForm";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 
 const IconMaths = () => (
@@ -18,9 +19,9 @@ export default function EnseignantMathsEvaluationPartiePage() {
 
   if (!partie) {
     return (
-      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+      <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
         <ForetMagiqueBackground />
-        <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
+        <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
           <p>Partie introuvable.</p>
           <Link href="/enseignant/maths/evaluation" className="mt-4 inline-block text-[#4a7c5a]">← Évaluation</Link>
         </div>
@@ -29,7 +30,7 @@ export default function EnseignantMathsEvaluationPartiePage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -45,11 +46,23 @@ export default function EnseignantMathsEvaluationPartiePage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{partie.titre}</h1>
+      <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
+        <h1 className="font-display inline-block max-w-full rounded-xl bg-white/90 px-4 py-2 text-2xl text-[#2d4a3e] shadow-sm backdrop-blur-sm">
+          {partie.titre}
+        </h1>
         {partieId === "traitement-donnees" ? (
           <>
-            <p className="mt-2 text-sm text-[#2d4a3e]/75">Choisis un test à faire passer ou à partager.</p>
+            <p className="mt-2 text-sm text-[#2d4a3e]/75">
+              Partage le test comme sur les autres parties (même carte blanche), puis ouvre la fiche Suite logique pour
+              les réponses ou l&apos;aperçu enfant.
+            </p>
+            <div className="mt-6">
+              <PartageMathsModuleForm
+                moduleId="suite-logique"
+                compact
+                titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+              />
+            </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Link
                 href="/enseignant/maths/suite-logique"
@@ -81,8 +94,16 @@ export default function EnseignantMathsEvaluationPartiePage() {
         ) : partieId === "grandeur" ? (
           <>
             <p className="mt-2 text-sm text-[#2d4a3e]/75">
-              Évaluations en grandeur et mesures.
+              Même disposition que Traitement de données ou Exercice → Grandeur : d&apos;abord le partage, puis la carte
+              vers la fiche détaillée.
             </p>
+            <div className="mt-6">
+              <PartageMathsModuleForm
+                moduleId="centimetre-metre"
+                compact
+                titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+              />
+            </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Link
                 href="/enseignant/maths/centimetre-metre"

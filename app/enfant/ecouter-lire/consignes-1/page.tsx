@@ -8,6 +8,8 @@ import {
   ITEMS_CONSIGNES_1,
   type ItemConsigne,
 } from "../../../data/consignes-1";
+import { EvalNiveauAccessGate } from "../../../components/EvalNiveauAccessGate";
+import { ECOUTER_LIRE_SON_ID, ECOUTER_EVAL_NIVEAU_CONSIGNES_1 } from "../../../data/ecouter-lire-eval-partage";
 
 type ReponsesState = (string | number | null | boolean | number[])[];
 
@@ -117,6 +119,11 @@ export default function EnfantConsignes1Page() {
   };
 
   return (
+    <EvalNiveauAccessGate
+      sonId={ECOUTER_LIRE_SON_ID}
+      niveauId={ECOUTER_EVAL_NIVEAU_CONSIGNES_1}
+      matiereLabel="Écouter-lire"
+    >
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
@@ -429,5 +436,6 @@ export default function EnfantConsignes1Page() {
         )}
       </div>
     </main>
+    </EvalNiveauAccessGate>
   );
 }

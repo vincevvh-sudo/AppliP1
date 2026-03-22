@@ -21,9 +21,9 @@ export default function EnseignantMathsExercicePartiePage() {
 
   if (!partie) {
     return (
-      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+      <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
         <ForetMagiqueBackground />
-        <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
+        <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
           <p>Partie introuvable.</p>
           <Link href="/enseignant/maths/exercice" className="mt-4 inline-block text-[#4a7c5a]">
             ← Exercice
@@ -37,7 +37,7 @@ export default function EnseignantMathsExercicePartiePage() {
   const isSolide = partieId === "solide-figure";
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -53,7 +53,7 @@ export default function EnseignantMathsExercicePartiePage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
+      <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
         <h1 className="font-display text-2xl text-[#2d4a3e]">{partie.titre}</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           {isNombres
@@ -78,18 +78,14 @@ export default function EnseignantMathsExercicePartiePage() {
           <div className="mt-8 space-y-8">
             {isSolide ? (
               <>
-                <section className="rounded-2xl border border-[#4a7c5a]/30 bg-[#e8f5e9]/40 p-5">
-                  <h2 className="font-display text-lg text-[#2d4a3e]">Espace / géométrie — les deux tests</h2>
-                  <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                    Vocabulaire spatial et Solides : même liste d&apos;élèves pour les deux activités.
-                  </p>
-                  <div className="mt-4">
-                    <PartageMathsModuleForm
-                      moduleId="vocabulaire-spatial"
-                      moduleIdsGroup={["vocabulaire-spatial", "solides"]}
-                    />
-                  </div>
-                </section>
+                <div>
+                  <PartageMathsModuleForm
+                    moduleId="vocabulaire-spatial"
+                    moduleIdsGroup={["vocabulaire-spatial", "solides"]}
+                    compact
+                    titreAide="Partage aux élèves de l'app (même liste pour les deux tests espace / géométrie). Exécute le SQL Supabase si besoin."
+                  />
+                </div>
                 {modules.map((m) => (
                   <section key={m.id} className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
                     <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
@@ -115,29 +111,33 @@ export default function EnseignantMathsExercicePartiePage() {
               </>
             ) : (
               modules.map((m) => (
-                <section key={m.id} className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
-                  <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
-                  <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
-                  <div className="mt-4">
-                    <PartageMathsModuleForm moduleId={m.id} />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Link
-                      href={m.hrefEnseignant}
-                      className="rounded-xl bg-[#c4a8e8]/80 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]"
-                    >
-                      Ouvrir (enseignant)
-                    </Link>
-                    <Link
-                      href={m.hrefEnfant}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-xl bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#2d4a3e]/20"
-                    >
-                      Voir côté enfant ↗
-                    </Link>
-                  </div>
-                </section>
+                <div key={m.id} className="space-y-6">
+                  <PartageMathsModuleForm
+                    moduleId={m.id}
+                    compact
+                    titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+                  />
+                  <section className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
+                    <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
+                    <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={m.hrefEnseignant}
+                        className="rounded-xl bg-[#c4a8e8]/80 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]"
+                      >
+                        Ouvrir (enseignant)
+                      </Link>
+                      <Link
+                        href={m.hrefEnfant}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#2d4a3e]/20"
+                      >
+                        Voir côté enfant ↗
+                      </Link>
+                    </div>
+                  </section>
+                </div>
               ))
             )}
           </div>

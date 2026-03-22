@@ -20,10 +20,17 @@
   }
 }
 
+html {
+  /* Réduit les décalages de hauteur de viewport (barre mobile) avec les fonds fixed */
+  height: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100%;
+  min-height: 100dvh;
 }
 
 .font-display {

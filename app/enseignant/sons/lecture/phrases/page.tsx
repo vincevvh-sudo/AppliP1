@@ -6,6 +6,8 @@ import {
   TITRE_LECTURE_PHRASES,
   QUESTIONS_LECTURE_PHRASES,
 } from "../../../../data/lecture-phrases";
+import { PartageLectureEvalForm } from "../../../../components/PartageLectureEvalForm";
+import { LECTURE_EVAL_NIVEAU_PHRASES } from "../../../../data/lecture-eval-partage";
 
 export default function EnseignantLecturePhrasesPage() {
   return (
@@ -40,6 +42,8 @@ export default function EnseignantLecturePhrasesPage() {
             Ouvrir l&apos;exercice (vue élève) ↗
           </a>
         </div>
+
+        <PartageLectureEvalForm niveauId={LECTURE_EVAL_NIVEAU_PHRASES} titre="Construction de phrases" />
 
         <div className="mt-10 rounded-xl border-2 border-[#2d4a3e]/20 bg-white/95 p-6 shadow-lg">
           <h2 className="font-display text-lg text-[#2d4a3e]">Phrases et découpage</h2>

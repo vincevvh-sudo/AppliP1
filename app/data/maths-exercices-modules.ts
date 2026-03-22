@@ -1,6 +1,9 @@
 /**
  * Exercices interactifs de l'arbre des maths (hors thèmes « nombres » avec feuilles).
  * Chaque module peut être partagé ou non avec les enfants (voir maths-partages).
+ *
+ * Nouvelle évaluation / module : checklist dans docs/PARTAGE-EVALUATIONS.md
+ * (PartageMathsModuleForm, table maths_exercices_modules_partages, page enfant).
  */
 
 import type { IdPartieMaths } from "./maths-data";

@@ -10,6 +10,8 @@ import {
 } from "../../../../data/lecture-syllabes";
 import { saveResultat } from "../../../../data/resultats-storage";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
+import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessGate";
+import { LECTURE_EVAL_NIVEAU_SYLLABES } from "../../../../data/lecture-eval-partage";
 
 export default function EnfantLectureSyllabesPage() {
   const [step, setStep] = useState(0);
@@ -82,6 +84,7 @@ export default function EnfantLectureSyllabesPage() {
   }, [envoye, resultSaved, score, total, reponses]);
 
   return (
+    <LectureEvalAccessGate niveauId={LECTURE_EVAL_NIVEAU_SYLLABES}>
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
@@ -215,5 +218,6 @@ export default function EnfantLectureSyllabesPage() {
         )}
       </div>
     </main>
+    </LectureEvalAccessGate>
   );
 }

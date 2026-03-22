@@ -77,7 +77,7 @@ export default function EnfantCentimetreMetrePage() {
   const scoreSur10 = points != null ? scoreSur10CentimetreMetre(points) : 0;
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -105,11 +105,17 @@ export default function EnfantCentimetreMetrePage() {
               {QUESTIONS_CENTIMETRE_METRE.map((q, index) => (
                 <div
                   key={q.id}
-                  className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2d4a3e]/10 bg-white/95 p-4 shadow-sm"
+                  className="flex min-h-[4.25rem] flex-wrap items-center gap-3 rounded-xl border border-[#2d4a3e]/10 bg-white/95 p-4 shadow-sm"
                 >
-                  <span className="text-[#2d4a3e]/70 font-medium w-6">{q.id}.</span>
-                  <span className="text-2xl" role="img" aria-hidden>{q.emoji}</span>
-                  <span className="min-w-0 flex-1 font-medium text-[#2d4a3e] capitalize">{q.nomObjet}</span>
+                  <span className="w-6 shrink-0 font-medium text-[#2d4a3e]/70">{q.id}.</span>
+                  <span
+                    className="flex h-11 w-11 shrink-0 select-none items-center justify-center text-3xl leading-none"
+                    role="img"
+                    aria-hidden
+                  >
+                    {q.emoji}
+                  </span>
+                  <span className="min-w-0 flex-1 font-medium capitalize text-[#2d4a3e]">{q.nomObjet}</span>
                   <span className="text-sm text-[#2d4a3e]/70">c&apos;est en :</span>
                   <div className="flex gap-2">
                     <button

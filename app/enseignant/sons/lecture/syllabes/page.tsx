@@ -6,6 +6,8 @@ import {
   TITRE_LECTURE_SYLLABES,
   QUESTIONS_LECTURE_SYLLABES,
 } from "../../../../data/lecture-syllabes";
+import { PartageLectureEvalForm } from "../../../../components/PartageLectureEvalForm";
+import { LECTURE_EVAL_NIVEAU_SYLLABES } from "../../../../data/lecture-eval-partage";
 
 export default function EnseignantLectureSyllabesPage() {
   return (
@@ -39,6 +41,8 @@ export default function EnseignantLectureSyllabesPage() {
             Ouvrir l&apos;exercice (vue élève) ↗
           </a>
         </div>
+
+        <PartageLectureEvalForm niveauId={LECTURE_EVAL_NIVEAU_SYLLABES} titre="Lecture de syllabes" />
 
         <div className="mt-10 rounded-xl border-2 border-[#2d4a3e]/20 bg-white/95 p-6 shadow-lg">
           <h2 className="font-display text-lg text-[#2d4a3e]">Réponses attendues</h2>

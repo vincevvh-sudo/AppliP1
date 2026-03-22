@@ -17,6 +17,8 @@ import {
 } from "../../../../data/lecture-janvier-data";
 import { saveResultat } from "../../../../data/resultats-storage";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
+import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessGate";
+import { LECTURE_EVAL_NIVEAU_JANVIER } from "../../../../data/lecture-eval-partage";
 
 const EXO_TITRES = [
   "1. Choisis l'image qui va avec la syllabe.",
@@ -25,7 +27,7 @@ const EXO_TITRES = [
   "4. La phrase est-elle vraie ou fausse ?",
 ];
 
-export default function EnfantLectureJanvierPage() {
+function EnfantLectureJanvierPageInner() {
   const [exoIndex, setExoIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [choix, setChoix] = useState<string[]>([]);
@@ -223,5 +225,13 @@ export default function EnfantLectureJanvierPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function EnfantLectureJanvierPage() {
+  return (
+    <LectureEvalAccessGate niveauId={LECTURE_EVAL_NIVEAU_JANVIER}>
+      <EnfantLectureJanvierPageInner />
+    </LectureEvalAccessGate>
   );
 }

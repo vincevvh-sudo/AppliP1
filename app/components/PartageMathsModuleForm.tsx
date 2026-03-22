@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+/**
+ * Partage par élève pour les modules maths (Grandeur, Espace, TdD, …).
+ * @see docs/PARTAGE-EVALUATIONS.md — checklist pour toute nouvelle évaluation dans l’arbre des maths.
+ */
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../utils/supabase";
 import type { EleveRow } from "../../utils/supabase";
 import type { MathsExerciceModuleId } from "../data/maths-exercices-modules";
+import { isExerciceModuleShared } from "../data/maths-partages";
 import {
   getEleveIdsPourModule,
   remplacerPartagesModule,
@@ -24,37 +29,69 @@ export function PartageMathsModuleForm({
   titreAide,
   compact,
 }: Props) {
-  const ids = moduleIdsGroup?.length ? moduleIdsGroup : [moduleId];
+  /**
+   * Référence stable obligatoire : `[moduleId]` recréé à chaque rendu cassait useCallback / useEffect
+   * (rechargement en boucle → skeleton « Chargement des élèves… » sans fin).
+   */
+  const groupKey = moduleIdsGroup?.length
+    ? [...moduleIdsGroup].sort().join(",")
+    : "__one__";
+  /** Toujours une copie : ne jamais réutiliser la ref du parent (sinon ids change à chaque rendu → boucle de chargement). */
+  const ids = useMemo<MathsExerciceModuleId[]>(() => {
+    return moduleIdsGroup?.length ? [...moduleIdsGroup] : [moduleId];
+  }, [moduleId, groupKey]);
   const [eleves, setEleves] = useState<EleveRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setMessage(null);
-    try {
-      const { data } = await supabase.from("eleves").select("*").order("nom").order("prenom");
-      const list = (data ?? []) as EleveRow[];
-      setEleves(list);
-      const merged = new Set<string>();
-      for (const mid of ids) {
-        const partages = await getEleveIdsPourModule(mid);
-        partages.forEach((id) => merged.add(id));
-      }
-      setSelected(merged);
-    } catch {
-      setEleves([]);
-      setSelected(new Set());
-    } finally {
-      setLoading(false);
-    }
-  }, [ids]);
+  const [message, setMessage] = useState<{ type: "ok" | "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    const moduleIds = moduleIdsGroup?.length ? [...moduleIdsGroup] : [moduleId];
+
+    (async () => {
+      setLoading(true);
+      setMessage(null);
+      try {
+        const { data, error } = await supabase.from("eleves").select("*").order("nom").order("prenom");
+        if (cancelled) return;
+        if (error) {
+          setMessage({ type: "error", text: `Liste des élèves : ${error.message}` });
+          setEleves([]);
+          setSelected(new Set());
+          return;
+        }
+        const list = (data ?? []) as EleveRow[];
+        setEleves(list);
+        const merged = new Set<string>();
+        for (const mid of moduleIds) {
+          const partages = await getEleveIdsPourModule(mid);
+          partages.forEach((id) => merged.add(id));
+        }
+        if (merged.size === 0 && list.length > 0 && moduleIds.some((mid) => isExerciceModuleShared(mid))) {
+          list.forEach((e) => merged.add(String(e.id)));
+        }
+        setSelected(merged);
+      } catch (e) {
+        if (!cancelled) {
+          setMessage({
+            type: "error",
+            text: e instanceof Error ? e.message : "Erreur lors du chargement des élèves.",
+          });
+          setEleves([]);
+          setSelected(new Set());
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // groupKey résume le groupe ; ne pas dépendre de moduleIdsGroup (nouvelle ref à chaque rendu parent).
+  }, [moduleId, groupKey]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -83,14 +120,42 @@ export function PartageMathsModuleForm({
         : await remplacerPartagesModule(moduleId, eleveIds);
     setSaving(false);
     if (result.ok) {
-      setMessage({ type: "ok", text: "Partage enregistré." });
+      if ("info" in result && result.info) {
+        setMessage({ type: "info", text: result.info });
+      } else {
+        setMessage({ type: "ok", text: "Partage enregistré." });
+      }
     } else {
       setMessage({ type: "error", text: result.error ?? "Erreur d'enregistrement." });
     }
   };
 
+  /** Carte avec hauteur proche du formulaire final → évite le saut du fond quand les élèves arrivent. */
   if (loading) {
-    return <p className={compact ? "text-xs text-[#2d4a3e]/70" : "text-sm text-[#2d4a3e]/70"}>Chargement des élèves…</p>;
+    const skeletonClass = compact
+      ? "rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-4 shadow-sm"
+      : "rounded-2xl border border-[#2d4a3e]/15 bg-white/95 p-4 shadow";
+    return (
+      <div
+        className={`${skeletonClass} min-h-[260px] animate-pulse`}
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <div className="h-4 w-3/4 max-w-xs rounded bg-[#2d4a3e]/10" />
+        <div className="mt-2 h-3 w-full rounded bg-[#2d4a3e]/10" />
+        <div className="mt-4 flex gap-2">
+          <div className="h-8 w-14 rounded bg-[#2d4a3e]/10" />
+          <div className="h-8 w-16 rounded bg-[#2d4a3e]/10" />
+        </div>
+        <div className="mt-4 space-y-2">
+          <div className="h-9 rounded bg-[#2d4a3e]/10" />
+          <div className="h-9 rounded bg-[#2d4a3e]/10" />
+          <div className="h-9 rounded bg-[#2d4a3e]/10" />
+        </div>
+        <div className="mt-5 h-10 rounded-xl bg-[#2d4a3e]/10" />
+        <p className="mt-3 text-xs text-[#2d4a3e]/55">Chargement des élèves…</p>
+      </div>
+    );
   }
 
   if (eleves.length === 0) {
@@ -101,15 +166,24 @@ export function PartageMathsModuleForm({
     );
   }
 
+  /** Même rendu « carte blanche » que Vocabulaire spatial (compact). */
   const wrapClass = compact
-    ? "rounded-xl border border-[#2d4a3e]/15 bg-[#fef9f3]/90 p-3"
+    ? "rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-4 shadow-sm"
     : "rounded-2xl border border-[#2d4a3e]/15 bg-white/95 p-4 shadow";
 
   return (
     <div className={wrapClass}>
       <p className={`font-medium text-[#2d4a3e] ${compact ? "text-sm" : ""}`}>
-        {ids.length > 1 ? "Partager les deux tests avec les élèves sélectionnés" : "Partager avec un ou plusieurs élèves"}
+        {ids.length > 1
+          ? "Partager les deux tests avec les élèves sélectionnés"
+          : "Partager avec les élèves sélectionnés"}
       </p>
+      {!compact ? (
+        <p className="mt-1 text-xs text-[#2d4a3e]/60">
+          Utilise <strong>Tous</strong> / <strong>Aucun</strong> ou coche les prénoms — tu peux partager avec toute la
+          classe ou seulement quelques élèves.
+        </p>
+      ) : null}
       {titreAide ? <p className="mt-1 text-xs text-[#2d4a3e]/65">{titreAide}</p> : null}
       <div className="mt-3 flex flex-wrap gap-2">
         <button
@@ -158,7 +232,13 @@ export function PartageMathsModuleForm({
       </button>
       {message ? (
         <p
-          className={`mt-2 text-sm ${message.type === "ok" ? "text-[#2d6a4f]" : "text-[#b91c1c]"}`}
+          className={`mt-2 text-sm ${
+            message.type === "ok"
+              ? "text-[#2d6a4f]"
+              : message.type === "info"
+                ? "text-[#92400e]"
+                : "text-[#b91c1c]"
+          }`}
           role="status"
         >
           {message.text}

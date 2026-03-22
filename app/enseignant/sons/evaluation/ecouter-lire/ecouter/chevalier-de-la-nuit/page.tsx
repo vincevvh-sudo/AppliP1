@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../../../components/MiyazakiDecor";
 import { TITRE_CHEVALIER, ITEMS_CHEVALIER } from "../../../../../../data/ecouter-lire-chevalier";
+import { PartageEvalNiveauForm } from "../../../../../../components/PartageEvalNiveauForm";
+import { ECOUTER_LIRE_SON_ID, ECOUTER_EVAL_NIVEAU_CHEVALIER } from "../../../../../../data/ecouter-lire-eval-partage";
 
 type Reponse = boolean | null;
 
@@ -61,6 +63,12 @@ export default function EnseignantChevalierPage() {
             Ouvrir le test (vue élève) ↗
           </a>
         </div>
+
+        <PartageEvalNiveauForm
+          sonId={ECOUTER_LIRE_SON_ID}
+          niveauId={ECOUTER_EVAL_NIVEAU_CHEVALIER}
+          titre={TITRE_CHEVALIER}
+        />
 
         {/* Tester le test (même interface que les élèves) */}
         <div className="mt-10 rounded-xl border-2 border-[#2d4a3e]/20 bg-white/95 p-6 shadow-lg">

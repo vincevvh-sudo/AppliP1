@@ -45,18 +45,19 @@ export default function EnseignantSolidesPage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-5 py-8">
+      <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
         <h1 className="font-display text-2xl text-[#2d4a3e]">{TITRE_SOLIDES_EVALUATION}</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           Évaluation en 2 parties : relier des objets au bon solide (8 items) puis répondre Vrai/Faux (8 phrases).
           La cotation est sur 10, et le résultat est enregistré dans <code>exercice_resultats</code>.
         </p>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <PartageMathsModuleForm
             moduleId="vocabulaire-spatial"
             moduleIdsGroup={["vocabulaire-spatial", "solides"]}
-            titreAide="Même liste d’élèves pour Vocabulaire spatial et Solides. Tu peux aussi gérer le partage depuis la page Vocabulaire spatial."
+            compact
+            titreAide="Partage aux élèves de l'app (même liste pour les deux tests espace / géométrie). Exécute le SQL Supabase si besoin."
           />
         </div>
 

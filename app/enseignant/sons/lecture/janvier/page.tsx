@@ -10,6 +10,8 @@ import {
   JANVIER_EX4_VRAI_FAUX,
   JANVIER_TOTAL_QUESTIONS,
 } from "../../../../data/lecture-janvier-data";
+import { PartageLectureEvalForm } from "../../../../components/PartageLectureEvalForm";
+import { LECTURE_EVAL_NIVEAU_JANVIER } from "../../../../data/lecture-eval-partage";
 
 export default function EnseignantLectureJanvierPage() {
   return (
@@ -51,6 +53,8 @@ export default function EnseignantLectureJanvierPage() {
             Voir l&apos;évaluation (enfant)
           </a>
         </div>
+
+        <PartageLectureEvalForm niveauId={LECTURE_EVAL_NIVEAU_JANVIER} titre="Janvier" />
 
         <div className="mt-8 space-y-6 rounded-2xl bg-white/95 p-6 shadow-lg">
           <section>

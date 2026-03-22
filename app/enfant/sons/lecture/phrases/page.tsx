@@ -8,6 +8,8 @@ import {
   QUESTIONS_LECTURE_PHRASES,
   PhraseConstructionSegment,
 } from "../../../../data/lecture-phrases";
+import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessGate";
+import { LECTURE_EVAL_NIVEAU_PHRASES } from "../../../../data/lecture-eval-partage";
 
 type SegmentWithIndex = PhraseConstructionSegment & { index: number };
 
@@ -79,6 +81,7 @@ export default function EnfantLecturePhrasesPage() {
   };
 
   return (
+    <LectureEvalAccessGate niveauId={LECTURE_EVAL_NIVEAU_PHRASES}>
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
@@ -209,6 +212,7 @@ export default function EnfantLecturePhrasesPage() {
         </div>
       </div>
     </main>
+    </LectureEvalAccessGate>
   );
 }
 

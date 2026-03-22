@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { getNiveauxEvalPartagesPourEleve } from "../../data/sons-partages";
+import {
+  LECTURE_SON_ID,
+  LECTURE_EVAL_ROUTES,
+  isLectureEvalNiveauId,
+} from "../../data/lecture-eval-partage";
+import {
+  ECOUTER_LIRE_SON_ID,
+  ECOUTER_EVAL_ROUTES,
+  isEcouterEvalNiveauId,
+} from "../../data/ecouter-lire-eval-partage";
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE_MOTS } from "../../data/dictee-mots-data";
 import { getMathsThemesEvaluationsPartages, getOperationsSeriesPartages } from "../../data/maths-partages";
@@ -38,13 +48,14 @@ const IconEcouterLire = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
   </svg>
 );
-const IconLecture = () => (
-  <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-  </svg>
-);
-
-type EvalFrancais = { son_id: string; niveau_id: string; titre: string; grapheme: string };
+type EvalFrancais = {
+  son_id: string;
+  niveau_id: string;
+  titre: string;
+  grapheme: string;
+  /** Si défini (ex. lecture), lien direct vers la page évaluation. */
+  href?: string;
+};
 type EvalDicteeMots = { num: number; titre: string };
 type EvalMaths = { themeId: string; titre: string };
 
@@ -71,6 +82,28 @@ export default function EnfantEvaluationsPage() {
     ]).then(([pairs, dicteesMotsNums, mathsIds]) => {
       const francais: EvalFrancais[] = [];
       for (const p of pairs) {
+        if (p.son_id === LECTURE_SON_ID && isLectureEvalNiveauId(p.niveau_id)) {
+          const route = LECTURE_EVAL_ROUTES[p.niveau_id];
+          francais.push({
+            son_id: p.son_id,
+            niveau_id: p.niveau_id,
+            titre: route.titre,
+            grapheme: "Lecture",
+            href: route.href,
+          });
+          continue;
+        }
+        if (p.son_id === ECOUTER_LIRE_SON_ID && isEcouterEvalNiveauId(p.niveau_id)) {
+          const route = ECOUTER_EVAL_ROUTES[p.niveau_id];
+          francais.push({
+            son_id: p.son_id,
+            niveau_id: p.niveau_id,
+            titre: route.titre,
+            grapheme: "Écouter-lire",
+            href: route.href,
+          });
+          continue;
+        }
         const son = getSonById(p.son_id);
         const niveau = son ? getNiveauById(p.son_id, p.niveau_id) : undefined;
         if (son && niveau) {
@@ -139,7 +172,8 @@ export default function EnfantEvaluationsPage() {
           <p className="mt-10 text-center text-[#2d4a3e]/70">Chargement…</p>
         ) : (
           <div className="mt-10 space-y-10">
-            {/* Français — Forêt des sons */}
+            {/* Français — Forêt des sons (hors écouter-lire, voir section dédiée) */}
+            {(evalFrancais.some((e) => e.son_id !== ECOUTER_LIRE_SON_ID) || evalDicteesMots.length > 0) && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#a8d5ba]/60 text-[#2d4a3e]">
@@ -150,25 +184,61 @@ export default function EnfantEvaluationsPage() {
                   <p className="text-sm text-[#2d4a3e]/70">Forêt des sons — évaluations partagées</p>
                 </div>
               </div>
-              {evalFrancais.length === 0 && evalDicteesMots.length === 0 ? (
+              {evalFrancais.filter((e) => e.son_id !== ECOUTER_LIRE_SON_ID).length === 0 &&
+              evalDicteesMots.length === 0 ? (
                 <p className="mt-4 text-sm text-[#2d4a3e]/60">Aucune évaluation français partagée pour le moment.</p>
               ) : (
                 <>
-                  {evalFrancais.length > 0 && (
+                  {evalFrancais.filter(
+                    (e) => e.son_id !== LECTURE_SON_ID && e.son_id !== ECOUTER_LIRE_SON_ID
+                  ).length > 0 && (
                     <>
                       <h3 className="mt-4 font-display text-lg text-[#2d4a3e]">Évaluations 1 à 4</h3>
                       <ul className="mt-2 flex flex-col gap-2">
-                        {evalFrancais.map((e) => (
-                          <li key={`${e.son_id}-${e.niveau_id}`}>
-                            <Link
-                              href={`/enfant/sons/${e.son_id}/jeu/${e.niveau_id}`}
-                              className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
-                            >
-                              <span className="font-semibold text-[#2d4a3e]">{e.titre}</span>
-                              <span className="ml-2 text-[#2d4a3e]/70">— son {e.grapheme}</span>
-                            </Link>
-                          </li>
-                        ))}
+                        {evalFrancais
+                          .filter((e) => e.son_id !== LECTURE_SON_ID && e.son_id !== ECOUTER_LIRE_SON_ID)
+                          .map((e) => (
+                            <li key={`${e.son_id}-${e.niveau_id}`}>
+                              <Link
+                                href={e.href ?? `/enfant/sons/${e.son_id}/jeu/${e.niveau_id}`}
+                                className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
+                              >
+                                <span className="font-semibold text-[#2d4a3e]">{e.titre}</span>
+                                <span className="ml-2 text-[#2d4a3e]/70">— son {e.grapheme}</span>
+                              </Link>
+                            </li>
+                          ))}
+                      </ul>
+                    </>
+                  )}
+
+                  {evalFrancais.filter((e) => e.son_id === LECTURE_SON_ID).length > 0 && (
+                    <>
+                      <h3
+                        className={`font-display text-lg text-[#2d4a3e] ${
+                          evalFrancais.some(
+                            (e) => e.son_id !== LECTURE_SON_ID && e.son_id !== ECOUTER_LIRE_SON_ID
+                          )
+                            ? "mt-6"
+                            : "mt-4"
+                        }`}
+                      >
+                        Évaluation lecture
+                      </h3>
+                      <ul className="mt-2 flex flex-col gap-2">
+                        {evalFrancais
+                          .filter((e) => e.son_id === LECTURE_SON_ID)
+                          .map((e) => (
+                            <li key={`${e.son_id}-${e.niveau_id}`}>
+                              <Link
+                                href={e.href ?? `/enfant/sons/${e.son_id}/jeu/${e.niveau_id}`}
+                                className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
+                              >
+                                <span className="font-semibold text-[#2d4a3e]">{e.titre}</span>
+                                <span className="ml-2 text-[#2d4a3e]/70">— Forêt des sons</span>
+                              </Link>
+                            </li>
+                          ))}
                       </ul>
                     </>
                   )}
@@ -193,86 +263,36 @@ export default function EnfantEvaluationsPage() {
                 </>
               )}
             </section>
+            )}
 
-            {/* Écouter-lire */}
-            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#b8d4e8]/60 text-[#2d4a3e]">
-                  <IconEcouterLire />
-                </div>
-                <div>
-                  <h2 className="font-display text-xl text-[#2d4a3e]">Écouter-lire</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">Écoute l&apos;histoire puis réponds Vrai ou Faux</p>
-                </div>
-              </div>
-              <ul className="mt-4 flex flex-col gap-2">
-                <li>
-                  <Link
-                    href="/enfant/ecouter-lire/chevalier-de-la-nuit"
-                    className="block rounded-xl bg-[#b8d4e8]/20 px-4 py-3 transition hover:bg-[#b8d4e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Le chevalier de la nuit</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/ecouter-lire/consignes-1"
-                    className="block rounded-xl bg-[#b8d4e8]/20 px-4 py-3 transition hover:bg-[#b8d4e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Consignes 1</span>
-                  </Link>
-                </li>
-              </ul>
-            </section>
-
-            {/* Lecture — Évaluation lecture */}
+            {/* Écouter-lire — uniquement si partagé */}
+            {evalFrancais.filter((e) => e.son_id === ECOUTER_LIRE_SON_ID).length > 0 && (
               <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#a8d5ba]/60 text-[#2d4a3e]">
-                  <IconLecture />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#b8d4e8]/60 text-[#2d4a3e]">
+                    <IconEcouterLire />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl text-[#2d4a3e]">Écouter-lire</h2>
+                    <p className="text-sm text-[#2d4a3e]/70">Évaluations d&apos;écoute partagées par ton enseignant</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-display text-xl text-[#2d4a3e]">Lecture</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">
-                    Exercices de lecture : sons, syllabes et construction de phrases.
-                  </p>
-                </div>
-              </div>
-              <ul className="mt-4 flex flex-col gap-2">
-                <li>
-                  <Link
-                    href="/enfant/sons/lecture/syllabes"
-                    className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Lecture de syllabes</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/sons/lecture/mots"
-                    className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Lecture de mots</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/sons/lecture/janvier"
-                    className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Janvier</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/sons/lecture/phrases"
-                    className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Construction de phrases</span>
-                  </Link>
-                </li>
-              </ul>
-            </section>
+                <ul className="mt-4 flex flex-col gap-2">
+                  {evalFrancais
+                    .filter((e) => e.son_id === ECOUTER_LIRE_SON_ID)
+                    .map((e) => (
+                      <li key={`${e.son_id}-${e.niveau_id}`}>
+                        <Link
+                          href={e.href!}
+                          className="block rounded-xl bg-[#b8d4e8]/20 px-4 py-3 transition hover:bg-[#b8d4e8]/40"
+                        >
+                          <span className="font-semibold text-[#2d4a3e]">{e.titre}</span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            )}
 
             {/* Mathématiques — Arbre des mathématiques */}
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">

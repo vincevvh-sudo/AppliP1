@@ -1,25 +1,50 @@
 /**
  * Partage des exercices maths (modules hors arithmétique) par élève — Supabase.
  * Table : maths_exercices_modules_partages (voir supabase-maths-exercices-modules-partages.sql)
- * Fallback : localStorage (maths-partages.exercicesModules) si la table est absente ou erreur réseau.
+ * Fallback : localStorage (liste d’élèves par module) si la table est absente ou erreur réseau.
  */
 
 import { supabase } from "../../utils/supabase";
 import { MATHS_EXERCICES_MODULES, type MathsExerciceModuleId } from "./maths-exercices-modules";
-import { getExercicesModulesPartages as getExercicesModulesPartagesLocal } from "./maths-partages";
+import {
+  getExerciceModuleEleveIds,
+  getExercicesModulesPartagesPourEleve,
+  setExerciceModuleEleveIds,
+} from "./maths-partages";
 
 const TABLE = "maths_exercices_modules_partages";
 
+/** PostgREST / Postgres : table absente ou pas encore dans le cache du schéma. */
 function isTableMissingError(err: { message?: string; code?: string } | null): boolean {
-  if (!err?.message) return false;
-  const m = err.message.toLowerCase();
-  return m.includes("does not exist") || m.includes("42p01") || m.includes("schema cache");
+  if (!err) return false;
+  const code = String(err.code ?? "").toUpperCase();
+  if (code === "42P01" || code === "PGRST205") return true;
+  const m = (err.message ?? "").toLowerCase();
+  return (
+    m.includes("does not exist") ||
+    m.includes("schema cache") ||
+    m.includes("could not find the table") ||
+    m.includes("undefined table")
+  );
+}
+
+/**
+ * Sans table Supabase : une entrée par élève coché (localStorage), comme avec la table SQL.
+ */
+function sauvegarderPartageLocal(
+  moduleIds: MathsExerciceModuleId[],
+  eleveIds: string[]
+): { ok: true; modeLocal: true } {
+  for (const id of moduleIds) {
+    setExerciceModuleEleveIds(id, eleveIds);
+  }
+  return { ok: true, modeLocal: true };
 }
 
 export async function getEleveIdsPourModule(moduleId: string): Promise<string[]> {
   const { data, error } = await supabase.from(TABLE).select("eleve_id").eq("module_id", moduleId);
   if (error) {
-    if (isTableMissingError(error)) return [];
+    if (isTableMissingError(error)) return getExerciceModuleEleveIds(moduleId);
     if (process.env.NODE_ENV === "development") console.warn("[maths-modules-partages]", error.message);
     return [];
   }
@@ -30,11 +55,16 @@ export async function getEleveIdsPourModule(moduleId: string): Promise<string[]>
 export async function remplacerPartagesModule(
   moduleId: MathsExerciceModuleId,
   eleveIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; info?: string }> {
   const { error: delErr } = await supabase.from(TABLE).delete().eq("module_id", moduleId);
   if (delErr) {
     if (isTableMissingError(delErr)) {
-      return { ok: false, error: "Table Supabase manquante. Exécute supabase-maths-exercices-modules-partages.sql dans le SQL Editor." };
+      sauvegarderPartageLocal([moduleId], eleveIds);
+      return {
+        ok: true,
+        info:
+          "Partage enregistré sur ce navigateur (élèves cochés enregistrés localement). Pour le même partage sur tous tes appareils et tous les postes, exécute supabase-maths-exercices-modules-partages.sql dans Supabase → SQL Editor.",
+      };
     }
     return { ok: false, error: delErr.message };
   }
@@ -49,12 +79,17 @@ export async function remplacerPartagesModule(
 export async function remplacerPartagesModules(
   moduleIds: MathsExerciceModuleId[],
   eleveIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; info?: string }> {
   if (moduleIds.length === 0) return { ok: true };
   const { error: delErr } = await supabase.from(TABLE).delete().in("module_id", moduleIds);
   if (delErr) {
     if (isTableMissingError(delErr)) {
-      return { ok: false, error: "Table Supabase manquante. Exécute supabase-maths-exercices-modules-partages.sql dans le SQL Editor." };
+      sauvegarderPartageLocal(moduleIds, eleveIds);
+      return {
+        ok: true,
+        info:
+          "Partage enregistré sur ce navigateur (élèves cochés en local). Pour synchroniser via Supabase sur tous les appareils, exécute supabase-maths-exercices-modules-partages.sql dans Supabase → SQL Editor.",
+      };
     }
     return { ok: false, error: delErr.message };
   }
@@ -85,7 +120,7 @@ export async function getModulesAccessiblesPourEleve(
   if (error && !isTableMissingError(error) && process.env.NODE_ENV === "development") {
     console.warn("[maths-modules-partages] fallback localStorage:", error.message);
   }
-  return getExercicesModulesPartagesLocal();
+  return getExercicesModulesPartagesPourEleve(eid);
 }
 
 export async function moduleEstAccessiblePourEleve(

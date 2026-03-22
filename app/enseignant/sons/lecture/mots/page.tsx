@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { TITRE_LECTURE_MOTS, LECTURE_MOTS_ITEMS } from "../../../../data/lecture-mots-data";
+import { PartageLectureEvalForm } from "../../../../components/PartageLectureEvalForm";
+import { LECTURE_EVAL_NIVEAU_MOTS } from "../../../../data/lecture-eval-partage";
 
 export default function EnseignantLectureMotsPage() {
   return (
@@ -44,6 +46,8 @@ export default function EnseignantLectureMotsPage() {
             Voir l&apos;exercice (enfant)
           </a>
         </div>
+
+        <PartageLectureEvalForm niveauId={LECTURE_EVAL_NIVEAU_MOTS} titre="Lecture de mots" />
 
         <div className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">
           <h2 className="font-display text-lg text-[#2d4a3e]">Les 10 mots</h2>

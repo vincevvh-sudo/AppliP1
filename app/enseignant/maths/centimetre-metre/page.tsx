@@ -14,7 +14,7 @@ const IconMaths = () => (
 
 export default function EnseignantCentimetreMetrePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -30,13 +30,21 @@ export default function EnseignantCentimetreMetrePage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-5 py-8">
+      <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
         <h1 className="font-display text-2xl text-[#2d4a3e]">{TITRE_CENTIMETRE_METRE}</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           20 questions : pour chaque objet, l&apos;enfant choisit « mètre » ou « centimètre ». Cotation sur 20, score sur 10 envoyé automatiquement à l&apos;enfant à la fin.
         </p>
 
         <div className="mt-6">
+          <PartageMathsModuleForm
+            moduleId="centimetre-metre"
+            compact
+            titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+          />
+        </div>
+
+        <div className="mt-8">
           <Link
             href="/enfant/maths/centimetre-metre"
             target="_blank"
@@ -45,13 +53,6 @@ export default function EnseignantCentimetreMetrePage() {
           >
             Voir l&apos;exercice (enfant)
           </Link>
-        </div>
-
-        <div className="mt-8">
-          <PartageMathsModuleForm
-            moduleId="centimetre-metre"
-            titreAide="Coche les élèves concernés puis enregistre. Table Supabase : maths_exercices_modules_partages."
-          />
         </div>
 
         <div className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">

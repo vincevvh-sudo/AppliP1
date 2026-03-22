@@ -1,0 +1,29 @@
+---
+description: Partage enseignant→élèves pour évaluations maths et Forêt des sons
+globs:
+  - app/data/maths-exercices-modules.ts
+  - app/data/maths-modules-partages-storage.ts
+  - app/data/maths-partages.ts
+  - app/data/sons-partages.ts
+  - app/components/PartageMathsModuleForm.tsx
+  - app/enseignant/maths/**/*
+  - app/enfant/maths/**/*
+  - app/enseignant/sons/**/*
+alwaysApply: false
+---
+
+# Partage des évaluations (maths + Forêt des sons)
+
+Avant d’ajouter une **nouvelle évaluation** dans l’arbre des mathématiques ou dans la Forêt des sons (parfois appelée « rivière de sons »), lire **`docs/PARTAGE-EVALUATIONS.md`**.
+
+## Mathématiques (modules interactifs)
+
+- Enregistrer le module dans `MATHS_EXERCICES_MODULES` (`maths-exercices-modules.ts`) et l’id dans `MathsExerciceModuleId`.
+- Réutiliser **`PartageMathsModuleForm`** avec `compact` + `titreAide` (même texte d’aide SQL que les autres modules).
+- Accès enfant : `moduleEstAccessiblePourEleve` depuis `maths-modules-partages-storage.ts`.
+- Table : `maths_exercices_modules_partages` (script `supabase-maths-exercices-modules-partages.sql`).
+
+## Forêt des sons
+
+- Ne pas mélanger les données maths avec les sons : utiliser **`sons-partages.ts`** et les tables `sons_partages` / évaluations associées.
+- S’inspirer de **`enseignant/sons/exercices/page.tsx`** pour le partage par son ; harmoniser le **style** UI avec la carte blanche des maths si demandé, sans changer le modèle de données sans migration.

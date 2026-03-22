@@ -1,8 +1,10 @@
 /**
- * Partage des sons aux élèves via Supabase
+ * Partage des sons aux élèves via Supabase (Forêt des sons / « rivière de sons »).
  * - sons_partages : partage des EXERCICES (Phono 1, 2, Phono Image 1, 2)
  * - sons_partages_evaluations : partage des ÉVALUATIONS (Éval 1, 2, 3, 4) — séparé, à activer par l'enseignant
  * eleve_id = 0 => partagé à tous les élèves
+ *
+ * Nouvelle évaluation côté français : voir docs/PARTAGE-EVALUATIONS.md (section Forêt des sons).
  */
 
 import { supabase } from "../../utils/supabase";
@@ -195,6 +197,30 @@ export async function setPartageEvalNiveau(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: String(e) };
+  }
+}
+
+/** État actuel du partage pour un (son_id, niveau_id) : tous les élèves, ou liste d’élèves précis. */
+export async function getPartageEvalNiveauState(
+  sonId: string,
+  niveauId: string
+): Promise<{ toAll: boolean; eleveIds: number[] }> {
+  try {
+    const { data } = await supabase
+      .from("sons_partages_eval_niveaux")
+      .select("eleve_id")
+      .eq("son_id", sonId)
+      .eq("niveau_id", niveauId);
+    const rows = data ?? [];
+    if (rows.some((r: { eleve_id: number }) => r.eleve_id === 0)) {
+      return { toAll: true, eleveIds: [] };
+    }
+    return {
+      toAll: false,
+      eleveIds: rows.map((r: { eleve_id: number }) => r.eleve_id).filter((id: number) => id !== 0),
+    };
+  } catch {
+    return { toAll: false, eleveIds: [] };
   }
 }
 

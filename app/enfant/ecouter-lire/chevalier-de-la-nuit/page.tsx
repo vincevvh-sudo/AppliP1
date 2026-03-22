@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
 import { TITRE_CHEVALIER, ITEMS_CHEVALIER } from "../../../data/ecouter-lire-chevalier";
+import { EvalNiveauAccessGate } from "../../../components/EvalNiveauAccessGate";
+import { ECOUTER_LIRE_SON_ID, ECOUTER_EVAL_NIVEAU_CHEVALIER } from "../../../data/ecouter-lire-eval-partage";
 
 type Reponse = boolean | null;
 
@@ -31,6 +33,11 @@ export default function EnfantChevalierPage() {
   const total = ITEMS_CHEVALIER.length;
 
   return (
+    <EvalNiveauAccessGate
+      sonId={ECOUTER_LIRE_SON_ID}
+      niveauId={ECOUTER_EVAL_NIVEAU_CHEVALIER}
+      matiereLabel="Écouter-lire"
+    >
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
@@ -144,5 +151,6 @@ export default function EnfantChevalierPage() {
         )}
       </div>
     </main>
+    </EvalNiveauAccessGate>
   );
 }

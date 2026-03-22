@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../../../components/MiyazakiDecor";
 import { TITRE_CONSIGNES_1, ITEMS_CONSIGNES_1 } from "../../../../../../data/consignes-1";
+import { PartageEvalNiveauForm } from "../../../../../../components/PartageEvalNiveauForm";
+import { ECOUTER_LIRE_SON_ID, ECOUTER_EVAL_NIVEAU_CONSIGNES_1 } from "../../../../../../data/ecouter-lire-eval-partage";
 
 export default function EnseignantConsignes1Page() {
   return (
@@ -36,6 +38,12 @@ export default function EnseignantConsignes1Page() {
             Ouvrir l&apos;évaluation (vue élève) ↗
           </a>
         </div>
+
+        <PartageEvalNiveauForm
+          sonId={ECOUTER_LIRE_SON_ID}
+          niveauId={ECOUTER_EVAL_NIVEAU_CONSIGNES_1}
+          titre={TITRE_CONSIGNES_1}
+        />
 
         <div className="mt-10 rounded-xl border-2 border-[#2d4a3e]/20 bg-white/95 p-6 shadow-lg">
           <h2 className="font-display text-lg text-[#2d4a3e]">Liste des 10 exercices</h2>

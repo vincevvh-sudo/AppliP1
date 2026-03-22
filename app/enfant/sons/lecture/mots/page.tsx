@@ -10,8 +10,10 @@ import {
 } from "../../../../data/lecture-mots-data";
 import { saveResultat } from "../../../../data/resultats-storage";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
+import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessGate";
+import { LECTURE_EVAL_NIVEAU_MOTS } from "../../../../data/lecture-eval-partage";
 
-export default function EnfantLectureMotsPage() {
+function EnfantLectureMotsPageInner() {
   const [step, setStep] = useState(0);
   const [choix, setChoix] = useState<string[]>(() => getChoixEmojis(0));
   const [reponse, setReponse] = useState<number | null>(null);
@@ -143,5 +145,13 @@ export default function EnfantLectureMotsPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function EnfantLectureMotsPage() {
+  return (
+    <LectureEvalAccessGate niveauId={LECTURE_EVAL_NIVEAU_MOTS}>
+      <EnfantLectureMotsPageInner />
+    </LectureEvalAccessGate>
   );
 }
