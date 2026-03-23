@@ -1681,6 +1681,10 @@ function ExoEvalRelieEcritures({
   const [slotContent, setSlotContent] = useState<(number | null)[]>(() =>
     Array(wordsCursive.length).fill(null)
   );
+  // Sur tablette, le drag & drop natif ne marche souvent pas : on ajoute un mode "toucher" (tap-to-place).
+  // 1) Tap sur un mot imprimé => selectedPrintIndex
+  // 2) Tap sur le bon emplacement => on place le mot
+  const [selectedPrintIndex, setSelectedPrintIndex] = useState<number | null>(null);
   const placedPrintIndices = useMemo(() => new Set(slotContent.filter((x): x is number => x !== null)), [slotContent]);
   const allCorrect = slotContent.every((printIdx, i) => printIdx !== null && wordsPrint[printIdx] === wordsCursive[i]);
 
@@ -1690,7 +1694,25 @@ function ExoEvalRelieEcritures({
     }
   }, [allCorrect, wordsCursive.length, onTermine, pointsMax]);
 
+  const tryPlace = useCallback(
+    (printIndex: number, slotIndex: number) => {
+      if (Number.isNaN(printIndex)) return;
+      if (placedPrintIndices.has(printIndex)) return;
+      if (slotContent[slotIndex] !== null) return; // emplacement déjà rempli
+      if (wordsPrint[printIndex] !== wordsCursive[slotIndex]) return; // pas le bon match
+
+      setSlotContent((prev) => {
+        const next = [...prev];
+        next[slotIndex] = printIndex;
+        return next;
+      });
+      setSelectedPrintIndex(null); // placement réussi
+    },
+    [placedPrintIndices, slotContent, wordsCursive, wordsPrint]
+  );
+
   const handleDragStart = useCallback((e: React.DragEvent, printIndex: number) => {
+    setSelectedPrintIndex(null);
     e.dataTransfer.setData("text/plain", String(printIndex));
     e.dataTransfer.effectAllowed = "move";
   }, []);
@@ -1704,15 +1726,10 @@ function ExoEvalRelieEcritures({
     (e: React.DragEvent, slotIndex: number) => {
       e.preventDefault();
       const printIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
-      if (Number.isNaN(printIndex) || placedPrintIndices.has(printIndex)) return;
-      if (wordsPrint[printIndex] !== wordsCursive[slotIndex]) return;
-      setSlotContent((prev) => {
-        const next = [...prev];
-        next[slotIndex] = printIndex;
-        return next;
-      });
+      if (Number.isNaN(printIndex)) return;
+      tryPlace(printIndex, slotIndex);
     },
-    [wordsCursive, wordsPrint, placedPrintIndices]
+    [tryPlace]
   );
 
   if (!data || wordsCursive.length === 0) return null;
@@ -1729,10 +1746,25 @@ function ExoEvalRelieEcritures({
               key={i}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, i)}
+              onPointerDown={(e) => {
+                if (e.pointerType !== "touch") return;
+                // Tap-to-place : on ne place que si un mot imprimé est sélectionné.
+                if (selectedPrintIndex === null) return;
+                e.preventDefault();
+                tryPlace(selectedPrintIndex, i);
+              }}
+              onTouchStart={(e) => {
+                if (selectedPrintIndex === null) return;
+                e.preventDefault();
+                tryPlace(selectedPrintIndex, i);
+              }}
+              style={{ touchAction: "none" }}
               className={`min-h-[52px] min-w-[140px] rounded-xl border-2 border-dashed p-3 text-center text-xl ${
                 slotContent[i] !== null
                   ? "border-[#4a7c5a] bg-[#a8d5ba]/40"
-                  : "border-[#2d4a3e]/30 bg-white"
+                  : selectedPrintIndex !== null && wordsPrint[selectedPrintIndex] === wordsCursive[i]
+                    ? "border-[#4a7c5a]/80 bg-[#a8d5ba]/20"
+                    : "border-[#2d4a3e]/30 bg-white"
               }`}
             >
               {slotContent[i] !== null ? (
@@ -1753,7 +1785,21 @@ function ExoEvalRelieEcritures({
                 key={j}
                 draggable
                 onDragStart={(e) => handleDragStart(e, j)}
-                className="cursor-grab rounded-xl border-2 border-[#2d4a3e]/30 bg-white px-4 py-2 text-center text-lg font-medium text-[#2d4a3e] active:cursor-grabbing"
+                onPointerDown={(e) => {
+                  if (e.pointerType !== "touch") return;
+                  if (placedPrintIndices.has(j)) return;
+                  e.preventDefault();
+                  setSelectedPrintIndex(j);
+                }}
+                onTouchStart={(e) => {
+                  if (placedPrintIndices.has(j)) return;
+                  e.preventDefault();
+                  setSelectedPrintIndex(j);
+                }}
+                style={{ touchAction: "none" }}
+                className={`cursor-grab rounded-xl border-2 border-[#2d4a3e]/30 bg-white px-4 py-2 text-center text-lg font-medium text-[#2d4a3e] active:cursor-grabbing ${
+                  selectedPrintIndex === j ? "ring-2 ring-[#4a7c5a]" : ""
+                }`}
               >
                 {mot}
               </div>
