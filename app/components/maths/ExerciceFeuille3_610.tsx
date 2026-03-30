@@ -6,23 +6,25 @@ const btnClass =
   "min-h-[44px] min-w-[44px] rounded-lg border-2 border-[#2d4a3e]/30 bg-[#fef9f3] text-lg font-bold text-[#2d4a3e] transition hover:bg-[#c4a8e8]/30 focus:outline-none focus:ring-2 focus:ring-[#c4a8e8] active:scale-95";
 
 const NUMBERS_0_10 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+type FeuilleRangeProps = { start?: number; end?: number };
 
 /** 1. Suite des nombres de 6 à 10 (grille 3×6). */
-function ExerciceSuite610({ onComplete }: { onComplete: () => void }) {
+function ExerciceSuite610({ onComplete, start }: { onComplete: () => void; start: number }) {
   const totalCells = 18;
   // Grille 3×6 :
   // Ligne 1 : 5, 6, 7, 8, 9, [10 donné]
   // Ligne 2 : 4, 5, 6, 7, 8, [9 donné]
   // Ligne 3 : 3, 4, 5, 6, 7, [8 donné]
+  const d = start - 6;
   const expectedSequence = [
     5, 6, 7, 8, 9, 10,
     4, 5, 6, 7, 8, 9,
     3, 4, 5, 6, 7, 8,
-  ];
+  ].map((n) => n + d);
   // Cases déjà remplies (indices dans la grille 3×6) :
   // uniquement la dernière colonne : 10 (ligne 1), 9 (ligne 2), 8 (ligne 3)
   const indicesDonnes = [5, 11, 17];
-  const valeursDonnees = [10, 9, 8];
+  const valeursDonnees = [10 + d, 9 + d, 8 + d];
   const [reponses, setReponses] = useState<(number | null)[]>(
     Array.from({ length: totalCells }, (_, i) => {
       const idx = indicesDonnes.indexOf(i);
@@ -50,8 +52,8 @@ function ExerciceSuite610({ onComplete }: { onComplete: () => void }) {
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Complète la suite des nombres de 6 à 10 (après 10 on recommence à 6).</h3>
-      <p className="mt-2 text-sm text-[#2d4a3e]/70">Clique sur une case vide puis sur un chiffre en bas (0 à 10).</p>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Complète la suite des nombres de {start} à {start + 4}.</h3>
+      <p className="mt-2 text-sm text-[#2d4a3e]/70">Clique sur une case vide puis sur un chiffre en bas.</p>
       <div className="mt-4 grid grid-cols-6 gap-1">
         {Array.from({ length: totalCells }, (_, pos) => {
           const idxDonne = indicesDonnes.indexOf(pos);
@@ -73,7 +75,7 @@ function ExerciceSuite610({ onComplete }: { onComplete: () => void }) {
       </div>
       {selectedCell !== null && (
         <div className="mt-3 flex flex-wrap justify-center gap-1">
-          {NUMBERS_0_10.map((n) => (
+          {Array.from({ length: start + 5 }, (_, i) => i).map((n) => (
             <button key={n} type="button" onClick={() => handleSetValue(n)} className={btnClass} style={{ backgroundColor: reponses[selectedCell] === n ? "#c4a8e8" : undefined }}>{n}</button>
           ))}
         </div>
@@ -88,13 +90,14 @@ function ExerciceSuite610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 2. Pommes dans chaque panier. 10, 8, 6, 7, 9. */
-function ExercicePaniers610({ onComplete }: { onComplete: () => void }) {
-  const cibles = [10, 8, 6, 7, 9];
+function ExercicePaniers610({ onComplete, start }: { onComplete: () => void; start: number }) {
+  const d = start - 6;
+  const cibles = [10 + d, 8 + d, 6 + d, 7 + d, 9 + d];
   const [counts, setCounts] = useState<number[]>(cibles.map(() => 0));
   const [showBravo, setShowBravo] = useState(false);
 
   const add = useCallback((i: number) => {
-    setCounts((prev) => { const next = [...prev]; if (next[i] < 10) next[i]++; return next; });
+    setCounts((prev) => { const next = [...prev]; if (next[i] < 25) next[i]++; return next; });
   }, []);
   const remove = useCallback((i: number) => {
     setCounts((prev) => { const next = [...prev]; if (next[i] > 0) next[i]--; return next; });
@@ -108,7 +111,7 @@ function ExercicePaniers610({ onComplete }: { onComplete: () => void }) {
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">2. Mets le bon nombre de pommes dans chaque panier (6 à 10).</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">2. Mets le bon nombre de pommes dans chaque panier.</h3>
       <div className="mt-4 grid grid-cols-3 gap-4">
         {cibles.map((c, i) => (
           <div key={i} className="flex flex-col items-center gap-2">
@@ -129,15 +132,16 @@ function ExercicePaniers610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 3. Colorier le nombre d'objets. 5 collections mélangées avec des valeurs entre 6 et 10. */
-function ExerciceColorier610({ onComplete }: { onComplete: () => void }) {
+function ExerciceColorier610({ onComplete, start }: { onComplete: () => void; start: number }) {
   // Ordre mélangé et dernière ligne avec 10 objets.
-  const valeurs = [7, 9, 6, 8, 10];
+  const d = start - 6;
+  const valeurs = [7, 9, 6, 8, 10].map((n) => n + d);
   const options: number[][] = [
-    [6, 7, 9],   // pour 7
-    [8, 9, 10],  // pour 9
-    [6, 7, 8],   // pour 6
-    [7, 8, 10],  // pour 8
-    [8, 9, 10],  // pour 10 (dernière ligne)
+    [6 + d, 7 + d, 9 + d],
+    [8 + d, 9 + d, 10 + d],
+    [6 + d, 7 + d, 8 + d],
+    [7 + d, 8 + d, 10 + d],
+    [8 + d, 9 + d, 10 + d],
   ];
   const [reponses, setReponses] = useState<(number | null)[]>(valeurs.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
@@ -183,8 +187,9 @@ function ExerciceColorier610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 4. Barrer les billes en trop. 10→7, 12→8, 11→9. */
-function ExerciceBarrerBilles610({ onComplete }: { onComplete: () => void }) {
-  const configs = [{ total: 10, cible: 7 }, { total: 12, cible: 8 }, { total: 11, cible: 9 }];
+function ExerciceBarrerBilles610({ onComplete, start }: { onComplete: () => void; start: number }) {
+  const d = start - 6;
+  const configs = [{ total: 10 + d, cible: 7 + d }, { total: 12 + d, cible: 8 + d }, { total: 11 + d, cible: 9 + d }];
   const [barrees, setBarrees] = useState<boolean[][]>(configs.map((c) => Array(c.total).fill(false)));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -221,17 +226,17 @@ function ExerciceBarrerBilles610({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-export default function ExerciceFeuille3_610() {
+export default function ExerciceFeuille3_610({ start = 6, end = 10 }: FeuilleRangeProps) {
   const [etape, setEtape] = useState(0);
   return (
     <div className="space-y-8">
-      <ExerciceSuite610 onComplete={() => setEtape(1)} />
-      {etape >= 1 && <ExercicePaniers610 onComplete={() => setEtape(2)} />}
-      {etape >= 2 && <ExerciceColorier610 onComplete={() => setEtape(3)} />}
-      {etape >= 3 && <ExerciceBarrerBilles610 onComplete={() => setEtape(4)} />}
+      <ExerciceSuite610 onComplete={() => setEtape(1)} start={start} />
+      {etape >= 1 && <ExercicePaniers610 onComplete={() => setEtape(2)} start={start} />}
+      {etape >= 2 && <ExerciceColorier610 onComplete={() => setEtape(3)} start={start} />}
+      {etape >= 3 && <ExerciceBarrerBilles610 onComplete={() => setEtape(4)} start={start} />}
       {etape >= 4 && (
         <div className="rounded-2xl bg-[#a8d5ba]/40 p-6 text-center">
-          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 3 (nombres 6 à 10).</p>
+          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 3 (nombres {start} à {end}).</p>
         </div>
       )}
     </div>

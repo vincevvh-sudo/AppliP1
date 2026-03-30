@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
 import { TITRE_CHEVALIER, ITEMS_CHEVALIER } from "../../../data/ecouter-lire-chevalier";
 import { EvalNiveauAccessGate } from "../../../components/EvalNiveauAccessGate";
@@ -10,6 +11,7 @@ import { ECOUTER_LIRE_SON_ID, ECOUTER_EVAL_NIVEAU_CHEVALIER } from "../../../dat
 type Reponse = boolean | null;
 
 export default function EnfantChevalierPage() {
+  const router = useRouter();
   const [reponses, setReponses] = useState<Reponse[]>(ITEMS_CHEVALIER.map(() => null));
   const [envoye, setEnvoye] = useState(false);
   const [score, setScore] = useState<number | null>(null);
@@ -31,6 +33,14 @@ export default function EnfantChevalierPage() {
 
   const allAnswered = reponses.every((r) => r !== null);
   const total = ITEMS_CHEVALIER.length;
+
+  useEffect(() => {
+    if (!envoye) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [envoye, router]);
 
   return (
     <EvalNiveauAccessGate
@@ -142,10 +152,10 @@ export default function EnfantChevalierPage() {
               {score !== null && score < total / 2 && "Réécoute l'histoire et réessaie quand tu veux."}
             </p>
             <Link
-              href="/enfant/evaluations"
+              href="/enfant/resultats"
               className="mt-6 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
             >
-              ← Retour aux évaluations
+              Vers mes résultats
             </Link>
           </div>
         )}

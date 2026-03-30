@@ -30,6 +30,7 @@ export default function EnfantCentimetreMetrePage() {
   const [points, setPoints] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [resultSaved, setResultSaved] = useState(false);
 
   useEffect(() => {
     const s = getEnfantSession();
@@ -65,12 +66,23 @@ export default function EnfantCentimetreMetrePage() {
     setSaving(true);
     setSaveError(null);
     saveCentimetreMetreResult(session.id, correct)
-      .then(() => setSaving(false))
+      .then(() => {
+        setResultSaved(true);
+        setSaving(false);
+      })
       .catch((err) => {
         setSaveError(err?.message ?? "Erreur enregistrement");
         setSaving(false);
       });
   }, [allAnswered, answers, session]);
+
+  useEffect(() => {
+    if (!finished || !resultSaved || saveError) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [finished, resultSaved, saveError, router]);
 
   if (!session) return null;
 
@@ -94,8 +106,8 @@ export default function EnfantCentimetreMetrePage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-8">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{TITRE_CENTIMETRE_METRE}</h1>
-        <p className="mt-1 text-sm text-[#2d4a3e]/75">
+        <h1 className="font-display text-2xl text-white">{TITRE_CENTIMETRE_METRE}</h1>
+        <p className="mt-1 text-sm text-white/95">
           Choisis pour chaque objet : on le mesure en mètre ou en centimètre ?
         </p>
 
@@ -171,8 +183,8 @@ export default function EnfantCentimetreMetrePage() {
           </div>
         )}
 
-        <Link href="/enfant/evaluations" className="mt-10 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
-          ← Retour aux évaluations
+        <Link href="/enfant/resultats" className="mt-10 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
+          Vers mes résultats
         </Link>
       </div>
     </main>

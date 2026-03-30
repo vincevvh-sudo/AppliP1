@@ -28,10 +28,10 @@ export default function EnfantMathsPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
+        <h1 className="font-display text-2xl text-white sm:text-3xl">
           L&apos;arbre des mathématiques
         </h1>
-        <p className="mt-2 text-sm text-[#2d4a3e]/75">
+        <p className="mt-2 text-sm text-white/95">
           Choisis Exercice ou Évaluation.
         </p>
 

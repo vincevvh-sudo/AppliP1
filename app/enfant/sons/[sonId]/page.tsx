@@ -87,7 +87,7 @@ export default function EnfantSonPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">
+        <h1 className="font-display text-2xl text-white">
           Choisir un exercice — {son.id === "e-accent" ? "é" : son.grapheme}
         </h1>
 

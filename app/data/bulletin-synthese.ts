@@ -59,6 +59,7 @@ function getCategorieFromExerciseType(
   // Détaillé (évaluations avec detail_exercices)
   if (t === "image-deux-mots" || t === "entoure-son" || t === "entoure-lettre" || t === "entoure-lettre-dans-mot" || t === "entoure-syllabe" || t === "phrases-vrai-faux" || t === "fluence-chrono") return "francais-lire";
   if (t === "ecris-syllabe" || t === "relie-ecritures") return "francais-ecrire";
+  if (t === "euros-monnaie" || t === "jours-semaine" || t === "instruments-mesure") return "maths-grandeur";
   if (t === "repere-son") return "francais-ecouter";
   if (t === "article-le-la") return "francais-parler";
   // Niveau entier (sans détail) : type de niveau
@@ -107,6 +108,18 @@ function getCategorieFromResultIdentifiers(row: ResultatRow): BulletinCategorieI
 
   // Maths : solides
   if (sonId === "maths-solides" || niveauId === "maths-solides") return "maths-espace-geo";
+
+  // Maths : quadrilateres (carré / rectangle / triangle / disque)
+  if (sonId === "maths-quadrilateres" || niveauId === "maths-quadrilateres") return "maths-espace-geo";
+
+  // Maths : compter les euros (grandeur)
+  if (sonId === "maths-euros-monnaie" || niveauId === "maths-euros-monnaie") return "maths-grandeur";
+
+  // Maths : jours de la semaine (grandeur)
+  if (sonId === "maths-jours-semaine" || niveauId === "maths-jours-semaine") return "maths-grandeur";
+
+  // Maths : instruments de mesure (grandeur)
+  if (sonId === "maths-instruments-mesure" || niveauId === "maths-instruments-mesure") return "maths-grandeur";
 
   // Français : Parler (grilles poésie / famille ; son_id historique savoir-parler-*)
   if (sonId === "savoir-parler-poesie" || sonId === "savoir-parler-famille") return "francais-parler";

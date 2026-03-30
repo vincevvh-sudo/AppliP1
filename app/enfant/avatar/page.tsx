@@ -132,7 +132,7 @@ export default function EnfantAvatarPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4a6b8]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Royaume des Lettres
+            Royaume des premières Primaires
           </Link>
           <Link href="/enfant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
             Retour
@@ -142,10 +142,10 @@ export default function EnfantAvatarPage() {
 
       <div className="relative z-10 mx-auto max-w-lg px-5 py-12 sm:py-16">
         <div className="mb-10 text-center">
-          <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
+          <h1 className="font-display text-2xl text-white sm:text-3xl">
             {isEdit ? "Modifier mon avatar" : "Crée ton avatar"}
           </h1>
-          <p className="mt-2 text-[#2d4a3e]/85">
+          <p className="mt-2 text-white/95">
             {isEdit
               ? "Tu peux le changer car ton maître ou ta maîtresse t'a autorisé."
               : "Choisis comment tu veux te représenter. Tu ne pourras plus le modifier ensuite (sauf si ton maître ou ta maîtresse t'y autorise)."}

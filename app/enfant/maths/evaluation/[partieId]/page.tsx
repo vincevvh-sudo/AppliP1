@@ -7,7 +7,7 @@ import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
 import {
-  getMathsThemesEvaluationsPartages,
+  getMathsThemesEvaluationsPartagesPourEleve,
   getOperationsSeriesPartages,
 } from "../../../../data/maths-partages";
 import { getOperationsSerie, type OperationSerieId } from "../../../../data/maths-operations";
@@ -28,22 +28,32 @@ export default function EnfantMathsEvaluationPartiePage() {
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
 
   useEffect(() => {
-    setEvaluationsPartagees(getMathsThemesEvaluationsPartages());
-    setOperationsPartagees(getOperationsSeriesPartages());
     const s = getEnfantSession();
     if (!s) {
+      setEvaluationsPartagees([]);
+      setOperationsPartagees([]);
       setModulesExercicesPartages([]);
       return;
     }
+    setEvaluationsPartagees(getMathsThemesEvaluationsPartagesPourEleve(s.id));
+    setOperationsPartagees(getOperationsSeriesPartages());
     getModulesAccessiblesPourEleve(s.id).then(setModulesExercicesPartages);
   }, []);
 
   const isNombres = partieId === "nombres";
   const hasNombres15 = evaluationsPartagees.includes("nombres-1-5");
   const hasNombres610 = evaluationsPartagees.includes("nombres-6-10");
+  const hasNombres1015 = evaluationsPartagees.includes("nombres-10-15");
+  const hasNombres1520 = evaluationsPartagees.includes("nombres-15-20");
   const themesToShow =
     isNombres && partie
-      ? partie.themes.filter((t) => (t.id === "1-5" && hasNombres15) || (t.id === "6-10" && hasNombres610))
+      ? partie.themes.filter(
+          (t) =>
+            (t.id === "1-5" && hasNombres15) ||
+            (t.id === "6-10" && hasNombres610) ||
+            (t.id === "10-15" && hasNombres1015) ||
+            (t.id === "15-20" && hasNombres1520)
+        )
       : partie?.themes ?? [];
 
   if (!partie) {
@@ -76,8 +86,8 @@ export default function EnfantMathsEvaluationPartiePage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{partie.titre}</h1>
-        <p className="mt-2 text-sm text-[#2d4a3e]/75">
+        <h1 className="font-display text-2xl text-white">{partie.titre}</h1>
+        <p className="mt-2 text-sm text-white/95">
           Choisis un thème d&apos;évaluation partagé par ton maître ou ta maîtresse, ou un exercice toujours disponible.
         </p>
 
@@ -129,6 +139,7 @@ export default function EnfantMathsEvaluationPartiePage() {
               )}
             </section>
 
+
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Nombres</h2>
               {themesToShow.length === 0 ? (
@@ -171,8 +182,18 @@ export default function EnfantMathsEvaluationPartiePage() {
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">Relier + Vrai/Faux (score sur 10).</p>
               </Link>
             ) : null}
+            {modulesExercicesPartages.includes("quadrilateres") ? (
+              <Link
+                href="/enfant/maths/quadrilateres"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Quadrilateres</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Carré=1, rectangle=2, triangle=3, disque=4 (score sur 10).</p>
+              </Link>
+            ) : null}
             {!modulesExercicesPartages.includes("vocabulaire-spatial") &&
-            !modulesExercicesPartages.includes("solides") ? (
+            !modulesExercicesPartages.includes("solides") &&
+            !modulesExercicesPartages.includes("quadrilateres") ? (
               <p className="col-span-full text-sm text-[#2d4a3e]/70">
                 Aucun exercice d&apos;espace / géométrie partagé pour le moment. Demande à ton enseignant d&apos;activer
                 le partage (Exercice → Espace et géométrie).
@@ -180,20 +201,52 @@ export default function EnfantMathsEvaluationPartiePage() {
             ) : null}
           </div>
         ) : partieId === "grandeur" ? (
-          modulesExercicesPartages.includes("centimetre-metre") ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Link
-                href="/enfant/maths/centimetre-metre"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Centimètre ou mètre</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">20 questions : m ou cm.</p>
-              </Link>
+          modulesExercicesPartages.includes("centimetre-metre") ||
+          modulesExercicesPartages.includes("euros-monnaie") ||
+          modulesExercicesPartages.includes("jours-semaine") ||
+          modulesExercicesPartages.includes("instruments-mesure") ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+              {modulesExercicesPartages.includes("centimetre-metre") ? (
+                <Link
+                  href="/enfant/maths/centimetre-metre"
+                  className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+                >
+                  <p className="font-display text-lg text-[#2d4a3e]">Centimètre ou mètre</p>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">20 questions : m ou cm.</p>
+                </Link>
+              ) : null}
+              {modulesExercicesPartages.includes("euros-monnaie") ? (
+                <Link
+                  href="/enfant/maths/euros-monnaie"
+                  className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+                >
+                  <p className="font-display text-lg text-[#2d4a3e]">Compter les euros</p>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">Pièces et billets — total jusqu&apos;à 20 €.</p>
+                </Link>
+              ) : null}
+              {modulesExercicesPartages.includes("jours-semaine") ? (
+                <Link
+                  href="/enfant/maths/jours-semaine"
+                  className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+                >
+                  <p className="font-display text-lg text-[#2d4a3e]">Les jours de la semaine</p>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">Jours mélangés : numéro de 1 à 7.</p>
+                </Link>
+              ) : null}
+              {modulesExercicesPartages.includes("instruments-mesure") ? (
+                <Link
+                  href="/enfant/maths/instruments-mesure"
+                  className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+                >
+                  <p className="font-display text-lg text-[#2d4a3e]">Les instruments de mesure</p>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">Choisir le type de mesure pour chaque image.</p>
+                </Link>
+              ) : null}
             </div>
           ) : (
             <p className="mt-6 text-sm text-[#2d4a3e]/70">
-              L&apos;exercice « Centimètre ou mètre » n&apos;est pas partagé pour le moment. Demande à ton enseignant
-              d&apos;activer le partage (Évaluation ou Exercice → Grandeur, puis cocher les élèves).
+              Aucun exercice de grandeur n&apos;est partagé pour le moment. Demande à ton enseignant d&apos;activer le
+              partage (Évaluation ou Exercice → Grandeur, puis cocher les élèves).
             </p>
           )
         ) : themesToShow.length === 0 ? (

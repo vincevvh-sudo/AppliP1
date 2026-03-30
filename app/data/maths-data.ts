@@ -19,6 +19,8 @@ export const PARTIES_MATHS: PartieMaths[] = [
     themes: [
       { id: "1-5", titre: "Les nombres de 1 à 5" },
       { id: "6-10", titre: "Les nombres de 6 à 10" },
+      { id: "10-15", titre: "Les nombres de 10 à 15" },
+      { id: "15-20", titre: "Les nombres de 15 à 20" },
     ],
   },
   {
@@ -91,5 +93,65 @@ export const FEUILLES_NOMBRES_6_10 = [
     titre: "Feuille 5",
     description:
       "Écrire le nombre avant et après (6 à 9) · Choisir la part du gâteau avec le plus grand nombre · Ranger des nombres de 4 à 10 du plus petit au plus grand · Compléter la suite de perles de 1 à 10.",
+  },
+] as const;
+
+/** 5 feuilles d'exercices pour "Les nombres de 10 à 15" (même structure que 6-10). */
+export const FEUILLES_NOMBRES_10_15 = [
+  {
+    id: "feuille-1",
+    titre: "Feuille 1",
+    description: "Relier chaque collection à son étiquette (10 à 15) · Dessiner les billes dans chaque sac · Barrer les objets en trop · Compléter les jetons manquants.",
+  },
+  {
+    id: "feuille-2",
+    titre: "Feuille 2",
+    description: "Chiffres 10 à 15 · Compter et entourer le nombre · Grouper par trois · Coller les gommettes (10 à 15).",
+  },
+  {
+    id: "feuille-3",
+    titre: "Feuille 3",
+    description: "Écrire la suite des nombres de 10 à 15 · Dessiner des pommes dans chaque panier · Colorier le nombre d'objets · Barrer les billes en trop.",
+  },
+  {
+    id: "feuille-4",
+    titre: "Feuille 4",
+    description: "Écrire le nombre (10 à 15) · Colorier le nombre de cases · Compter le nombre de fruits.",
+  },
+  {
+    id: "feuille-5",
+    titre: "Feuille 5",
+    description:
+      "Écrire le nombre avant et après (10 à 15) · Choisir la part du gâteau avec le plus grand nombre · Ranger des nombres de 10 à 15 du plus petit au plus grand · Compléter la suite de perles.",
+  },
+] as const;
+
+/** 5 feuilles d'exercices pour "Les nombres de 15 à 20" (même structure que 6-10). */
+export const FEUILLES_NOMBRES_15_20 = [
+  {
+    id: "feuille-1",
+    titre: "Feuille 1",
+    description: "Relier chaque collection à son étiquette (15 à 20) · Dessiner les billes dans chaque sac · Barrer les objets en trop · Compléter les jetons manquants.",
+  },
+  {
+    id: "feuille-2",
+    titre: "Feuille 2",
+    description: "Chiffres 15 à 20 · Compter et entourer le nombre · Grouper par trois · Coller les gommettes (15 à 20).",
+  },
+  {
+    id: "feuille-3",
+    titre: "Feuille 3",
+    description: "Écrire la suite des nombres de 15 à 20 · Dessiner des pommes dans chaque panier · Colorier le nombre d'objets · Barrer les billes en trop.",
+  },
+  {
+    id: "feuille-4",
+    titre: "Feuille 4",
+    description: "Écrire le nombre (15 à 20) · Colorier le nombre de cases · Compter le nombre de fruits.",
+  },
+  {
+    id: "feuille-5",
+    titre: "Feuille 5",
+    description:
+      "Écrire le nombre avant et après (15 à 20) · Choisir la part du gâteau avec le plus grand nombre · Ranger des nombres de 15 à 20 du plus petit au plus grand · Compléter la suite de perles.",
   },
 ] as const;

@@ -39,8 +39,9 @@ export default function EnseignantCentimetreMetrePage() {
         <div className="mt-6">
           <PartageMathsModuleForm
             moduleId="centimetre-metre"
+            moduleIdsGroup={["centimetre-metre", "euros-monnaie", "jours-semaine", "instruments-mesure"]}
             compact
-            titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+            titreAide="Même liste d’élèves que les autres exercices de grandeur. SQL Supabase si besoin."
           />
         </div>
 

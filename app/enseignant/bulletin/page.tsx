@@ -26,6 +26,10 @@ import {
   type NiveauAcquisition,
 } from "../../data/bulletin-storage";
 import {
+  syncBulletinSectionsTemplateToLocalStorage,
+  pushLocalBulletinSectionsTemplateToSupabase,
+} from "../../data/bulletin-sections-template-storage";
+import {
   BULLETIN_MONTHS,
   BULLETIN_SUBJECTS,
   type BulletinMonthId,
@@ -231,13 +235,14 @@ export default function BulletinPage() {
   const [syntheseEval, setSyntheseEval] = useState<SyntheseBulletin | null>(null);
   const [loadingSynthese, setLoadingSynthese] = useState(false);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setEleves(getElevesBulletin());
-    setSectionsState(getSections());
+    const synced = await syncBulletinSectionsTemplateToLocalStorage();
+    setSectionsState(synced);
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   // Réinitialiser le filtre d'impression après la fin de l'impression
@@ -340,18 +345,30 @@ export default function BulletinPage() {
     setRefresh((r) => r + 1);
   };
 
-  const handleSaveAttenduEdit = () => {
+  const handleSaveAttenduEdit = async () => {
     if (!editingAttendu) return;
     updateAttendu(editingAttendu.sectionId, editingAttendu.attenduId, editingAttendu.libelle);
-    setSectionsState(getSections());
+    const nextSections = getSections();
+    setSectionsState(nextSections);
+    try {
+      await pushLocalBulletinSectionsTemplateToSupabase();
+    } catch (e) {
+      console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+    }
     setEditingAttendu(null);
   };
 
-  const handleAddAttenduLine = (sectionId: string) => {
+  const handleAddAttenduLine = async (sectionId: string) => {
     const libelle = window.prompt("Libellé du nouvel attendu :");
     if (libelle?.trim()) {
       addAttendu(sectionId, libelle);
-      setSectionsState(getSections());
+      const nextSections = getSections();
+      setSectionsState(nextSections);
+      try {
+        await pushLocalBulletinSectionsTemplateToSupabase();
+      } catch (e) {
+        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+      }
     }
   };
 
@@ -481,8 +498,17 @@ export default function BulletinPage() {
       );
       alert(`Bulletin « ${monthLabel} » envoyé à l'enfant.`);
     } catch (e: unknown) {
-      console.error(e);
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : (() => {
+              try {
+                return JSON.stringify(e);
+              } catch {
+                return String(e);
+              }
+            })();
+      console.error("handleEnvoyerBulletinMois error:", msg, e);
       alert(`Erreur lors de l'envoi : ${msg}\n\nVérifiez que la table bulletins_envoyes existe dans Supabase (voir supabase-bulletins-envoyes.sql).`);
     } finally {
       setSendingSection(null);
@@ -510,8 +536,16 @@ export default function BulletinPage() {
             {!sections.some((s) => s.id.startsWith("mois-")) && (
               <button
                 type="button"
-                onClick={() => {
-                  if (addProgrammationSectionsIfMissing()) load();
+                onClick={async () => {
+                  if (addProgrammationSectionsIfMissing()) {
+                    setSectionsState(getSections());
+                    try {
+                      await pushLocalBulletinSectionsTemplateToSupabase();
+                    } catch (e) {
+                      console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+                    }
+                  }
+                  await load();
                 }}
                 className="rounded-full bg-[#4a7c5a] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3d6b4d]"
               >
@@ -847,9 +881,15 @@ export default function BulletinPage() {
                                 <div className="flex items-center gap-1">
                                   <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       moveAttendu(section.id, a.id, "up");
-                                      setSectionsState(getSections());
+                                      const nextSections = getSections();
+                                      setSectionsState(nextSections);
+                                      try {
+                                        await pushLocalBulletinSectionsTemplateToSupabase();
+                                      } catch (e) {
+                                        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+                                      }
                                     }}
                                     className="text-xs text-[#2d4a3e]/70 hover:text-[#2d4a3e]"
                                     title="Monter"
@@ -858,9 +898,15 @@ export default function BulletinPage() {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       moveAttendu(section.id, a.id, "down");
-                                      setSectionsState(getSections());
+                                      const nextSections = getSections();
+                                      setSectionsState(nextSections);
+                                      try {
+                                        await pushLocalBulletinSectionsTemplateToSupabase();
+                                      } catch (e) {
+                                        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+                                      }
                                     }}
                                     className="text-xs text-[#2d4a3e]/70 hover:text-[#2d4a3e]"
                                     title="Descendre"
@@ -882,12 +928,19 @@ export default function BulletinPage() {
                                   Modifier
                                 </button>
                                 <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm("Supprimer cet attendu ?"))
-                                      removeAttendu(section.id, a.id);
-                                    setSectionsState(getSections());
-                                  }}
+                                    type="button"
+                                    onClick={async () => {
+                                      if (window.confirm("Supprimer cet attendu ?")) {
+                                        removeAttendu(section.id, a.id);
+                                        const nextSections = getSections();
+                                        setSectionsState(nextSections);
+                                        try {
+                                          await pushLocalBulletinSectionsTemplateToSupabase();
+                                        } catch (e) {
+                                          console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
+                                        }
+                                      }
+                                    }}
                                   className="text-xs text-red-600"
                                 >
                                   Suppr.

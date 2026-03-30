@@ -146,6 +146,14 @@ export default function EnfantSolidesPage() {
     }
   }, [part, terminerEtSauver]);
 
+  useEffect(() => {
+    if (part !== 3 || !resultSaved || saveError || saving) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [part, resultSaved, saveError, saving, router]);
+
   if (!session) return null;
 
   return (
@@ -166,8 +174,8 @@ export default function EnfantSolidesPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-8">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{TITRE_SOLIDES_EVALUATION}</h1>
-        <p className="mt-1 text-sm text-[#2d4a3e]/75">
+        <h1 className="font-display text-2xl text-white">{TITRE_SOLIDES_EVALUATION}</h1>
+        <p className="mt-1 text-sm text-white/95">
           Partie {part === 3 ? 2 : part} / 2
         </p>
 
@@ -303,8 +311,8 @@ export default function EnfantSolidesPage() {
           </section>
         )}
 
-        <Link href="/enfant/maths/evaluation/solide-figure" className="mt-10 inline-block rounded-xl bg-[#c4a8e8]/80 px-6 py-3 font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]">
-          ← Retour
+        <Link href="/enfant/resultats" className="mt-10 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
+          Vers mes résultats
         </Link>
       </div>
     </main>

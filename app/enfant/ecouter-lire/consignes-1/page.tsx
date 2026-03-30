@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
 import {
   TITRE_CONSIGNES_1,
@@ -27,6 +28,7 @@ const initialReponses: ReponsesState = [
 ];
 
 export default function EnfantConsignes1Page() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [reponses, setReponses] = useState<ReponsesState>(initialReponses);
   const [termine, setTermine] = useState(false);
@@ -53,6 +55,14 @@ export default function EnfantConsignes1Page() {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
   }, []);
+
+  useEffect(() => {
+    if (!termine) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [termine, router]);
 
   const setReponse = (index: number, value: string | number | null | boolean | number[]) => {
     setReponses((prev) => {
@@ -427,10 +437,10 @@ export default function EnfantConsignes1Page() {
             <p className="font-display text-xl text-[#2d4a3e]">Bravo !</p>
             <p className="mt-2 text-[#2d4a3e]/80">Tu as terminé les 10 exercices des Consignes 1.</p>
             <Link
-              href="/enfant/evaluations"
+              href="/enfant/resultats"
               className="mt-6 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white"
             >
-              ← Retour aux évaluations
+              Vers mes résultats
             </Link>
           </div>
         )}

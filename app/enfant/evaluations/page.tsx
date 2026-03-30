@@ -17,7 +17,7 @@ import {
 } from "../../data/ecouter-lire-eval-partage";
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE_MOTS } from "../../data/dictee-mots-data";
-import { getMathsThemesEvaluationsPartages, getOperationsSeriesPartages } from "../../data/maths-partages";
+import { getMathsThemesEvaluationsPartagesPourEleve, getOperationsSeriesPartages } from "../../data/maths-partages";
 import { getSonById, getNiveauById } from "../../data/sons-data";
 import { PARTIES_MATHS } from "../../data/maths-data";
 import { getOperationsSerie, type OperationSerieId } from "../../data/maths-operations";
@@ -75,10 +75,10 @@ export default function EnfantEvaluationsPage() {
       router.replace("/enfant");
       return;
     }
-    Promise.all([
+      Promise.all([
       getNiveauxEvalPartagesPourEleve(s.id),
       getDicteesMotsPartagesPourEleve(s.id as number),
-      Promise.resolve(getMathsThemesEvaluationsPartages()),
+      Promise.resolve(getMathsThemesEvaluationsPartagesPourEleve(s.id)),
     ]).then(([pairs, dicteesMotsNums, mathsIds]) => {
       const francais: EvalFrancais[] = [];
       for (const p of pairs) {
@@ -128,7 +128,16 @@ export default function EnfantEvaluationsPage() {
       const partie = PARTIES_MATHS.find((x) => x.id === "nombres");
       const maths: EvalMaths[] = [];
       for (const id of mathsIds) {
-        const themeId = id === "nombres-1-5" ? "1-5" : id === "nombres-6-10" ? "6-10" : null;
+        const themeId =
+          id === "nombres-1-5"
+            ? "1-5"
+            : id === "nombres-6-10"
+              ? "6-10"
+              : id === "nombres-10-15"
+                ? "10-15"
+                : id === "nombres-15-20"
+                  ? "15-20"
+                  : null;
         const theme = partie?.themes.find((t) => t.id === themeId);
         if (themeId && theme) maths.push({ themeId, titre: theme.titre });
       }
@@ -161,10 +170,10 @@ export default function EnfantEvaluationsPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
+        <h1 className="font-display text-2xl text-white sm:text-3xl">
           Mes évaluations
         </h1>
-        <p className="mt-2 text-[#2d4a3e]/85">
+        <p className="mt-2 text-white/95">
           Les évaluations que ton maître ou ta maîtresse a partagées apparaissent ici, par matière.
         </p>
 
@@ -312,6 +321,30 @@ export default function EnfantEvaluationsPage() {
                     className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
                   >
                     <span className="font-semibold text-[#2d4a3e]">Centimètre ou mètre</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/enfant/maths/euros-monnaie"
+                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                  >
+                    <span className="font-semibold text-[#2d4a3e]">Compter les euros</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/enfant/maths/jours-semaine"
+                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                  >
+                    <span className="font-semibold text-[#2d4a3e]">Les jours de la semaine</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/enfant/maths/instruments-mesure"
+                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                  >
+                    <span className="font-semibold text-[#2d4a3e]">Les instruments de mesure</span>
                   </Link>
                 </li>
                 <li>

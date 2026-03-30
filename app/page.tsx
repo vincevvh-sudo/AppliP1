@@ -30,13 +30,13 @@ export default function Home() {
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2 shadow-sm backdrop-blur">
             <IconLeaf />
             <span className="font-display text-lg tracking-wide text-[#2d4a3e]">
-              Royaume des Lettres
+              Royaume des premières Primaires
             </span>
           </div>
-          <h1 className="font-display text-4xl tracking-wide text-[#2d4a3e] sm:text-5xl">
-            Une aventure pour apprendre à lire
+          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+            Une aventure pour apprendre
           </h1>
-          <p className="mt-3 text-[#2d4a3e]/90">
+          <p className="mt-3 text-white/95">
             Choisis ton espace pour commencer
           </p>
         </header>
@@ -71,7 +71,7 @@ export default function Home() {
         </section>
 
         <footer className="text-center text-sm text-[#2d4a3e]/70">
-          Royaume des Lettres · CP · Une aventure douce pour les 6 ans
+          Royaume des premières Primaires · CP · Une aventure douce pour les 6 ans
         </footer>
       </div>
     </main>

@@ -6,12 +6,13 @@ const btnClass =
   "min-h-[44px] min-w-[44px] rounded-lg border-2 border-[#2d4a3e]/30 bg-[#fef9f3] text-lg font-bold text-[#2d4a3e] transition hover:bg-[#c4a8e8]/30 focus:outline-none focus:ring-2 focus:ring-[#c4a8e8] active:scale-95";
 
 const NUMBERS_0_10 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+type FeuilleRangeProps = { start?: number; end?: number };
 
 /** 1. Nombre avant et après (4 fois) avec un nombre entre 6 et 9 au centre. */
-function ExerciceAvantApres610({ onComplete }: { onComplete: () => void }) {
+function ExerciceAvantApres610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
   // On mélange l'ordre des nombres au milieu (6, 7, 8, 9) pour que les perles ne soient pas toujours dans le même ordre.
   const milieux = useMemo(() => {
-    const arr = [6, 7, 8, 9];
+    const arr = [start, start + 1, start + 2, start + 3];
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -62,7 +63,7 @@ function ExerciceAvantApres610({ onComplete }: { onComplete: () => void }) {
         1. Écris le nombre avant et après.
       </h3>
       <p className="mt-2 text-sm text-[#2d4a3e]/70">
-        Clique dans une boule blanche puis choisis le bon nombre (0 à 10). Le nombre du milieu est toujours entre 6 et 9.
+        Clique dans une boule blanche puis choisis le bon nombre. Le nombre du milieu est entre {start} et {start + 3}.
       </p>
       <div className="mt-4 space-y-4">
         {milieux.map((m, i) => {
@@ -101,7 +102,7 @@ function ExerciceAvantApres610({ onComplete }: { onComplete: () => void }) {
       </div>
       {selectedSlot !== null && (
         <div className="mt-4 flex flex-wrap justify-center gap-1">
-          {NUMBERS_0_10.map((n) => (
+          {Array.from({ length: end + 3 }, (_, i) => i).map((n) => (
             <button
               key={n}
               type="button"
@@ -130,12 +131,13 @@ function ExerciceAvantApres610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 2. Choisir la part du gâteau qui contient le plus grand nombre. */
-function ExerciceGateaux610({ onComplete }: { onComplete: () => void }) {
+function ExerciceGateaux610({ onComplete, start }: { onComplete: () => void; start: number }) {
+  const d = start - 6;
   const gateaux = [
-    [5, 8, 4, 10],
-    [7, 4, 3, 9],
-    [6, 2, 10, 5],
-    [3, 7, 8, 4],
+    [5 + d, 8 + d, 4 + d, 10 + d],
+    [7 + d, 4 + d, 3 + d, 9 + d],
+    [6 + d, 2 + d, 10 + d, 5 + d],
+    [3 + d, 7 + d, 8 + d, 4 + d],
   ];
   const [selection, setSelection] = useState<(number | null)[]>(gateaux.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
@@ -207,8 +209,9 @@ function ExerciceGateaux610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 3. Ranger 4, 8, 6, 7 et 10 du plus petit au plus grand. */
-function ExerciceOrdreCroissant610({ onComplete }: { onComplete: () => void }) {
-  const nombres = [4, 8, 6, 7, 10];
+function ExerciceOrdreCroissant610({ onComplete, start }: { onComplete: () => void; start: number }) {
+  const d = start - 6;
+  const nombres = [4 + d, 8 + d, 6 + d, 7 + d, 10 + d];
   const cible = [...nombres].sort((a, b) => a - b);
   const [choix, setChoix] = useState<number[]>([]);
   const [utilises, setUtilises] = useState<boolean[]>(nombres.map(() => false));
@@ -302,12 +305,13 @@ function ExerciceOrdreCroissant610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 4. Compléter la suite de perles de 1 à 10 (puis 11 et 12 déjà écrits). */
-function ExercicePerles610({ onComplete }: { onComplete: () => void }) {
+function ExercicePerles610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
   const total = 12;
-  const expected = Array.from({ length: total }, (_, i) => i + 1);
+  const d = start - 6;
+  const expected = Array.from({ length: total }, (_, i) => i + 1 + d);
   // 1 au début, 11 et 12 déjà écrits à la fin.
   const indicesDonnes = [0, 10, 11];
-  const valeursDonnees = [1, 11, 12];
+  const valeursDonnees = [1 + d, 11 + d, 12 + d];
 
   const [reponses, setReponses] = useState<(number | null)[]>(
     Array.from({ length: total }, (_, i) => {
@@ -354,7 +358,7 @@ function ExercicePerles610({ onComplete }: { onComplete: () => void }) {
         4. Replace les perles au bon endroit pour aller de 1 à 10.
       </h3>
       <p className="mt-2 text-sm text-[#2d4a3e]/70">
-        Clique sur une perle vide puis choisis le bon nombre (0 à 10). Après 10, les perles 11 et 12 sont déjà écrites.
+        Clique sur une perle vide puis choisis le bon nombre. Les perles suivent la suite autour de {start} à {end}.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {reponses.map((valeur, i) => {
@@ -379,7 +383,7 @@ function ExercicePerles610({ onComplete }: { onComplete: () => void }) {
       </div>
       {selectedIndex !== null && (
         <div className="mt-4 flex flex-wrap justify-center gap-1">
-          {NUMBERS_0_10.map((n) => (
+          {Array.from({ length: end + 3 }, (_, i) => i).map((n) => (
             <button
               key={n}
               type="button"
@@ -407,19 +411,19 @@ function ExercicePerles610({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-export default function ExerciceFeuille5_610() {
+export default function ExerciceFeuille5_610({ start = 6, end = 10 }: FeuilleRangeProps) {
   const [etape, setEtape] = useState(0);
 
   return (
     <div className="space-y-8">
-      <ExerciceAvantApres610 onComplete={() => setEtape(1)} />
-      {etape >= 1 && <ExerciceGateaux610 onComplete={() => setEtape(2)} />}
-      {etape >= 2 && <ExerciceOrdreCroissant610 onComplete={() => setEtape(3)} />}
-      {etape >= 3 && <ExercicePerles610 onComplete={() => setEtape(4)} />}
+      <ExerciceAvantApres610 onComplete={() => setEtape(1)} start={start} end={end} />
+      {etape >= 1 && <ExerciceGateaux610 onComplete={() => setEtape(2)} start={start} />}
+      {etape >= 2 && <ExerciceOrdreCroissant610 onComplete={() => setEtape(3)} start={start} />}
+      {etape >= 3 && <ExercicePerles610 onComplete={() => setEtape(4)} start={start} end={end} />}
       {etape >= 4 && (
         <div className="rounded-2xl bg-[#a8d5ba]/40 p-6 text-center">
           <p className="font-display text-xl font-semibold text-[#2d4a3e]">
-            Félicitations ! Tu as terminé la feuille 5 (nombres 6 à 10).
+            Félicitations ! Tu as terminé la feuille 5 (nombres {start} à {end}).
           </p>
         </div>
       )}

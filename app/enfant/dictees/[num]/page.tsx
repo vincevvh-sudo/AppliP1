@@ -113,6 +113,14 @@ export default function EnfantDicteeNumPage() {
     }).finally(() => setResultSaved(true));
   }, [num, resultSaved, score, session?.id, syllabes, tousVerifies, resultats]);
 
+  useEffect(() => {
+    if (!tousVerifies || !resultSaved) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [tousVerifies, resultSaved, router]);
+
   if (partage === null) {
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -257,10 +265,10 @@ export default function EnfantDicteeNumPage() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link
-                href="/enfant/sons"
+                href="/enfant/resultats"
                 className="rounded-xl bg-[#4a7c5a] px-8 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
               >
-                ← Autres dictées
+                Vers mes résultats
               </Link>
               <Link
                 href="/enfant/sons"

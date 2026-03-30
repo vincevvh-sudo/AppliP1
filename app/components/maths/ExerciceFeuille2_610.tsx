@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo, type ReactNode } from "react";
 const btnClass =
   "min-h-[44px] min-w-[44px] rounded-lg border-2 border-[#2d4a3e]/30 bg-[#fef9f3] text-lg font-bold text-[#2d4a3e] transition hover:bg-[#c4a8e8]/30 focus:outline-none focus:ring-2 focus:ring-[#c4a8e8] active:scale-95";
 
-const NUMBERS_6_10 = [6, 7, 8, 9, 10];
+type FeuilleRangeProps = { start?: number; end?: number };
 
 /** Positions dans l’image sprite mains 1-5 (réutilisée pour 6-10 = main 5 + main 1..5). */
 const MAIN_SPRITE_POSITIONS: Record<number, string> = {
@@ -33,6 +33,15 @@ function MainSprite({ doigts, className = "h-16 w-16" }: { doigts: number; class
 
 /** Pour 6 à 10 : toujours la main 5 + la main du reste (5+1, 5+2, … 5+5). */
 function Mains6a10({ nombre, className }: { nombre: number; className?: string }) {
+  if (nombre > 10) {
+    return (
+      <div className={`flex flex-wrap items-center justify-center gap-0.5 ${className ?? ""}`} aria-label={`${nombre} points`}>
+        {Array.from({ length: nombre }, (_, i) => (
+          <span key={i} className="h-2.5 w-2.5 rounded-full bg-[#4a7c5a]" />
+        ))}
+      </div>
+    );
+  }
   const reste = nombre - 5;
   return (
     <div className={`flex items-center justify-center gap-1 ${className ?? ""}`} aria-label={`${nombre} doigts : 5 et ${reste}`}>
@@ -52,8 +61,8 @@ function melange610(): number[] {
 }
 
 /** 1. Compter les points et choisir le bon nombre (6 à 10) en désordre. */
-function ExerciceChiffres610({ onComplete }: { onComplete: () => void }) {
-  const valeurs = useMemo(() => melange610(), []);
+function ExerciceChiffres610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
+  const valeurs = useMemo(() => melange610().map((n) => n + (start - 6)), [start]);
   const [reponses, setReponses] = useState<(number | null)[]>(valeurs.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -70,7 +79,7 @@ function ExerciceChiffres610({ onComplete }: { onComplete: () => void }) {
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Compte les points et choisis le bon nombre (6 à 10).</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Compte les points et choisis le bon nombre ({start} à {end}).</h3>
       <div className="mt-4 flex flex-wrap justify-center gap-4">
         {valeurs.map((v, slot) => (
           <div key={slot} className="flex flex-col items-center gap-2">
@@ -80,7 +89,7 @@ function ExerciceChiffres610({ onComplete }: { onComplete: () => void }) {
               ))}
             </div>
             <div className="flex flex-wrap gap-1">
-              {NUMBERS_6_10.map((n) => (
+              {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
                 <button key={n} type="button" onClick={() => handleSelect(slot, n)} className={btnClass} style={{ backgroundColor: reponses[slot] === n ? "#c4a8e8" : undefined }}>{n}</button>
               ))}
             </div>
@@ -97,9 +106,10 @@ function ExerciceChiffres610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 2. Entourer le nombre. Valeurs 7, 10, 8, 9, 6 avec 3 options chacune. */
-function ExerciceEntourer610({ onComplete }: { onComplete: () => void }) {
-  const valeurs = [7, 10, 8, 9, 6];
-  const options: number[][] = [[6, 7, 9], [8, 9, 10], [7, 8, 10], [6, 9, 10], [6, 7, 8]];
+function ExerciceEntourer610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
+  const d = start - 6;
+  const valeurs = [7 + d, 10 + d, 8 + d, 9 + d, 6 + d];
+  const options: number[][] = [[6 + d, 7 + d, 9 + d], [8 + d, 9 + d, 10 + d], [7 + d, 8 + d, 10 + d], [6 + d, 9 + d, 10 + d], [6 + d, 7 + d, 8 + d]];
   const [reponses, setReponses] = useState<(number | null)[]>(valeurs.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -117,7 +127,7 @@ function ExerciceEntourer610({ onComplete }: { onComplete: () => void }) {
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
       <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">2. Compte les doigts et entoure le bon nombre.</h3>
-      <p className="mt-2 text-sm text-[#2d4a3e]/70">Chaque case montre une main de 5 doigts et une autre main. Choisis le bon nombre (6 à 10) pour chaque case.</p>
+      <p className="mt-2 text-sm text-[#2d4a3e]/70">Choisis le bon nombre ({start} à {end}) pour chaque case.</p>
       <div className="mt-4 flex flex-wrap justify-center gap-4">
         {valeurs.map((v, i) => (
           <div key={i} className="flex flex-col items-center gap-2">
@@ -145,7 +155,7 @@ const NOMBRE_MOUTONS_610 = 30;
 const TAILLE_GROUPE = 3;
 
 /** 3. Grouper par trois : 30 moutons → 10 paquets. */
-function ExerciceGrouper610({ onComplete }: { onComplete: () => void }) {
+function ExerciceGrouper610({ onComplete, start }: { onComplete: () => void; start: number }) {
   const [groups, setGroups] = useState<number[][]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [reponse, setReponse] = useState<number | null>(null);
@@ -172,6 +182,7 @@ function ExerciceGrouper610({ onComplete }: { onComplete: () => void }) {
   const handleValider = useCallback(() => {
     if (reponse === correct) { setShowBravo(true); setTimeout(() => onComplete(), 1200); }
   }, [reponse, onComplete]);
+  const d = start - 6;
 
   const items: ReactNode[] = [];
   const rendered = new Set<number>();
@@ -201,7 +212,7 @@ function ExerciceGrouper610({ onComplete }: { onComplete: () => void }) {
       <p className="mt-2 text-sm text-[#2d4a3e]/70">Clique sur 3 moutons pour faire un paquet.</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">{items}</div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {[8, 9, 10, 11].map((n) => (
+        {[8 + d, 9 + d, 10 + d, 11 + d].map((n) => (
           <button key={n} type="button" onClick={() => setReponse(n)} className={btnClass} style={{ backgroundColor: reponse === n ? "#c4a8e8" : undefined }}>{n}</button>
         ))}
       </div>
@@ -213,13 +224,14 @@ function ExerciceGrouper610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 4. Gommettes : 7, 10, 8. */
-function ExerciceGommettes610({ onComplete }: { onComplete: () => void }) {
-  const cibles = [7, 10, 8];
+function ExerciceGommettes610({ onComplete, start }: { onComplete: () => void; start: number }) {
+  const d = start - 6;
+  const cibles = [7 + d, 10 + d, 8 + d];
   const [counts, setCounts] = useState<number[]>([0, 0, 0]);
   const [showBravo, setShowBravo] = useState(false);
 
   const add = useCallback((i: number) => {
-    setCounts((prev) => { const next = [...prev]; if (next[i] < 10) next[i]++; return next; });
+    setCounts((prev) => { const next = [...prev]; if (next[i] < 20) next[i]++; return next; });
   }, []);
   const remove = useCallback((i: number) => {
     setCounts((prev) => { const next = [...prev]; if (next[i] > 0) next[i]--; return next; });
@@ -253,17 +265,17 @@ function ExerciceGommettes610({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-export default function ExerciceFeuille2_610() {
+export default function ExerciceFeuille2_610({ start = 6, end = 10 }: FeuilleRangeProps) {
   const [etape, setEtape] = useState(0);
   return (
     <div className="space-y-8">
-      <ExerciceChiffres610 onComplete={() => setEtape(1)} />
-      {etape >= 1 && <ExerciceEntourer610 onComplete={() => setEtape(2)} />}
-      {etape >= 2 && <ExerciceGrouper610 onComplete={() => setEtape(3)} />}
-      {etape >= 3 && <ExerciceGommettes610 onComplete={() => setEtape(4)} />}
+      <ExerciceChiffres610 onComplete={() => setEtape(1)} start={start} end={end} />
+      {etape >= 1 && <ExerciceEntourer610 onComplete={() => setEtape(2)} start={start} end={end} />}
+      {etape >= 2 && <ExerciceGrouper610 onComplete={() => setEtape(3)} start={start} />}
+      {etape >= 3 && <ExerciceGommettes610 onComplete={() => setEtape(4)} start={start} />}
       {etape >= 4 && (
         <div className="rounded-2xl bg-[#a8d5ba]/40 p-6 text-center">
-          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 2 (nombres 6 à 10).</p>
+          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 2 (nombres {start} à {end}).</p>
         </div>
       )}
     </div>

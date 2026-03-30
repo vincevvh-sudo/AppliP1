@@ -62,7 +62,7 @@ export default function EnfantVocabulaireSpatialPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{TITRE_VOCABULAIRE_SPATIAL}</h1>
+        <h1 className="font-display text-2xl text-white">{TITRE_VOCABULAIRE_SPATIAL}</h1>
 
         {result === "loading" && (
           <p className="mt-6 text-[#2d4a3e]/70">Chargement…</p>

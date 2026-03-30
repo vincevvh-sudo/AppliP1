@@ -183,7 +183,7 @@ export default function EnfantPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4a6b8]/80 text-[#2d4a3e]">
                 <IconLeaf />
               </span>
-              Royaume des Lettres
+              Royaume des premières Primaires
             </Link>
             <div className="flex items-center gap-3">
               <AvatarSelector
@@ -234,10 +234,10 @@ export default function EnfantPage() {
               size={80}
               className="mb-4"
             />
-            <h1 className="font-display text-3xl tracking-wide text-[#2d4a3e] sm:text-4xl">
+            <h1 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
               Bonjour {session.prenom} ! 👋
             </h1>
-            <p className="mt-2 text-[#2d4a3e]/85">
+            <p className="mt-2 text-white/95">
               Choisis où tu veux aller…
             </p>
           </div>
@@ -282,7 +282,7 @@ export default function EnfantPage() {
           </div>
 
           <footer className="mt-16 text-center text-sm text-[#2d4a3e]/60">
-            Royaume des Lettres · Pour les 6 ans
+            Royaume des premières Primaires · Pour les 6 ans
           </footer>
         </div>
       </main>
@@ -300,7 +300,7 @@ export default function EnfantPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4a6b8]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Royaume des Lettres
+            Royaume des premières Primaires
           </Link>
           <Link href="/" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
             Retour
@@ -310,10 +310,10 @@ export default function EnfantPage() {
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12 sm:py-16">
         <div className="mb-10 text-center">
-          <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
+          <h1 className="font-display text-2xl text-white sm:text-3xl">
             {selectedEleve ? "Entre ton code" : "Qui es-tu ?"}
           </h1>
-          <p className="mt-2 text-[#2d4a3e]/85">
+          <p className="mt-2 text-white/95">
             {selectedEleve
               ? `Code à 4 chiffres pour ${selectedEleve.prenom} ${selectedEleve.nom}`
               : "Clique sur ton nom"}

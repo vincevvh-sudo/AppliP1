@@ -19,7 +19,7 @@ const dancingScript = Dancing_Script({
 });
 
 export const metadata: Metadata = {
-  title: "Royaume des Lettres — CP & CE1",
+  title: "Royaume des premières Primaires — CP & CE1",
   description: "Une aventure Miyazaki pour apprendre à lire (6 ans). Espace enseignant, espace enfant. Exercices sur PC, Mac et tablette.",
 };
 

@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../../../components/MiyazakiDecor";
-import { FEUILLES_NOMBRES_1_5, FEUILLES_NOMBRES_6_10 } from "../../../../../../data/maths-data";
+import {
+  FEUILLES_NOMBRES_1_5,
+  FEUILLES_NOMBRES_6_10,
+  FEUILLES_NOMBRES_10_15,
+  FEUILLES_NOMBRES_15_20,
+} from "../../../../../../data/maths-data";
 import ExerciceFeuille1 from "../../../../../../components/maths/ExerciceFeuille1";
 import ExerciceFeuille2 from "../../../../../../components/maths/ExerciceFeuille2";
 import ExerciceFeuille3 from "../../../../../../components/maths/ExerciceFeuille3";
@@ -20,8 +25,17 @@ export default function EnfantMathsNombresFeuillePage() {
   const params = useParams();
   const themeId = params?.themeId as string;
   const feuilleId = params?.feuilleId as string;
-  const is610 = themeId === "6-10";
-  const feuilles = is610 ? FEUILLES_NOMBRES_6_10 : FEUILLES_NOMBRES_1_5;
+  const is610Like = themeId === "6-10" || themeId === "10-15" || themeId === "15-20";
+  const feuilles =
+    themeId === "6-10"
+      ? FEUILLES_NOMBRES_6_10
+      : themeId === "10-15"
+        ? FEUILLES_NOMBRES_10_15
+        : themeId === "15-20"
+          ? FEUILLES_NOMBRES_15_20
+          : FEUILLES_NOMBRES_1_5;
+  const rangeStart = themeId === "10-15" ? 10 : themeId === "15-20" ? 15 : 6;
+  const rangeEnd = themeId === "10-15" ? 15 : themeId === "15-20" ? 20 : 10;
   const feuille = feuilles.find((f) => f.id === feuilleId);
   const isInteractif = FEUILLES_INTERACTIVES.includes(feuilleId as (typeof FEUILLES_INTERACTIVES)[number]);
 
@@ -54,21 +68,21 @@ export default function EnfantMathsNombresFeuillePage() {
         </div>
       </header>
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-8 pb-16">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{feuille.titre}</h1>
+        <h1 className="font-display text-2xl text-white">{feuille.titre}</h1>
 
         {isInteractif ? (
           <>
-            <p className="mt-2 text-sm text-[#2d4a3e]/75">
+            <p className="mt-2 text-sm text-white/95">
               Fais les exercices sur l&apos;écran. Tu peux cliquer ou toucher (PC, Mac, tablette).
             </p>
             <div className="mt-6">
-              {is610 ? (
+              {is610Like ? (
                 <>
-                  {feuilleId === "feuille-1" && <ExerciceFeuille1_610 />}
-                  {feuilleId === "feuille-2" && <ExerciceFeuille2_610 />}
-                  {feuilleId === "feuille-3" && <ExerciceFeuille3_610 />}
-                  {feuilleId === "feuille-4" && <ExerciceFeuille4_610 />}
-                  {feuilleId === "feuille-5" && <ExerciceFeuille5_610 />}
+                  {feuilleId === "feuille-1" && <ExerciceFeuille1_610 start={rangeStart} end={rangeEnd} />}
+                  {feuilleId === "feuille-2" && <ExerciceFeuille2_610 start={rangeStart} end={rangeEnd} />}
+                  {feuilleId === "feuille-3" && <ExerciceFeuille3_610 start={rangeStart} end={rangeEnd} />}
+                  {feuilleId === "feuille-4" && <ExerciceFeuille4_610 start={rangeStart} end={rangeEnd} />}
+                  {feuilleId === "feuille-5" && <ExerciceFeuille5_610 start={rangeStart} end={rangeEnd} />}
                 </>
               ) : (
                 <>

@@ -4,13 +4,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
-import { PARTIES_MATHS, FEUILLES_NOMBRES_1_5, FEUILLES_NOMBRES_6_10 } from "../../../../data/maths-data";
 import {
-  isMathsExercicesShared,
-  isMathsEvaluationsShared,
-  setMathsExercicesShared,
-  setMathsEvaluationsShared,
+  PARTIES_MATHS,
+  FEUILLES_NOMBRES_1_5,
+  FEUILLES_NOMBRES_6_10,
+  FEUILLES_NOMBRES_10_15,
+  FEUILLES_NOMBRES_15_20,
+} from "../../../../data/maths-data";
+import {
+  getMathsThemeEvaluationsEleveIds,
+  getMathsThemeExercicesEleveIds,
+  setMathsThemeEvaluationsEleveIds,
+  setMathsThemeExercicesEleveIds,
+  type MathsThemePartageKey,
 } from "../../../../data/maths-partages";
+import { supabase, type EleveRow } from "../../../../../utils/supabase";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,32 +32,94 @@ export default function EnseignantMathsNombresThemePage() {
   const [partageExercices, setPartageExercices] = useState(false);
   const [partageEvaluations, setPartageEvaluations] = useState(false);
   const [mode, setMode] = useState<"choix" | "exercice" | "evaluation">("choix");
+  const [eleves, setEleves] = useState<EleveRow[]>([]);
+  const [selectedExercices, setSelectedExercices] = useState<Set<string>>(new Set());
+  const [selectedEvaluations, setSelectedEvaluations] = useState<Set<string>>(new Set());
 
   const partie = PARTIES_MATHS.find((p) => p.id === "nombres");
   const theme = partie?.themes.find((t) => t.id === themeId);
   const isNombres15 = themeId === "1-5";
   const isNombres610 = themeId === "6-10";
-  const partageThemeId = isNombres15 ? "nombres-1-5" : isNombres610 ? "nombres-6-10" : null;
+  const isNombres1015 = themeId === "10-15";
+  const isNombres1520 = themeId === "15-20";
+  const partageThemeId = isNombres15
+    ? "nombres-1-5"
+    : isNombres610
+      ? "nombres-6-10"
+      : isNombres1015
+        ? "nombres-10-15"
+        : isNombres1520
+          ? "nombres-15-20"
+          : null;
 
   useEffect(() => {
     if (partageThemeId) {
-      setPartageExercices(isMathsExercicesShared(partageThemeId));
-      setPartageEvaluations(isMathsEvaluationsShared(partageThemeId));
+      const exIds = getMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey);
+      const evIds = getMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey);
+      setSelectedExercices(new Set(exIds));
+      setSelectedEvaluations(new Set(evIds));
+      setPartageExercices(exIds.length > 0);
+      setPartageEvaluations(evIds.length > 0);
     }
   }, [partageThemeId]);
 
+  useEffect(() => {
+    supabase
+      .from("eleves")
+      .select("*")
+      .order("nom")
+      .order("prenom")
+      .then(({ data }) => setEleves((data ?? []) as EleveRow[]));
+  }, []);
+
   const handleToggleExercices = () => {
     if (!partageThemeId) return;
-    const next = !partageExercices;
-    setMathsExercicesShared(partageThemeId, next);
-    setPartageExercices(next);
+    if (selectedExercices.size > 0) {
+      setSelectedExercices(new Set());
+      setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, []);
+      setPartageExercices(false);
+      return;
+    }
+    const all = eleves.map((e) => String(e.id));
+    setSelectedExercices(new Set(all));
+    setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, all);
+    setPartageExercices(all.length > 0);
   };
 
   const handleToggleEvaluations = () => {
     if (!partageThemeId) return;
-    const next = !partageEvaluations;
-    setMathsEvaluationsShared(partageThemeId, next);
-    setPartageEvaluations(next);
+    if (selectedEvaluations.size > 0) {
+      setSelectedEvaluations(new Set());
+      setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, []);
+      setPartageEvaluations(false);
+      return;
+    }
+    const all = eleves.map((e) => String(e.id));
+    setSelectedEvaluations(new Set(all));
+    setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, all);
+    setPartageEvaluations(all.length > 0);
+  };
+
+  const toggleEleveExercice = (id: string) => {
+    if (!partageThemeId) return;
+    const next = new Set(selectedExercices);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedExercices(next);
+    const list = Array.from(next);
+    setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, list);
+    setPartageExercices(list.length > 0);
+  };
+
+  const toggleEleveEvaluation = (id: string) => {
+    if (!partageThemeId) return;
+    const next = new Set(selectedEvaluations);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedEvaluations(next);
+    const list = Array.from(next);
+    setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, list);
+    setPartageEvaluations(list.length > 0);
   };
 
   if (!partie || !theme) {
@@ -64,8 +134,14 @@ export default function EnseignantMathsNombresThemePage() {
     );
   }
 
-  if (mode === "exercice" && (isNombres15 || isNombres610)) {
-    const feuilles = isNombres15 ? FEUILLES_NOMBRES_1_5 : FEUILLES_NOMBRES_6_10;
+  if (mode === "exercice" && (isNombres15 || isNombres610 || isNombres1015 || isNombres1520)) {
+    const feuilles = isNombres15
+      ? FEUILLES_NOMBRES_1_5
+      : isNombres610
+        ? FEUILLES_NOMBRES_6_10
+        : isNombres1015
+          ? FEUILLES_NOMBRES_10_15
+          : FEUILLES_NOMBRES_15_20;
     const basePath = `/enseignant/maths/nombres/${themeId}/exercice`;
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -101,7 +177,7 @@ export default function EnseignantMathsNombresThemePage() {
     );
   }
 
-  if (mode === "evaluation" && (isNombres15 || isNombres610)) {
+  if (mode === "evaluation" && (isNombres15 || isNombres610 || isNombres1015 || isNombres1520)) {
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
         <ForetMagiqueBackground />
@@ -167,7 +243,7 @@ export default function EnseignantMathsNombresThemePage() {
         {partageThemeId && (
           <div className="mt-10 rounded-2xl border-2 border-[#2d4a3e]/15 bg-white/90 p-6">
             <h2 className="font-display text-lg font-semibold text-[#2d4a3e]">Partager aux enfants</h2>
-            <p className="mt-1 text-sm text-[#2d4a3e]/70">Comme pour le français : décide quels contenus les enfants voient.</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">Sélectionne les élèves autorisés pour ce thème.</p>
             <div className="mt-4 flex flex-col gap-3">
               <label className="flex items-center gap-3">
                 <input
@@ -176,8 +252,23 @@ export default function EnseignantMathsNombresThemePage() {
                   onChange={handleToggleExercices}
                   className="h-5 w-5 rounded border-[#2d4a3e]/30 text-[#c4a8e8]"
                 />
-                <span className="text-[#2d4a3e]">Partager les exercices (4 feuilles)</span>
+                <span className="text-[#2d4a3e]">Partager les exercices (élèves sélectionnés)</span>
               </label>
+              {partageExercices && (
+                <div className="ml-8 grid gap-2">
+                  {eleves.map((e) => (
+                    <label key={`ex-${e.id}`} className="flex items-center gap-2 text-sm text-[#2d4a3e]">
+                      <input
+                        type="checkbox"
+                        checked={selectedExercices.has(String(e.id))}
+                        onChange={() => toggleEleveExercice(String(e.id))}
+                        className="h-4 w-4 rounded border-[#2d4a3e]/30"
+                      />
+                      {e.prenom} {e.nom}
+                    </label>
+                  ))}
+                </div>
+              )}
               <label className="flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -185,8 +276,23 @@ export default function EnseignantMathsNombresThemePage() {
                   onChange={handleToggleEvaluations}
                   className="h-5 w-5 rounded border-[#2d4a3e]/30 text-[#c4a8e8]"
                 />
-                <span className="text-[#2d4a3e]">Partager les évaluations</span>
+                <span className="text-[#2d4a3e]">Partager les évaluations (élèves sélectionnés)</span>
               </label>
+              {partageEvaluations && (
+                <div className="ml-8 grid gap-2">
+                  {eleves.map((e) => (
+                    <label key={`ev-${e.id}`} className="flex items-center gap-2 text-sm text-[#2d4a3e]">
+                      <input
+                        type="checkbox"
+                        checked={selectedEvaluations.has(String(e.id))}
+                        onChange={() => toggleEleveEvaluation(String(e.id))}
+                        className="h-4 w-4 rounded border-[#2d4a3e]/30"
+                      />
+                      {e.prenom} {e.nom}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

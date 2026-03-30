@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import {
   TITRE_JANVIER,
@@ -28,6 +29,7 @@ const EXO_TITRES = [
 ];
 
 function EnfantLectureJanvierPageInner() {
+  const router = useRouter();
   const [exoIndex, setExoIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [choix, setChoix] = useState<string[]>([]);
@@ -49,6 +51,14 @@ function EnfantLectureJanvierPageInner() {
       reussi: score >= JANVIER_TOTAL_QUESTIONS / 2,
     }).finally(() => setResultSaved(true));
   }, [resultSaved, score, termine]);
+
+  useEffect(() => {
+    if (!termine || !resultSaved) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [termine, resultSaved, router]);
 
   const isExo4 = exoIndex === 3;
   const itemsLength =
@@ -128,8 +138,8 @@ function EnfantLectureJanvierPageInner() {
             </p>
             <p className="mt-2 text-2xl font-semibold text-[#2d4a3e]">Score : {sur10} / 10</p>
           </div>
-          <Link href="/enfant/evaluations" className="mt-8 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
-            ← Retour aux évaluations
+          <Link href="/enfant/resultats" className="mt-8 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
+            Vers mes résultats
           </Link>
         </div>
       </main>

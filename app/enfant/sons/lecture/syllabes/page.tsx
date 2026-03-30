@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import {
   TITRE_LECTURE_SYLLABES,
@@ -14,6 +15,7 @@ import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessG
 import { LECTURE_EVAL_NIVEAU_SYLLABES } from "../../../../data/lecture-eval-partage";
 
 export default function EnfantLectureSyllabesPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [reponses, setReponses] = useState<(number | null)[]>(
     QUESTIONS_LECTURE_SYLLABES.map(() => null)
@@ -82,6 +84,14 @@ export default function EnfantLectureSyllabesPage() {
       })),
     }).finally(() => setResultSaved(true));
   }, [envoye, resultSaved, score, total, reponses]);
+
+  useEffect(() => {
+    if (!envoye || !resultSaved) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [envoye, resultSaved, router]);
 
   return (
     <LectureEvalAccessGate niveauId={LECTURE_EVAL_NIVEAU_SYLLABES}>
@@ -209,10 +219,10 @@ export default function EnfantLectureSyllabesPage() {
               })}
             </ul>
             <Link
-              href="/enfant/evaluations"
+              href="/enfant/resultats"
               className="mt-6 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white"
             >
-              ← Retour aux évaluations
+              Vers mes résultats
             </Link>
           </div>
         )}

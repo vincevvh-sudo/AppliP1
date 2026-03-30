@@ -78,10 +78,10 @@ export default function EnfantResultatsPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
+        <h1 className="font-display text-2xl text-white sm:text-3xl">
           Mes évaluations
         </h1>
-        <p className="mt-2 text-[#2d4a3e]/85">
+        <p className="mt-2 text-white/95">
           Voici tes scores (points obtenus / points max).
         </p>
 

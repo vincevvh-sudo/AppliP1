@@ -100,11 +100,12 @@ export default function EnseignantMathsEvaluationPartiePage() {
             <div className="mt-6">
               <PartageMathsModuleForm
                 moduleId="centimetre-metre"
+                moduleIdsGroup={["centimetre-metre", "euros-monnaie", "jours-semaine", "instruments-mesure"]}
                 compact
-                titreAide="Partage aux élèves de l'app. Exécute le SQL Supabase si besoin."
+                titreAide="Même liste d’élèves pour tous les exercices de grandeur. SQL Supabase si besoin."
               />
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               <Link
                 href="/enseignant/maths/centimetre-metre"
                 className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
@@ -112,6 +113,33 @@ export default function EnseignantMathsEvaluationPartiePage() {
                 <p className="font-display text-lg text-[#2d4a3e]">Centimètre ou mètre</p>
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">
                   20 questions : choisir mètre ou centimètre pour chaque objet. Cotation sur 20, score sur 10 envoyé à l&apos;enfant.
+                </p>
+              </Link>
+              <Link
+                href="/enseignant/maths/euros-monnaie"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Compter les euros</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                  20 questions : pièces 1 € et 2 €, billets 5 € et 10 € — total entre 1 et 20 €.
+                </p>
+              </Link>
+              <Link
+                href="/enseignant/maths/jours-semaine"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Les jours de la semaine</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                  7 jours mélangés : numéro de 1 (lundi) à 7 (dimanche). Score sur 7.
+                </p>
+              </Link>
+              <Link
+                href="/enseignant/maths/instruments-mesure"
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Les instruments de mesure</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                  21 images : type de mesure (temps, masse, longueurs, capacité, prix, température). Score sur 21.
                 </p>
               </Link>
             </div>

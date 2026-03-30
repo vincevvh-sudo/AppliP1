@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import {
   TITRE_LECTURE_MOTS,
@@ -14,6 +15,7 @@ import { LectureEvalAccessGate } from "../../../../components/LectureEvalAccessG
 import { LECTURE_EVAL_NIVEAU_MOTS } from "../../../../data/lecture-eval-partage";
 
 function EnfantLectureMotsPageInner() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [choix, setChoix] = useState<string[]>(() => getChoixEmojis(0));
   const [reponse, setReponse] = useState<number | null>(null);
@@ -60,6 +62,14 @@ function EnfantLectureMotsPageInner() {
     }).finally(() => setResultSaved(true));
   }, [resultSaved, score, termine, total]);
 
+  useEffect(() => {
+    if (!termine || !resultSaved) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [termine, resultSaved, router]);
+
   if (termine) {
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -85,10 +95,10 @@ function EnfantLectureMotsPageInner() {
             </p>
           </div>
           <Link
-            href="/enfant/evaluations"
+            href="/enfant/resultats"
             className="mt-8 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
           >
-            ← Retour aux évaluations
+            Vers mes résultats
           </Link>
         </div>
       </main>

@@ -107,6 +107,14 @@ export default function EnfantDicteeMotsNumPage() {
     }).finally(() => setResultSaved(true));
   }, [mots, num, resultSaved, score, session?.id, tousVerifies, resultats]);
 
+  useEffect(() => {
+    if (!tousVerifies || !resultSaved) return;
+    const t = setTimeout(() => {
+      router.replace("/enfant/resultats");
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [tousVerifies, resultSaved, router]);
+
   if (partage === null) {
     return (
       <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -246,10 +254,10 @@ export default function EnfantDicteeMotsNumPage() {
               Tu peux refaire la dictée plus tard pour t&apos;améliorer avant la dictée à l&apos;école.
             </p>
             <Link
-              href="/enfant/dictees-mots"
+              href="/enfant/resultats"
               className="mt-6 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
             >
-              ← Retour aux dictées de mots
+              Vers mes résultats
             </Link>
           </div>
         )}

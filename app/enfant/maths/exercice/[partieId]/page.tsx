@@ -7,7 +7,22 @@ import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
 import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
-import { getMathsThemesExercicesPartages } from "../../../../data/maths-partages";
+import {
+  getAdditions20SeriesPartages,
+  getAdditionsSeriesPartages,
+  getMathsThemesExercicesPartagesPourEleve,
+  getSoustractionsSeriesPartages,
+  getSoustractions20SeriesPartages,
+  getAdditionsSoustractions20SeriesPartages,
+} from "../../../../data/maths-partages";
+import { getAdditionsSerie, type AdditionSerieId } from "../../../../data/maths-additions";
+import { getAdditions20Serie, type Addition20SerieId } from "../../../../data/maths-additions-20";
+import { getSoustractionSerie, type SoustractionSerieId } from "../../../../data/maths-soustractions";
+import { getSoustraction20Serie, type Soustraction20SerieId } from "../../../../data/maths-soustractions-20";
+import {
+  getAdditionsSoustractions20Serie,
+  type AdditionSoustraction20SerieId,
+} from "../../../../data/maths-additions-soustractions-20";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconMaths = () => (
@@ -20,19 +35,35 @@ export default function EnfantMathsExercicePartiePage() {
   const params = useParams();
   const partieId = params?.partieId as string;
   const [exercicesPartages, setExercicesPartages] = useState<string[]>([]);
+  const [additionsPartagees, setAdditionsPartagees] = useState<string[]>([]);
+  const [additions20Partagees, setAdditions20Partagees] = useState<string[]>([]);
+  const [soustractionsPartagees, setSoustractionsPartagees] = useState<string[]>([]);
+  const [soustractions20Partagees, setSoustractions20Partagees] = useState<string[]>([]);
+  const [additionsSoustractions20Partagees, setAdditionsSoustractions20Partagees] = useState<string[]>([]);
   const [modulesPartages, setModulesPartages] = useState<string[]>([]);
   const [modulesLoading, setModulesLoading] = useState(true);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
   const modulesDef = partie ? getExerciceModulesForPartie(partie.id) : [];
 
   useEffect(() => {
-    setExercicesPartages(getMathsThemesExercicesPartages());
     const s = getEnfantSession();
     if (!s) {
+      setExercicesPartages([]);
+      setAdditionsPartagees([]);
+      setAdditions20Partagees([]);
+      setSoustractionsPartagees([]);
+      setSoustractions20Partagees([]);
+      setAdditionsSoustractions20Partagees([]);
       setModulesPartages([]);
       setModulesLoading(false);
       return;
     }
+    setExercicesPartages(getMathsThemesExercicesPartagesPourEleve(s.id));
+    setAdditionsPartagees(getAdditionsSeriesPartages());
+    setAdditions20Partagees(getAdditions20SeriesPartages());
+    setSoustractionsPartagees(getSoustractionsSeriesPartages());
+    setSoustractions20Partagees(getSoustractions20SeriesPartages());
+    setAdditionsSoustractions20Partagees(getAdditionsSoustractions20SeriesPartages());
     getModulesAccessiblesPourEleve(s.id).then((ids) => {
       setModulesPartages(ids);
       setModulesLoading(false);
@@ -42,9 +73,17 @@ export default function EnfantMathsExercicePartiePage() {
   const isNombres = partieId === "nombres";
   const hasNombres15 = exercicesPartages.includes("nombres-1-5");
   const hasNombres610 = exercicesPartages.includes("nombres-6-10");
+  const hasNombres1015 = exercicesPartages.includes("nombres-10-15");
+  const hasNombres1520 = exercicesPartages.includes("nombres-15-20");
   const themesToShow =
     isNombres && partie
-      ? partie.themes.filter((t) => (t.id === "1-5" && hasNombres15) || (t.id === "6-10" && hasNombres610))
+      ? partie.themes.filter(
+          (t) =>
+            (t.id === "1-5" && hasNombres15) ||
+            (t.id === "6-10" && hasNombres610) ||
+            (t.id === "10-15" && hasNombres1015) ||
+            (t.id === "15-20" && hasNombres1520)
+        )
       : partie?.themes ?? [];
 
   const modulesVisibles = modulesDef.filter((m) => modulesPartages.includes(m.id));
@@ -85,8 +124,8 @@ export default function EnfantMathsExercicePartiePage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{partie.titre}</h1>
-        <p className="mt-2 text-sm text-[#2d4a3e]/75">
+        <h1 className="font-display text-2xl text-white">{partie.titre}</h1>
+        <p className="mt-2 text-sm text-white/95">
           {isNombres
             ? "Choisis un thème (exercices partagés par ton maître ou ta maîtresse)."
             : "Exercices partagés par ton maître ou ta maîtresse depuis son espace."}
@@ -101,17 +140,154 @@ export default function EnfantMathsExercicePartiePage() {
               : "Aucun exercice de cette partie n’est partagé pour toi pour le moment. Demande à ton maître ou ta maîtresse de te sélectionner dans le partage (Exercice → cette partie)."}
           </p>
         ) : isNombres ? (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {themesToShow.map((theme) => (
-              <Link
-                key={theme.id}
-                href={`/enfant/maths/nombres/${theme.id}/exercice`}
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">{theme.titre}</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">Exercices</p>
-              </Link>
-            ))}
+          <div className="mt-6 space-y-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {themesToShow.map((theme) => (
+                <Link
+                  key={theme.id}
+                  href={`/enfant/maths/nombres/${theme.id}/exercice`}
+                  className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+                >
+                  <p className="font-display text-lg text-[#2d4a3e]">{theme.titre}</p>
+                  <p className="mt-1 text-sm text-[#2d4a3e]/70">Exercices</p>
+                </Link>
+              ))}
+            </div>
+
+            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
+              <h2 className="font-display text-lg text-[#2d4a3e]">Additions jusque 10</h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                10 séries de 10 additions, avec une réponse toujours jusqu&apos;à 10.
+              </p>
+              {additionsPartagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série d&apos;additions partagée pour le moment. Demande à ton maître ou ta maîtresse.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {additionsPartagees.map((sid) => {
+                    const { titre } = getAdditionsSerie(sid as AdditionSerieId);
+                    return (
+                      <Link
+                        key={`add-${sid}`}
+                        href={`/enfant/maths/additions/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
+              <h2 className="font-display text-lg text-[#2d4a3e]">Additions jusque 20</h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                10 séries de 10 additions DU + U ou U + DU, avec des réponses entre 10 et 20.
+              </p>
+              {additions20Partagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série d&apos;additions jusque 20 partagée pour le moment. Demande à ton maître ou ta maîtresse.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {additions20Partagees.map((sid) => {
+                    const { titre } = getAdditions20Serie(sid as Addition20SerieId);
+                    return (
+                      <Link
+                        key={`add20-${sid}`}
+                        href={`/enfant/maths/additions-20/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
+              <h2 className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 10</h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                5 séries de 10 soustractions, avec un départ à 10 ou un nombre plus petit que 10.
+              </p>
+              {soustractionsPartagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série de soustractions partagée pour le moment. Demande à ton maître ou ta maîtresse.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {soustractionsPartagees.map((sid) => {
+                    const { titre } = getSoustractionSerie(sid as SoustractionSerieId);
+                    return (
+                      <Link
+                        key={`sub-${sid}`}
+                        href={`/enfant/maths/soustractions/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
+              <h2 className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 20</h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                5 séries de 10 soustractions, avec un départ entre 10 et 20 et des réponses entre 10 et 20.
+              </p>
+              {soustractions20Partagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série de soustractions jusque 20 partagée pour le moment. Demande à ton maître ou ta maîtresse.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {soustractions20Partagees.map((sid) => {
+                    const { titre } = getSoustraction20Serie(sid as Soustraction20SerieId);
+                    return (
+                      <Link
+                        key={`sub20-${sid}`}
+                        href={`/enfant/maths/soustractions-20/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
+              <h2 className="font-display text-lg text-[#2d4a3e]">Additions et soustractions jusque 20</h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                10 séries de 10 calculs mélangés (additions comme dans la partie additions jusque 20 et soustractions 10–20).
+              </p>
+              {additionsSoustractions20Partagees.length === 0 ? (
+                <p className="mt-4 text-sm text-[#2d4a3e]/70">
+                  Aucune série d&apos;additions/soustractions partagée pour le moment. Demande à ton maître ou ta maîtresse.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {additionsSoustractions20Partagees.map((sid) => {
+                    const { titre } = getAdditionsSoustractions20Serie(sid as AdditionSoustraction20SerieId);
+                    return (
+                      <Link
+                        key={`mix20-${sid}`}
+                        href={`/enfant/maths/additions-soustractions-20/${sid}`}
+                        className="rounded-2xl bg-[#c4a8e8]/10 px-4 py-3 transition hover:bg-[#c4a8e8]/30"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
         ) : (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">

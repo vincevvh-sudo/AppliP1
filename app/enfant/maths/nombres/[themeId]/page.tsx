@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS, FEUILLES_NOMBRES_1_5 } from "../../../../data/maths-data";
-import { getMathsThemesExercicesPartages, getMathsThemesEvaluationsPartages } from "../../../../data/maths-partages";
+import {
+  getMathsThemesExercicesPartagesPourEleve,
+  getMathsThemesEvaluationsPartagesPourEleve,
+} from "../../../../data/maths-partages";
+import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,13 +24,28 @@ export default function EnfantMathsNombresThemePage() {
   const [evaluationsPartagees, setEvaluationsPartagees] = useState<string[]>([]);
 
   useEffect(() => {
-    setExercicesPartages(getMathsThemesExercicesPartages());
-    setEvaluationsPartagees(getMathsThemesEvaluationsPartages());
+    const s = getEnfantSession();
+    if (!s) {
+      setExercicesPartages([]);
+      setEvaluationsPartagees([]);
+      return;
+    }
+    setExercicesPartages(getMathsThemesExercicesPartagesPourEleve(s.id));
+    setEvaluationsPartagees(getMathsThemesEvaluationsPartagesPourEleve(s.id));
   }, []);
 
   const partie = PARTIES_MATHS.find((p) => p.id === "nombres");
   const theme = partie?.themes.find((t) => t.id === themeId);
-  const partageId = themeId === "1-5" ? "nombres-1-5" : themeId === "6-10" ? "nombres-6-10" : null;
+  const partageId =
+    themeId === "1-5"
+      ? "nombres-1-5"
+      : themeId === "6-10"
+        ? "nombres-6-10"
+        : themeId === "10-15"
+          ? "nombres-10-15"
+          : themeId === "15-20"
+            ? "nombres-15-20"
+            : null;
   const exercicesOk = !!partageId && exercicesPartages.includes(partageId);
   const evaluationsOk = !!partageId && evaluationsPartagees.includes(partageId);
 
@@ -60,8 +79,8 @@ export default function EnfantMathsNombresThemePage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">{theme.titre}</h1>
-        <p className="mt-2 text-sm text-[#2d4a3e]/75">Choisis Exercice ou Évaluation.</p>
+        <h1 className="font-display text-2xl text-white">{theme.titre}</h1>
+        <p className="mt-2 text-sm text-white/95">Choisis Exercice ou Évaluation.</p>
 
         <div className="mt-8 flex flex-col gap-4">
           {exercicesOk && (

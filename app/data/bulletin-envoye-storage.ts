@@ -29,6 +29,23 @@ export type BulletinEnvoyeRow = {
   data: BulletinEnvoyeData;
 };
 
+function formatSupabaseError(error: unknown): string {
+  const e = error as {
+    code?: string;
+    message?: string;
+    details?: string | null;
+    hint?: string | null;
+  } | null;
+  if (!e) return "Erreur inconnue Supabase";
+  const parts = [
+    e.code ? `code=${e.code}` : null,
+    e.message ?? null,
+    e.details ? `details=${e.details}` : null,
+    e.hint ? `hint=${e.hint}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" | ") : "Erreur inconnue Supabase";
+}
+
 export async function saveBulletinEnvoye(
   eleveId: string,
   sectionId: string,
@@ -41,7 +58,9 @@ export async function saveBulletinEnvoye(
     section_title: sectionTitle,
     data,
   });
-  if (error) throw error;
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
 }
 
 export async function getBulletinsByEleve(

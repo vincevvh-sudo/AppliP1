@@ -35,6 +35,7 @@ export default function EnseignantMathsExercicePartiePage() {
 
   const isNombres = partieId === "nombres";
   const isSolide = partieId === "solide-figure";
+  const isGrandeur = partieId === "grandeur";
 
   return (
     <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">
@@ -73,6 +74,51 @@ export default function EnseignantMathsExercicePartiePage() {
                 <p className="mt-1 text-sm text-[#2d4a3e]/65">Partager exercices / évaluations sur la page du thème</p>
               </Link>
             ))}
+            <Link
+              href="/enseignant/maths/additions"
+              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+            >
+              <p className="font-display text-lg text-[#2d4a3e]">Additions jusque 10</p>
+              <p className="mt-1 text-sm text-[#2d4a3e]/65">
+                10 séries de 10 additions (résultats ≤ 10), à partager depuis cette partie Exercice.
+              </p>
+            </Link>
+            <Link
+              href="/enseignant/maths/additions-20"
+              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+            >
+              <p className="font-display text-lg text-[#2d4a3e]">Additions jusque 20</p>
+              <p className="mt-1 text-sm text-[#2d4a3e]/65">
+                10 séries de 10 additions DU + U ou U + DU (résultats entre 10 et 20).
+              </p>
+            </Link>
+            <Link
+              href="/enseignant/maths/soustractions"
+              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+            >
+              <p className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 10</p>
+              <p className="mt-1 text-sm text-[#2d4a3e]/65">
+                5 séries de 10 soustractions (départ à 10 ou moins), à partager depuis cette partie Exercice.
+              </p>
+            </Link>
+            <Link
+              href="/enseignant/maths/soustractions-20"
+              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+            >
+              <p className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 20</p>
+              <p className="mt-1 text-sm text-[#2d4a3e]/65">
+                5 séries de 10 soustractions (départ entre 10 et 20), avec résultats entre 10 et 20.
+              </p>
+            </Link>
+            <Link
+              href="/enseignant/maths/additions-soustractions-20"
+              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
+            >
+              <p className="font-display text-lg text-[#2d4a3e]">Additions et soustractions jusque 20</p>
+              <p className="mt-1 text-sm text-[#2d4a3e]/65">
+                10 séries de 10 calculs mélangés (additions DU + U / U + DU et soustractions 10–20).
+              </p>
+            </Link>
           </div>
         ) : !isNombres && modules.length > 0 ? (
           <div className="mt-8 space-y-8">
@@ -81,9 +127,42 @@ export default function EnseignantMathsExercicePartiePage() {
                 <div>
                   <PartageMathsModuleForm
                     moduleId="vocabulaire-spatial"
-                    moduleIdsGroup={["vocabulaire-spatial", "solides"]}
+                    moduleIdsGroup={["vocabulaire-spatial", "solides", "quadrilateres"]}
                     compact
                     titreAide="Partage aux élèves de l'app (même liste pour les deux tests espace / géométrie). Exécute le SQL Supabase si besoin."
+                  />
+                </div>
+                {modules.map((m) => (
+                  <section key={m.id} className="rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-5 shadow-lg">
+                    <h2 className="font-display text-lg text-[#2d4a3e]">{m.titre}</h2>
+                    <p className="mt-1 text-sm text-[#2d4a3e]/70">{m.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={m.hrefEnseignant}
+                        className="rounded-xl bg-[#c4a8e8]/80 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#c4a8e8]"
+                      >
+                        Ouvrir (enseignant)
+                      </Link>
+                      <Link
+                        href={m.hrefEnfant}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#2d4a3e]/20"
+                      >
+                        Voir côté enfant ↗
+                      </Link>
+                    </div>
+                  </section>
+                ))}
+              </>
+            ) : isGrandeur ? (
+              <>
+                <div>
+                  <PartageMathsModuleForm
+                    moduleId="centimetre-metre"
+                    moduleIdsGroup={["centimetre-metre", "euros-monnaie", "jours-semaine", "instruments-mesure"]}
+                    compact
+                    titreAide="Même liste d’élèves pour tous les exercices de grandeur. SQL Supabase si besoin."
                   />
                 </div>
                 {modules.map((m) => (

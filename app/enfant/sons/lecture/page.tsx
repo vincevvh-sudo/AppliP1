@@ -33,8 +33,8 @@ export default function EnfantLecturePage() {
         </div>
       </header>
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e]">Lecture</h1>
-        <p className="mt-4 text-[#2d4a3e]/85">
+        <h1 className="font-display text-2xl text-white">Lecture</h1>
+        <p className="mt-4 text-white/95">
           Les exercices de lecture arrivent bientôt !
         </p>
         <Link

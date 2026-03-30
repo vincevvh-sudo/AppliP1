@@ -65,7 +65,7 @@ export default function EnseignantPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffd4a3]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Royaume des Lettres
+            Royaume des premières Primaires
           </Link>
           <Link href="/" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
             Retour
@@ -107,7 +107,7 @@ export default function EnseignantPage() {
         </div>
 
         <footer className="mt-16 text-center text-sm text-[#2d4a3e]/60">
-          Royaume des Lettres · Espace enseignant
+          Royaume des premières Primaires · Espace enseignant
         </footer>
       </div>
     </main>

@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../../components/MiyazakiDecor";
-import { PARTIES_MATHS, FEUILLES_NOMBRES_1_5, FEUILLES_NOMBRES_6_10 } from "../../../../../data/maths-data";
+import {
+  PARTIES_MATHS,
+  FEUILLES_NOMBRES_1_5,
+  FEUILLES_NOMBRES_6_10,
+  FEUILLES_NOMBRES_10_15,
+  FEUILLES_NOMBRES_15_20,
+} from "../../../../../data/maths-data";
 
 export default function EnfantMathsNombresExercicePage() {
   const params = useParams();
@@ -40,7 +46,15 @@ export default function EnfantMathsNombresExercicePage() {
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
         <p className="text-sm text-[#2d4a3e]/75">Choisis une feuille d&apos;exercices.</p>
         <div className="mt-6 space-y-4">
-          {(themeId === "6-10" ? FEUILLES_NOMBRES_6_10 : FEUILLES_NOMBRES_1_5).map((feuille) => (
+          {(
+            themeId === "6-10"
+              ? FEUILLES_NOMBRES_6_10
+              : themeId === "10-15"
+                ? FEUILLES_NOMBRES_10_15
+                : themeId === "15-20"
+                  ? FEUILLES_NOMBRES_15_20
+                  : FEUILLES_NOMBRES_1_5
+          ).map((feuille) => (
             <Link
               key={feuille.id}
               href={`/enfant/maths/nombres/${themeId}/exercice/${feuille.id}`}

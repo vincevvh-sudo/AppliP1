@@ -154,10 +154,10 @@ export default function EnfantDatesPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-3xl px-5 py-10 sm:py-14">
-        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl text-center">
+        <h1 className="font-display text-2xl text-white sm:text-3xl text-center">
           Mes rendez-vous
         </h1>
-        <p className="mt-2 text-center text-[#2d4a3e]/80">
+        <p className="mt-2 text-center text-white/95">
           Choisis un créneau proposé par ton enseignant pour venir avec ta famille.
         </p>
 

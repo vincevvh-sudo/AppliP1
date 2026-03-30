@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 const btnClass =
   "min-h-[44px] min-w-[44px] rounded-lg border-2 border-[#2d4a3e]/30 bg-[#fef9f3] text-lg font-bold text-[#2d4a3e] transition hover:bg-[#c4a8e8]/30 focus:outline-none focus:ring-2 focus:ring-[#c4a8e8] active:scale-95";
 
-const NUMBERS_6_10 = [6, 7, 8, 9, 10];
+type FeuilleRangeProps = { start?: number; end?: number };
 
 /** Positions dans l’image sprite mains 1-5 (réutilisée pour 6-10 = main 5 + main 1..5). */
 const MAIN_SPRITE_POSITIONS: Record<number, string> = {
@@ -33,6 +33,18 @@ function MainSprite({ doigts, className = "h-16 w-16" }: { doigts: number; class
 
 /** Pour 6 à 10 : toujours la main 5 + la main du reste (5+1, 5+2, … 5+5). */
 function Mains6a10({ nombre, className }: { nombre: number; className?: string }) {
+  if (nombre > 10) {
+    return (
+      <div
+        className={`flex flex-wrap items-center justify-center gap-0.5 ${className ?? ""}`}
+        aria-label={`${nombre} points`}
+      >
+        {Array.from({ length: nombre }, (_, i) => (
+          <span key={i} className="h-2.5 w-2.5 rounded-full bg-[#4a7c5a]" />
+        ))}
+      </div>
+    );
+  }
   const reste = nombre - 5;
   return (
     <div
@@ -46,8 +58,9 @@ function Mains6a10({ nombre, className }: { nombre: number; className?: string }
 }
 
 /** 1. Compter les doigts (6 à 10) et choisir le bon nombre. */
-function ExerciceNombre610({ onComplete }: { onComplete: () => void }) {
-  const values = [8, 6, 10, 7, 9];
+function ExerciceNombre610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
+  const d = start - 6;
+  const values = [8, 6, 10, 7, 9].map((n) => n + d);
   const [reponses, setReponses] = useState<(number | null)[]>(values.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -65,7 +78,7 @@ function ExerciceNombre610({ onComplete }: { onComplete: () => void }) {
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
       <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">
-        1. Compte les doigts et choisis le bon nombre (6 à 10).
+        1. Compte et choisis le bon nombre ({start} à {end}).
       </h3>
       <div className="mt-4 flex flex-wrap justify-center gap-6">
         {values.map((v, i) => (
@@ -74,7 +87,7 @@ function ExerciceNombre610({ onComplete }: { onComplete: () => void }) {
               <Mains6a10 nombre={v} />
             </div>
             <div className="flex gap-1">
-              {NUMBERS_6_10.map((n) => (
+              {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
                 <button key={n} type="button" onClick={() => handleChange(i, n)} className={btnClass} style={{ backgroundColor: reponses[i] === n ? "#c4a8e8" : undefined }}>{n}</button>
               ))}
             </div>
@@ -91,8 +104,9 @@ function ExerciceNombre610({ onComplete }: { onComplete: () => void }) {
 }
 
 /** 2. Colorier le nombre de cases (6 à 10). Grille de 10 cases. */
-function ExerciceColorier610({ onComplete }: { onComplete: () => void }) {
-  const config = [8, 7, 10, 6, 9];
+function ExerciceColorier610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
+  const d = start - 6;
+  const config = [8 + d, 7 + d, 10 + d, 6 + d, 9 + d];
   const [colored, setColored] = useState<boolean[][]>(config.map(() => Array(10).fill(false)));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -109,7 +123,7 @@ function ExerciceColorier610({ onComplete }: { onComplete: () => void }) {
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">2. Colorie le nombre de cases (6 à 10).</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">2. Colorie le nombre de cases ({start} à {end}).</h3>
       <div className="mt-4 flex flex-wrap justify-center gap-4">
         {config.map((n, col) => (
           <div key={col} className="flex flex-col items-center gap-2">
@@ -139,7 +153,9 @@ const FRUITS_DATA_610: { type: string; emoji: string; count: number }[] = [
 ];
 
 /** 3. Compter les fruits (6 à 10). */
-function ExerciceFruits610({ onComplete }: { onComplete: () => void }) {
+function ExerciceFruits610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
+  const d = start - 6;
+  const fruits = FRUITS_DATA_610.map((f) => ({ ...f, count: f.count + d }));
   const [reponses, setReponses] = useState<(number | null)[]>(FRUITS_DATA_610.map(() => null));
   const [showBravo, setShowBravo] = useState(false);
 
@@ -147,7 +163,7 @@ function ExerciceFruits610({ onComplete }: { onComplete: () => void }) {
     setReponses((prev) => { const next = [...prev]; next[index] = n; return next; });
   }, []);
 
-  const allOk = reponses.every((r, i) => r === FRUITS_DATA_610[i].count);
+  const allOk = reponses.every((r, i) => r === fruits[i].count);
   const complete = reponses.every((r) => r !== null);
 
   const handleValider = useCallback(() => {
@@ -156,12 +172,12 @@ function ExerciceFruits610({ onComplete }: { onComplete: () => void }) {
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">3. Compte le nombre de chaque fruit et écris le nombre (6 à 10).</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">3. Compte le nombre de chaque fruit et écris le nombre ({start} à {end}).</h3>
       <p className="mt-2 text-sm text-[#2d4a3e]/70">Regarde l&apos;image ci-dessous, compte chaque fruit, puis choisis le bon nombre.</p>
       <div className="mt-4 rounded-xl border-2 border-[#4a7c5a]/30 bg-[#fef9f3] p-4">
         <p className="mb-3 text-sm font-medium text-[#2d4a3e]/80">Image à compter :</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {FRUITS_DATA_610.map((f, i) => (
+          {fruits.map((f, i) => (
             <span key={i} className="inline-flex items-center gap-0.5 text-xl" aria-label={`${f.count} ${f.type}`}>
               {Array.from({ length: Math.min(f.count, 10) }, (_, k) => (
                 <span key={k} role="img">{f.emoji}</span>
@@ -173,11 +189,11 @@ function ExerciceFruits610({ onComplete }: { onComplete: () => void }) {
       </div>
       <p className="mt-3 text-sm text-[#2d4a3e]/70">Écris combien tu as compté pour chaque fruit :</p>
       <div className="mt-4 flex flex-wrap gap-4">
-        {FRUITS_DATA_610.map((f, i) => (
+        {fruits.map((f, i) => (
           <div key={i} className="flex items-center gap-2 rounded-xl border-2 border-[#2d4a3e]/20 bg-[#fef9f3] p-3">
             <span className="text-2xl" role="img" aria-label={f.type}>{f.emoji}</span>
             <div className="flex gap-1">
-              {NUMBERS_6_10.map((n) => (
+              {Array.from({ length: end - start + 1 }, (_, idx) => start + idx).map((n) => (
                 <button key={n} type="button" onClick={() => handleChange(i, n)} className={btnClass} style={{ backgroundColor: reponses[i] === n ? "#c4a8e8" : undefined }}>{n}</button>
               ))}
             </div>
@@ -193,16 +209,16 @@ function ExerciceFruits610({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-export default function ExerciceFeuille4_610() {
+export default function ExerciceFeuille4_610({ start = 6, end = 10 }: FeuilleRangeProps) {
   const [etape, setEtape] = useState(0);
   return (
     <div className="space-y-8">
-      <ExerciceNombre610 onComplete={() => setEtape(1)} />
-      {etape >= 1 && <ExerciceColorier610 onComplete={() => setEtape(2)} />}
-      {etape >= 2 && <ExerciceFruits610 onComplete={() => setEtape(3)} />}
+      <ExerciceNombre610 onComplete={() => setEtape(1)} start={start} end={end} />
+      {etape >= 1 && <ExerciceColorier610 onComplete={() => setEtape(2)} start={start} end={end} />}
+      {etape >= 2 && <ExerciceFruits610 onComplete={() => setEtape(3)} start={start} end={end} />}
       {etape >= 3 && (
         <div className="rounded-2xl bg-[#a8d5ba]/40 p-6 text-center">
-          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 4 (nombres 6 à 10).</p>
+          <p className="font-display text-xl font-semibold text-[#2d4a3e]">Félicitations ! Tu as terminé la feuille 4 (nombres {start} à {end}).</p>
         </div>
       )}
     </div>
