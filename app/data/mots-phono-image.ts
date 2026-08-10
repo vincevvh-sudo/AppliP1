@@ -5,6 +5,9 @@
 
 import type { Son } from "./sons-data";
 
+/** Image du mot « cou » (enfant qui montre son cou) — remplace la girafe. */
+export const IMAGE_MOT_COU = "/images/cou.png";
+
 /** Mots avec emoji (ou image personnalisée) - chaque mot est associé à UN seul son. */
 export const MOTS_PHONO_IMAGE: Record<string, { mot: string; emoji: string; image?: string }[]> = {
   i: [
@@ -369,7 +372,7 @@ export const MOTS_PHONO_IMAGE: Record<string, { mot: string; emoji: string; imag
   ],
   ou: [
     { mot: "loup", emoji: "🐺" },
-    { mot: "cou", emoji: "🦒" },
+    { mot: "cou", emoji: "👧", image: IMAGE_MOT_COU },
     { mot: "souris", emoji: "🐭" },
     { mot: "forêt", emoji: "🌲" },
   ],
@@ -861,7 +864,7 @@ const ECOUTE_CLIQUE_PAR_SON: Record<string, ItemEcouteClique[]> = {
   ],
   ou: [
     { mot: "loup", emoji: "🐺", contientSon: true },
-    { mot: "cou", emoji: "🦒", contientSon: true },
+    { mot: "cou", emoji: "👧", image: IMAGE_MOT_COU, contientSon: true },
     { mot: "forêt", emoji: "🌲", contientSon: true },
     { mot: "souris", emoji: "🐭", contientSon: true },
     { mot: "poule", emoji: "🐔", contientSon: true },

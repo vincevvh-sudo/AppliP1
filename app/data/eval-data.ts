@@ -8,7 +8,7 @@
 
 import type { Son } from "./sons-data";
 import { SONS, getSonById, isConsonne, getSyllabes } from "./sons-data";
-import { MOTS_PHONO_IMAGE } from "./mots-phono-image";
+import { IMAGE_MOT_COU, MOTS_PHONO_IMAGE } from "./mots-phono-image";
 
 /** Mots considérés comme une seule syllabe : à exclure des évaluations (on veut 2+ syllabes). */
 const MOTS_UNE_SYLLABE = new Set([
@@ -1957,7 +1957,7 @@ export function getPhrasesVraiFaux(son: Son): ItemPhraseVraiFaux[] {
 
 // ——— Exercice « Écrire la syllabe » (à partir du son v, 8e exercice) ———
 // 5 mots par son : affichage prefix + "__" + suffix, l'enfant écrit la syllabe manquante (celle du son travaillé).
-export type ItemEcrireSyllabe = { mot: string; syllabe: string; prefix: string; suffix: string; emoji?: string };
+export type ItemEcrireSyllabe = { mot: string; syllabe: string; prefix: string; suffix: string; emoji?: string; image?: string };
 
 const ECRIRE_SYLLABE_ITEMS: Record<string, ItemEcrireSyllabe[]> = {
   v: [
@@ -2019,7 +2019,7 @@ const ECRIRE_SYLLABE_ITEMS: Record<string, ItemEcrireSyllabe[]> = {
   ou: [
     { mot: "poulet", syllabe: "pou", prefix: "", suffix: "let", emoji: "🐔" },
     { mot: "loup", syllabe: "lou", prefix: "", suffix: "p", emoji: "🐺" },
-    { mot: "cou", syllabe: "cou", prefix: "", suffix: "", emoji: "🦒" },
+    { mot: "cou", syllabe: "cou", prefix: "", suffix: "", emoji: "👧", image: IMAGE_MOT_COU },
     { mot: "four", syllabe: "fou", prefix: "", suffix: "r", emoji: "🔥" },
     { mot: "souris", syllabe: "sou", prefix: "", suffix: "ris", emoji: "🐭" },
   ],
@@ -2221,7 +2221,7 @@ const ITEMS_IMAGE_DEUX_MOTS_APRES_R: Record<string, ItemImageDeuxMots[]> = {
   ],
   ou: [
     { emoji: "🐺", motCorrect: "loup", motDistracteur: "cou" },
-    { emoji: "🦒", motCorrect: "cou", motDistracteur: "loup" },
+    { emoji: "👧", image: IMAGE_MOT_COU, motCorrect: "cou", motDistracteur: "loup" },
     { emoji: "🔥", motCorrect: "four", motDistracteur: "fou" },
     { emoji: "🐔", motCorrect: "poule", motDistracteur: "pou" },
     { emoji: "🛞", motCorrect: "roue", motDistracteur: "roux" },

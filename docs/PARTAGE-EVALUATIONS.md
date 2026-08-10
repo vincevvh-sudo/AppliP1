@@ -67,6 +67,14 @@ Ce document décrit **comment réutiliser le même principe de partage** (choisi
 - **Liste élève** : section **Écouter-lire** dans `enfant/evaluations` (liens uniquement si partagé).
 - **Accès** : **`EvalNiveauAccessGate`** sur `enfant/ecouter-lire/…`.
 
+### Fluence (exercice — lecture rapide)
+
+- Placée sous **Forêt des sons → Exercices → Fluence** (plus sous Évaluations).
+- **Une unité = un son** : Voyelle 1 (`o`), Voyelle 2 (`u`), Voyelle 3 (`e`), puis consonnes / sons.
+- **`niveau_id`** : `` `${sonId}-fluence` `` (ex. `o-fluence`) — helpers dans `fluence-partage.ts`.
+- **Partage** : `PartageEvalNiveauForm` sur `enseignant/sons/fluence/test/[sonId]` via `sons_partages_eval_niveaux`.
+- **Liste élève** : section **Fluence** sur `enfant/sons` ; page `enfant/sons/fluence/[sonId]` avec `EvalNiveauAccessGate`.
+
 ---
 
 ## 3. Résumé
@@ -77,5 +85,6 @@ Ce document décrit **comment réutiliser le même principe de partage** (choisi
 | Forêt des sons | `sons-partages.ts`, page exercices enseignant | `sons_partages`, `sons_partages_evaluations` |
 | Lecture (éval.) | `PartageLectureEvalForm` → `PartageEvalNiveauForm`, `lecture-eval-partage.ts` | `sons_partages_eval_niveaux` (`son_id` = `lecture`) |
 | Écouter-lire | `PartageEvalNiveauForm`, `ecouter-lire-eval-partage.ts` | `sons_partages_eval_niveaux` (`son_id` = `ecouter-lire`) |
+| Fluence | `PartageEvalNiveauForm`, `fluence-partage.ts` | `sons_partages_eval_niveaux` (`niveau_id` = `{son}-fluence`) |
 
 Toute nouvelle fonctionnalité doit **documenter ici** en une phrase si un troisième type de partage apparaît.

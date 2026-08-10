@@ -161,11 +161,7 @@ function EcouteCliqueSon({
               selected.has(idx) ? "border-[#4a7c5a] bg-[#a8d5ba]/40" : "border-[#2d4a3e]/20 bg-white/95 hover:bg-[#a8d5ba]/20"
             }`}
           >
-            {item.image ? (
-              <img src={item.image} alt={item.mot} className="h-14 w-auto object-contain" />
-            ) : (
-              <span className="text-4xl" role="img" aria-hidden>{item.emoji}</span>
-            )}
+            <MotVisuel item={item} size="md" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); playWord(item.mot); }}
@@ -940,7 +936,7 @@ function getMotAvecSyllabeManquante(item: { mot: string; prefix?: string; suffix
   return { prefix: item.prefix ?? "", suffix: item.suffix ?? "" };
 }
 
-/** Affiche l’emoji ou l’image personnalisée (ex. tube de colle). */
+/** Affiche l’emoji ou l’image personnalisée (ex. tube de colle, cou). */
 function MotVisuel({
   item,
   size = "md",
@@ -948,11 +944,12 @@ function MotVisuel({
   item: { mot: string; emoji: string; image?: string };
   size?: "sm" | "md" | "lg";
 }) {
+  const h = size === "sm" ? "h-12" : size === "md" ? "h-14" : "h-20";
+  const textSize = size === "sm" ? "text-4xl" : size === "md" ? "text-5xl" : "text-8xl";
+
   if (item.image) {
-    const h = size === "sm" ? "h-12" : size === "md" ? "h-14" : "h-20";
     return <img src={item.image} alt={item.mot} className={`${h} w-auto object-contain`} />;
   }
-  const textSize = size === "sm" ? "text-4xl" : size === "md" ? "text-5xl" : "text-8xl";
   return (
     <span className={textSize} role="img" aria-hidden>
       {item.emoji}
@@ -2398,7 +2395,11 @@ function JeuEcrireSyllabe({ son, onTermine }: PropsJeu) {
         Mot {index + 1} sur {items.length}
       </p>
       <div className="flex flex-col items-center gap-4">
-        {item.emoji && <span className="text-4xl">{item.emoji}</span>}
+        {item.image ? (
+          <img src={item.image} alt={item.mot} className="h-20 w-auto object-contain" />
+        ) : (
+          item.emoji && <span className="text-4xl">{item.emoji}</span>
+        )}
         <p className="font-mono text-2xl font-medium text-[#2d4a3e] tracking-wider">
           {displayBlank.trim() || " __ "}
         </p>

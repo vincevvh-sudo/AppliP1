@@ -20,8 +20,43 @@ export type Message = {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  reply_to_message_id?: number | null;
   created_at?: string;
 };
+
+export type Poll = {
+  id: number;
+  message_id: number;
+  conversation_id: number;
+  question: string;
+  closes_at?: string | null;
+  created_at?: string;
+};
+
+export type PollOption = {
+  id: number;
+  poll_id: number;
+  label: string;
+  position: number;
+};
+
+export type PollVote = {
+  id: number;
+  poll_id: number;
+  option_id: number;
+  voter_type: "enseignant" | "eleve";
+  voter_eleve_id?: number | string | null;
+  created_at?: string;
+};
+
+export type PollWithDetails = Poll & {
+  options: PollOption[];
+  votes: PollVote[];
+};
+
+export type MessagerieViewer =
+  | { role: "enseignant" }
+  | { role: "eleve"; eleveId: number | string };
 
 /** Récupère ou crée la conversation groupe. */
 export async function getConversationGroupe(): Promise<Conversation | null> {
@@ -159,6 +194,16 @@ export function subscribeToMessages(
       },
       () => onNewMessage()
     )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      () => onNewMessage()
+    )
     .subscribe();
   return () => {
     supabase.removeChannel(channel);
@@ -174,6 +219,7 @@ export async function sendMessage(row: {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  reply_to_message_id?: number | null;
 }): Promise<Message | null> {
   const payload: Record<string, unknown> = {
     conversation_id: row.conversation_id,
@@ -184,6 +230,7 @@ export async function sendMessage(row: {
   if (row.attachment_url != null) payload.attachment_url = row.attachment_url;
   if (row.attachment_type != null) payload.attachment_type = row.attachment_type;
   if (row.attachment_name != null) payload.attachment_name = row.attachment_name;
+  if (row.reply_to_message_id != null) payload.reply_to_message_id = row.reply_to_message_id;
 
   const { data, error } = await supabase
     .from("messages")
@@ -196,6 +243,277 @@ export async function sendMessage(row: {
     return null;
   }
   return data as Message;
+}
+
+/** Supprime un message (et le sondage lié via CASCADE si présent). */
+export async function deleteMessage(messageId: number): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from("messages")
+    .delete()
+    .eq("id", messageId)
+    .select("id");
+  if (error) {
+    console.error("[messagerie] Erreur delete message:", error.message, error.details, error.code);
+    return { ok: false, error: error.message };
+  }
+  if (!data?.length) {
+    return {
+      ok: false,
+      error:
+        "Suppression refusée par la base. Vérifie que le script SQL supabase-messagerie-repondre-supprimer.sql a bien été exécuté.",
+    };
+  }
+  return { ok: true };
+}
+
+/**
+ * Efface tous les messages de toutes les conversations (fin d'année).
+ * Les conversations (groupe + élèves) sont conservées, vides.
+ */
+export async function deleteAllMessages(): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.from("messages").delete().neq("id", 0).select("id");
+  if (error) {
+    console.error("[messagerie] Erreur delete all messages:", error.message, error.details, error.code);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, error: data?.length ? undefined : "Aucun message à effacer." };
+}
+
+export async function createPollMessage(row: {
+  conversation_id: number;
+  author_type: "enseignant" | "eleve";
+  eleve_id?: number | string | null;
+  question: string;
+  options: string[];
+  closes_at?: string | null;
+}): Promise<PollWithDetails | null> {
+  const question = (row.question || "").trim();
+  const cleanedOptions = row.options
+    .map((opt) => opt.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+  if (!question || cleanedOptions.length < 2) return null;
+
+  const message = await sendMessage({
+    conversation_id: row.conversation_id,
+    author_type: row.author_type,
+    eleve_id: row.eleve_id ?? null,
+    content: `📊 ${question}`,
+  });
+  if (!message) return null;
+
+  const { data: pollData, error: pollError } = await supabase
+    .from("polls")
+    .insert({
+      message_id: message.id,
+      conversation_id: row.conversation_id,
+      question,
+      closes_at: row.closes_at ?? null,
+    })
+    .select()
+    .single();
+  if (pollError || !pollData) return null;
+
+  const optionsPayload = cleanedOptions.map((label, idx) => ({
+    poll_id: pollData.id,
+    label,
+    position: idx,
+  }));
+  const { data: optionsData, error: optionsError } = await supabase
+    .from("poll_options")
+    .insert(optionsPayload)
+    .select("*")
+    .order("position", { ascending: true });
+  if (optionsError) return null;
+
+  return {
+    ...(pollData as Poll),
+    options: (optionsData ?? []) as PollOption[],
+    votes: [],
+  };
+}
+
+export async function getPollsByMessageIds(
+  messageIds: number[]
+): Promise<Record<number, PollWithDetails>> {
+  if (!messageIds.length) return {};
+  const { data: pollsData, error: pollsError } = await supabase
+    .from("polls")
+    .select("*")
+    .in("message_id", messageIds);
+  if (pollsError || !pollsData?.length) return {};
+
+  const polls = pollsData as Poll[];
+  const pollIds = polls.map((p) => p.id);
+
+  const [{ data: optionsData }, { data: votesData }] = await Promise.all([
+    supabase
+      .from("poll_options")
+      .select("*")
+      .in("poll_id", pollIds)
+      .order("position", { ascending: true }),
+    supabase.from("poll_votes").select("*").in("poll_id", pollIds),
+  ]);
+
+  const optionsByPollId: Record<number, PollOption[]> = {};
+  for (const option of (optionsData ?? []) as PollOption[]) {
+    optionsByPollId[option.poll_id] = optionsByPollId[option.poll_id] ?? [];
+    optionsByPollId[option.poll_id].push(option);
+  }
+
+  const votesByPollId: Record<number, PollVote[]> = {};
+  for (const vote of (votesData ?? []) as PollVote[]) {
+    votesByPollId[vote.poll_id] = votesByPollId[vote.poll_id] ?? [];
+    votesByPollId[vote.poll_id].push(vote);
+  }
+
+  const byMessageId: Record<number, PollWithDetails> = {};
+  for (const poll of polls) {
+    byMessageId[poll.message_id] = {
+      ...poll,
+      options: optionsByPollId[poll.id] ?? [],
+      votes: votesByPollId[poll.id] ?? [],
+    };
+  }
+  return byMessageId;
+}
+
+export async function votePoll(row: {
+  pollId: number;
+  optionId: number;
+  voterType: "enseignant" | "eleve";
+  voterEleveId?: number | string | null;
+}): Promise<boolean> {
+  const { data: poll, error: pollError } = await supabase
+    .from("polls")
+    .select("id, closes_at")
+    .eq("id", row.pollId)
+    .maybeSingle();
+  if (pollError) {
+    console.error("[poll-debug] votePoll poll read error", pollError.message, pollError.details, pollError.code);
+    return false;
+  }
+  if (!poll) {
+    console.warn("[poll-debug] votePoll poll not found", { pollId: row.pollId });
+    return false;
+  }
+  if (poll.closes_at && new Date(poll.closes_at).getTime() <= Date.now()) {
+    console.warn("[poll-debug] votePoll blocked by closes_at", {
+      pollId: row.pollId,
+      closesAt: poll.closes_at,
+      nowIso: new Date().toISOString(),
+      closesAtMs: new Date(poll.closes_at).getTime(),
+      nowMs: Date.now(),
+    });
+    return false;
+  }
+
+  const deleteQuery = supabase
+    .from("poll_votes")
+    .delete()
+    .eq("poll_id", row.pollId)
+    .eq("voter_type", row.voterType);
+  const { error: deleteError } =
+    row.voterType === "eleve"
+      ? await deleteQuery.eq("voter_eleve_id", row.voterEleveId ?? null)
+      : await deleteQuery.is("voter_eleve_id", null);
+  if (deleteError) {
+    console.error("[poll-debug] votePoll delete previous vote error", deleteError.message, deleteError.details, deleteError.code);
+    return false;
+  }
+
+  const { error: insertError } = await supabase.from("poll_votes").insert({
+    poll_id: row.pollId,
+    option_id: row.optionId,
+    voter_type: row.voterType,
+    voter_eleve_id: row.voterType === "eleve" ? row.voterEleveId ?? null : null,
+  });
+  if (insertError) {
+    console.error("[poll-debug] votePoll insert error", insertError.message, insertError.details, insertError.code);
+    return false;
+  }
+  console.log("[poll-debug] votePoll success", {
+    pollId: row.pollId,
+    optionId: row.optionId,
+    voterType: row.voterType,
+    voterEleveId: row.voterEleveId ?? null,
+    nowIso: new Date().toISOString(),
+  });
+  return true;
+}
+
+const LAST_READ_KEY = "messagerie-last-read-v1";
+
+function loadLastReadMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(LAST_READ_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLastReadMap(map: Record<string, string>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LAST_READ_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+function getViewerKey(viewer: MessagerieViewer): string {
+  if (viewer.role === "enseignant") return "enseignant";
+  return `eleve:${String(viewer.eleveId)}`;
+}
+
+function getLastReadEntryKey(conversationId: number, viewer: MessagerieViewer): string {
+  return `${getViewerKey(viewer)}:${conversationId}`;
+}
+
+export function markConversationAsRead(
+  conversationId: number,
+  viewer: MessagerieViewer,
+  atIso?: string
+): void {
+  const map = loadLastReadMap();
+  map[getLastReadEntryKey(conversationId, viewer)] = atIso ?? new Date().toISOString();
+  saveLastReadMap(map);
+}
+
+export function getConversationLastReadAt(
+  conversationId: number,
+  viewer: MessagerieViewer
+): string | null {
+  const map = loadLastReadMap();
+  return map[getLastReadEntryKey(conversationId, viewer)] ?? null;
+}
+
+function isOwnMessage(message: Message, viewer: MessagerieViewer): boolean {
+  if (viewer.role === "enseignant") return message.author_type === "enseignant";
+  return (
+    message.author_type === "eleve" &&
+    message.eleve_id != null &&
+    String(message.eleve_id) === String(viewer.eleveId)
+  );
+}
+
+export function countUnreadMessages(
+  messages: Message[],
+  conversationId: number,
+  viewer: MessagerieViewer
+): number {
+  const lastRead = getConversationLastReadAt(conversationId, viewer);
+  const lastReadMs = lastRead ? new Date(lastRead).getTime() : 0;
+  return messages.reduce((count, m) => {
+    if (isOwnMessage(m, viewer)) return count;
+    const msgMs = m.created_at ? new Date(m.created_at).getTime() : 0;
+    if (msgMs > lastReadMs) return count + 1;
+    return count;
+  }, 0);
 }
 
 const BUCKET_MESSAGERIE = "messagerie";

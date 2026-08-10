@@ -1,12 +1,12 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
 import { getSonById, type Niveau } from "../../../data/sons-data";
 import { getResultatsByEleve } from "../../../data/resultats-storage";
-import { getNiveauxEvalPartagesPourEleve } from "../../../data/sons-partages";
+import { getNiveauxEvalPartagesPourEleve, getSharedSonsForEleve } from "../../../data/sons-partages";
 import { getEnfantSession } from "../../../../utils/enfant-session";
 
 const IconLeaf = () => (
@@ -17,11 +17,20 @@ const IconLeaf = () => (
 
 export default function EnfantSonPage() {
   const params = useParams();
+  const router = useRouter();
   const sonId = params.sonId as string;
   const son = getSonById(sonId);
   const session = typeof window !== "undefined" ? getEnfantSession() : null;
   const [completedEvalNiveauIds, setCompletedEvalNiveauIds] = useState<Set<string>>(new Set());
   const [niveauxEvalPartages, setNiveauxEvalPartages] = useState<Set<string>>(new Set());
+  const [sonAccessible, setSonAccessible] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!session?.id || !sonId) return;
+    getSharedSonsForEleve(session.id).then((ids) => {
+      setSonAccessible(ids.includes(sonId));
+    });
+  }, [session?.id, sonId]);
 
   useEffect(() => {
     if (!session?.id || !sonId) return;
@@ -40,9 +49,26 @@ export default function EnfantSonPage() {
     });
   }, [session?.id]);
 
+  useEffect(() => {
+    if (sonAccessible === false) {
+      router.replace("/enfant/sons");
+    }
+  }, [sonAccessible, router]);
+
   const niveauxVisibles = son
     ? son.niveaux.filter((n: Niveau) => {
-        if (n.type === "phono" || n.type === "phono-image" || n.type === "relie" || n.type === "article" || n.type === "phrases-vrai-faux" || n.type === "ecrire-syllabe") return true;
+        // Exercices : visibles seulement si le son est partagé (vérifié plus haut).
+        if (
+          n.type === "phono" ||
+          n.type === "phono-image" ||
+          n.type === "relie" ||
+          n.type === "article" ||
+          n.type === "phrases-vrai-faux" ||
+          n.type === "ecrire-syllabe"
+        ) {
+          return sonAccessible === true;
+        }
+        // Évaluations : uniquement si partagées explicitement.
         if (n.type === "eval") return niveauxEvalPartages.has(`${sonId}:${n.id}`);
         return false;
       })
@@ -54,6 +80,31 @@ export default function EnfantSonPage() {
         <ForetMagiqueBackground />
         <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
           <p>Son introuvable.</p>
+          <Link href="/enfant/sons" className="mt-4 inline-block text-[#4a7c5a]">
+            ← Retour
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (sonAccessible === null) {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
+          <p className="text-[#2d4a3e]/70">Chargement…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (sonAccessible === false) {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
+          <p>Ce son n&apos;a pas été partagé avec toi.</p>
           <Link href="/enfant/sons" className="mt-4 inline-block text-[#4a7c5a]">
             ← Retour
           </Link>
@@ -91,20 +142,41 @@ export default function EnfantSonPage() {
           Choisir un exercice — {son.id === "e-accent" ? "é" : son.grapheme}
         </h1>
 
-        <div className="mt-10 grid gap-3 sm:grid-cols-2">
-          {niveauxVisibles.map((niveau) => (
-            <Link
-              key={niveau.id}
-              href={`/enfant/sons/${son.id}/jeu/${niveau.id}`}
-              className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#a8d5ba]/30"
-            >
-              <p className="font-display text-lg text-[#2d4a3e]">{niveau.titre}</p>
-              <p className="mt-1 text-sm text-[#2d4a3e]/70">
-              {niveau.type === "eval" ? "Évaluation" : niveau.type === "phono" ? "Lettre entendue" : niveau.type === "phono-image" ? "Image → lettre" : niveau.type === "relie" ? "Relie cursive et imprimé" : niveau.type === "article" ? "Le, la, un, une" : niveau.type === "phrases-vrai-faux" ? "Phrase possible ou impossible" : niveau.type === "ecrire-syllabe" ? "Écrire la syllabe" : niveau.type}
-            </p>
-            </Link>
-          ))}
-        </div>
+        {niveauxVisibles.length === 0 ? (
+          <p className="mt-10 text-center text-[#2d4a3e]/80">
+            Aucun exercice ou évaluation partagé pour ce son pour le moment.
+          </p>
+        ) : (
+          <div className="mt-10 grid gap-3 sm:grid-cols-2">
+            {niveauxVisibles.map((niveau) => (
+              <Link
+                key={niveau.id}
+                href={`/enfant/sons/${son.id}/jeu/${niveau.id}`}
+                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#a8d5ba]/30"
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">{niveau.titre}</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                  {niveau.type === "eval"
+                    ? "Évaluation"
+                    : niveau.type === "phono"
+                      ? "Lettre entendue"
+                      : niveau.type === "phono-image"
+                        ? "Image → lettre"
+                        : niveau.type === "relie"
+                          ? "Relie cursive et imprimé"
+                          : niveau.type === "article"
+                            ? "Le, la, un, une"
+                            : niveau.type === "phrases-vrai-faux"
+                              ? "Phrase possible ou impossible"
+                              : niveau.type === "ecrire-syllabe"
+                                ? "Écrire la syllabe"
+                                : niveau.type}
+                  {completedEvalNiveauIds.has(niveau.id) ? " · déjà fait" : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
 
         <Link
           href="/enfant/sons"

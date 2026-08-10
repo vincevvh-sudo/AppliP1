@@ -9,12 +9,17 @@ import {
   getConversationGroupe,
   getConversationDirecte,
   getMessages,
+  getPollsByMessageIds,
   sendMessage,
+  deleteMessage,
   uploadFileMessagerie,
   subscribeToMessages,
+  countUnreadMessages,
+  markConversationAsRead,
+  votePoll,
 } from "../../data/messagerie-storage";
 import { getEnfantSession } from "../../../utils/enfant-session";
-import type { Message } from "../../data/messagerie-storage";
+import type { Message, PollWithDetails } from "../../data/messagerie-storage";
 import { supabase } from "../../../utils/supabase";
 
 const IconLeaf = () => (
@@ -35,6 +40,11 @@ function EnfantMessageriePageInner() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [elevesById, setElevesById] = useState<Record<string, { prenom: string; nom: string }>>({});
+  const [unreadCounts, setUnreadCounts] = useState<{ groupe: number; direct: number }>({
+    groupe: 0,
+    direct: 0,
+  });
+  const [pollsByMessageId, setPollsByMessageId] = useState<Record<number, PollWithDetails>>({});
 
   const conversationId = convType === "direct" ? convDirecteId : convGroupeId;
 
@@ -87,6 +97,7 @@ function EnfantMessageriePageInner() {
     const load = () =>
       getMessages(conversationId).then((msgs) => {
         setMessages(msgs);
+        void getPollsByMessageIds(msgs.map((m) => m.id)).then(setPollsByMessageId);
         setLoading(false);
       });
     load();
@@ -98,7 +109,7 @@ function EnfantMessageriePageInner() {
     };
   }, [conversationId]);
 
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, replyToMessageId?: number | null) => {
     if (!conversationId || !session) return;
     const txt = (content || "").trim();
     if (!txt) return;
@@ -108,6 +119,7 @@ function EnfantMessageriePageInner() {
       author_type: "eleve",
       eleve_id: session.id,
       content: txt,
+      reply_to_message_id: replyToMessageId ?? null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, newMsg]);
@@ -116,17 +128,20 @@ function EnfantMessageriePageInner() {
       author_type: "eleve",
       eleve_id: session.id,
       content: txt,
+      reply_to_message_id: replyToMessageId ?? null,
     });
     if (!saved) {
       setMessages((prev) => prev.filter((m) => m.id !== newMsg.id));
-      alert("Impossible d'enregistrer le message.");
+      alert(
+        "Impossible d'enregistrer le message. Si tu réponds à un message, exécute aussi supabase-messagerie-repondre-supprimer.sql dans Supabase."
+      );
       return;
     }
     const msgs = await getMessages(conversationId);
     setMessages(msgs);
   };
 
-  const handleSendFile = async (file: File) => {
+  const handleSendFile = async (file: File, replyToMessageId?: number | null) => {
     if (!conversationId || !session) return;
     const url = await uploadFileMessagerie(file);
     if (!url) throw new Error("Erreur upload");
@@ -138,6 +153,7 @@ function EnfantMessageriePageInner() {
       attachment_url: url,
       attachment_type: file.type,
       attachment_name: file.name,
+      reply_to_message_id: replyToMessageId ?? null,
     });
     if (saved) {
       const msgs = await getMessages(conversationId);
@@ -145,12 +161,74 @@ function EnfantMessageriePageInner() {
     }
   };
 
+  const handleDelete = async (messageId: number) => {
+    const result = await deleteMessage(messageId);
+    if (!result.ok) {
+      alert(result.error ?? "Impossible de supprimer ce message.");
+      return;
+    }
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    setPollsByMessageId((prev) => {
+      const next = { ...prev };
+      delete next[messageId];
+      return next;
+    });
+  };
+
   const handleRefresh = useCallback(async () => {
     if (conversationId) {
       const msgs = await getMessages(conversationId);
       setMessages(msgs);
+      const polls = await getPollsByMessageIds(msgs.map((m) => m.id));
+      setPollsByMessageId(polls);
     }
   }, [conversationId]);
+
+  const handleVotePoll = useCallback(
+    async (pollId: number, optionId: number) => {
+      if (!session) return;
+      const ok = await votePoll({
+        pollId,
+        optionId,
+        voterType: "eleve",
+        voterEleveId: session.id,
+      });
+      if (ok) await handleRefresh();
+      else alert("Vote impossible : le sondage est peut-être clôturé.");
+    },
+    [session, handleRefresh]
+  );
+
+  const refreshUnreadCounts = useCallback(async () => {
+    if (!session) return;
+    const viewer = { role: "eleve" as const, eleveId: session.id };
+    let groupe = 0;
+    let direct = 0;
+    if (convGroupeId) {
+      const msgs = await getMessages(convGroupeId);
+      groupe = countUnreadMessages(msgs, convGroupeId, viewer);
+    }
+    if (convDirecteId) {
+      const msgs = await getMessages(convDirecteId);
+      direct = countUnreadMessages(msgs, convDirecteId, viewer);
+    }
+    setUnreadCounts({ groupe, direct });
+  }, [session, convGroupeId, convDirecteId]);
+
+  useEffect(() => {
+    if (!session || !conversationId) return;
+    markConversationAsRead(conversationId, { role: "eleve", eleveId: session.id });
+    void refreshUnreadCounts();
+  }, [session, conversationId, messages, refreshUnreadCounts]);
+
+  useEffect(() => {
+    if (!session) return;
+    void refreshUnreadCounts();
+    const interval = setInterval(() => {
+      void refreshUnreadCounts();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [session, refreshUnreadCounts]);
 
   const titre = convType === "groupe" ? "Groupe classe" : "Messages avec mon maître / ma maîtresse";
 
@@ -185,6 +263,11 @@ function EnfantMessageriePageInner() {
             }`}
           >
             Groupe classe
+            {unreadCounts.groupe > 0 && (
+              <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                {unreadCounts.groupe}
+              </span>
+            )}
           </Link>
           <Link
             href="/enfant/messagerie?type=direct"
@@ -195,6 +278,11 @@ function EnfantMessageriePageInner() {
             }`}
           >
             Avec mon maître / ma maîtresse
+            {unreadCounts.direct > 0 && (
+              <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                {unreadCounts.direct}
+              </span>
+            )}
           </Link>
         </div>
 
@@ -208,9 +296,12 @@ function EnfantMessageriePageInner() {
             elevesById={elevesById}
             onSend={handleSend}
             onSendFile={handleSendFile}
+            onDelete={handleDelete}
             canSendPdf
             onRefresh={handleRefresh}
             titreConversation={titre}
+            pollsByMessageId={pollsByMessageId}
+            onVotePoll={handleVotePoll}
           />
         )}
       </div>

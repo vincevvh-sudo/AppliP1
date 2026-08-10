@@ -108,14 +108,13 @@ body {
   .commentaire-mois-empty {
     display: none !important;
   }
-  /* En impression : masquer les cellules de commentaire vides (pas de boîte vide) */
+  /* En impression : supprimer les cases commentaire vides (ligne par ligne) */
   .comment-cell-empty-print {
-    padding: 0 !important;
-    border: none !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
+    display: none !important;
+  }
+  /* Masquer toute la colonne « Commentaire » si aucun commentaire dans la section */
+  .bulletin-no-comments .comment-col-header {
+    display: none !important;
   }
   /* Rendre les lignes des tableaux plus compactes en impression */
   #bulletin-print-area td,

@@ -88,6 +88,10 @@ function SectionTable({
   showEnfantColumn: boolean;
 }) {
   const isCollapsed = collapsedSections.has(section.id);
+  const sectionHasComments = section.attendus.some((attendu) => {
+    const line = bulletin?.sections[section.id]?.[attendu.id];
+    return (line?.commentaire ?? "").trim() !== "";
+  });
   return (
     <section className="mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
       <button
@@ -109,7 +113,13 @@ function SectionTable({
       </button>
       {!isCollapsed && (
         <div className="overflow-x-auto px-4 pb-4">
-          <table className="w-full border-collapse text-sm">
+          <table
+            className={`w-full border-collapse text-sm ${
+              sectionHasComments
+                ? "bulletin-has-comments"
+                : "bulletin-no-comments"
+            }`}
+          >
             <thead>
               <tr className="border-b border-[#2d4a3e]/20">
                 <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
@@ -123,7 +133,7 @@ function SectionTable({
                 <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
                   Enseignant
                 </th>
-                <th className="pb-2 pl-4 text-left font-medium text-[#2d4a3e] min-w-[200px]">
+                <th className="comment-col-header pb-2 pl-4 text-left font-medium text-[#2d4a3e] min-w-[200px]">
                   Commentaire
                 </th>
               </tr>

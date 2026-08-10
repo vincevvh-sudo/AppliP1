@@ -135,8 +135,21 @@ export default function EnseignantSonsExercicesPage() {
           Exercices
         </h1>
         <p className="mt-2 text-[#2d4a3e]/85">
-          Voyelles, consonnes, les sons et lecture — Phono 1, Phono 2, Phono Image 1 et Sons images. Partage et teste par son.
+          Voyelles, consonnes, les sons, fluence et lecture — Phono, images, partage et test par son.
         </p>
+
+        <section className="mt-10">
+          <Link
+            href="/enseignant/sons/fluence"
+            className="block rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20"
+          >
+            <p className="font-display text-lg text-[#2d4a3e]">Fluence</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">
+              Lecture rapide par numéro (Voyelle 1, Voyelle 2, Voyelle 3…). Teste et partage chaque fluence
+              séparément aux enfants, semaine après semaine.
+            </p>
+          </Link>
+        </section>
 
         {PARTIES_EXERCICES.map((partie) => (
           <section key={partie.id} className="mt-12 first:mt-10">

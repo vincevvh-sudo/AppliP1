@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { getSonById, PARTIES_FORET, getSonsByPartie } from "../../data/sons-data";
-import { getSharedSonsForEleve } from "../../data/sons-partages";
+import { getSharedSonsForEleve, getNiveauxEvalPartagesPourEleve } from "../../data/sons-partages";
 import { getDicteesPartagesPourEleve } from "../../data/dictee-partages";
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE } from "../../data/dictee-syllabes";
+import {
+  getFluenceDisplayLabel,
+  isFluenceNiveauId,
+  sonIdFromFluenceNiveauId,
+} from "../../data/fluence-partage";
 import { getEnfantSession } from "../../../utils/enfant-session";
 
 const IconLeaf = () => (
@@ -19,7 +24,8 @@ const IconLeaf = () => (
 export default function EnfantSonsPage() {
   const [sharedIds, setSharedIds] = useState<string[]>([]);
   const [dicteesPartagees, setDicteesPartagees] = useState<number[]>([]);
-   const [dicteesMotsPartagees, setDicteesMotsPartagees] = useState<number[]>([]);
+  const [dicteesMotsPartagees, setDicteesMotsPartagees] = useState<number[]>([]);
+  const [fluenceSonIds, setFluenceSonIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const session = getEnfantSession();
 
@@ -29,18 +35,25 @@ export default function EnfantSonsPage() {
       getSharedSonsForEleve(session.id),
       getDicteesPartagesPourEleve(session.id),
       getDicteesMotsPartagesPourEleve(session.id as number),
-    ]).then(([ids, dictees, dicteesMots]) => {
+      getNiveauxEvalPartagesPourEleve(session.id),
+    ]).then(([ids, dictees, dicteesMots, niveaux]) => {
       setSharedIds(ids);
       setDicteesPartagees(dictees);
       setDicteesMotsPartagees(dicteesMots);
+      const fluenceIds = niveaux
+        .filter((n) => isFluenceNiveauId(n.niveau_id))
+        .map((n) => sonIdFromFluenceNiveauId(n.niveau_id) ?? n.son_id)
+        .filter((id, i, arr) => !!getSonById(id) && arr.indexOf(id) === i);
+      setFluenceSonIds(fluenceIds);
       setLoading(false);
     });
   }, [session?.id]);
 
   const allSonIds = PARTIES_FORET.flatMap((p) => p.sonIds);
-  const idsToShow = sharedIds.length > 0 ? sharedIds.filter((id) => allSonIds.includes(id)) : allSonIds;
+  // Uniquement les sons explicitement partagés (jamais « tout » par défaut).
+  const idsToShow = sharedIds.filter((id) => allSonIds.includes(id));
 
-  /** Pour une partie avec des sons : liste des sons à afficher (partagés ou tous). */
+  /** Pour une partie avec des sons : uniquement les sons partagés avec cet élève. */
   function getSonsToShowInPartie(partie: (typeof PARTIES_FORET)[0]) {
     if (partie.sonIds.length === 0) return [];
     return getSonsByPartie(partie).filter((s) => idsToShow.includes(s.id));
@@ -85,18 +98,41 @@ export default function EnfantSonsPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12">
-        <h1 className="font-display text-2xl text-white sm:text-3xl">
-          Choisis un son
-        </h1>
-        <p className="mt-2 text-white/95">
-          Clique sur un son pour faire les exercices.
-        </p>
+        <h1 className="font-display text-2xl text-white sm:text-3xl">Choisis un son</h1>
+        <p className="mt-2 text-white/95">Clique sur un son pour faire les exercices.</p>
 
         {loading ? (
           <p className="mt-12 text-center text-[#2d4a3e]/70">Chargement…</p>
         ) : (
           <>
-            {allSonIds.length > 0 && idsToShow.length === 0 ? (
+            {fluenceSonIds.length > 0 && (
+              <section className="mt-10">
+                <h2 className="font-display text-lg text-[#2d4a3e]">Fluence</h2>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">
+                  Lecture rapide partagée par ton maître ou ta maîtresse.
+                </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-4">
+                  {fluenceSonIds.map((id) => {
+                    const son = getSonById(id);
+                    if (!son) return null;
+                    const label = getFluenceDisplayLabel(son);
+                    return (
+                      <Link
+                        key={id}
+                        href={`/enfant/sons/fluence/${id}`}
+                        className="flex min-h-24 min-w-[6rem] flex-col items-center justify-center rounded-2xl bg-white/95 px-4 py-3 shadow-lg transition hover:-translate-y-2 hover:bg-[#a8d5ba]/50 hover:shadow-xl sm:min-w-[8rem]"
+                      >
+                        <span className="text-center font-display text-base font-semibold text-[#2d4a3e] sm:text-lg">
+                          {label}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {allSonIds.length > 0 && idsToShow.length === 0 && fluenceSonIds.length === 0 ? (
               <p className="mt-12 text-center text-[#2d4a3e]/80">
                 Aucun son partagé pour le moment. Demande à ton maître ou ta maîtresse !
               </p>
@@ -131,7 +167,8 @@ export default function EnfantSonsPage() {
                     )}
                     {partie.isEvaluations && (
                       <p className="mt-2 text-sm text-[#2d4a3e]/80">
-                        Les évaluations 1, 2, 3, 4 et 5 sont dans chaque son : ouvre un son ci-dessus puis choisis une évaluation.
+                        Les évaluations 1, 2, 3, 4 et 5 sont dans chaque son : ouvre un son ci-dessus puis choisis une
+                        évaluation.
                       </p>
                     )}
                     {partie.isLecture && (
@@ -151,7 +188,7 @@ export default function EnfantSonsPage() {
             )}
 
             {dicteesPartagees.length > 0 && (
-              <section className={idsToShow.length > 0 ? "mt-12" : "mt-10"}>
+              <section className={idsToShow.length > 0 || fluenceSonIds.length > 0 ? "mt-12" : "mt-10"}>
                 <h2 className="font-display text-lg text-[#2d4a3e]">Dictées</h2>
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">
                   Choisis une dictée : on te dit une syllabe, tu l&apos;écris.
@@ -176,8 +213,7 @@ export default function EnfantSonsPage() {
               <section className="mt-8">
                 <h2 className="font-display text-lg text-[#2d4a3e]">Dictées de mots</h2>
                 <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  Ton maître ou ta maîtresse a partagé des dictées de mots pour t&apos;entraîner à la
-                  maison.
+                  Ton maître ou ta maîtresse a partagé des dictées de mots pour t&apos;entraîner à la maison.
                 </p>
                 <div className="mt-4">
                   <Link

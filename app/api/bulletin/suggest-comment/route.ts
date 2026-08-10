@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getGeminiApiKeyFromEnv } from "../../../lib/gemini-api-key";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
@@ -22,8 +23,7 @@ function getGeminiErrorMessage(status: number, errText: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const rawKey = process.env.GEMINI_API_KEY;
-  const apiKey = rawKey?.trim();
+  const apiKey = getGeminiApiKeyFromEnv();
   if (!apiKey) {
     return NextResponse.json(
       { error: "GEMINI_API_KEY non configurée. Ajoutez-la dans .env.local pour activer les suggestions." },

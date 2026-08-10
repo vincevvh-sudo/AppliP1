@@ -54,15 +54,6 @@ export default function EnseignantSonsEvaluationsPage() {
             </p>
           </Link>
           <Link
-            href="/enseignant/sons/fluence"
-            className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20"
-          >
-            <p className="font-display text-lg text-[#2d4a3e]">Fluence</p>
-            <p className="mt-1 text-sm text-[#2d4a3e]/70">
-              Lecture rapide par son. Choisis une lettre, puis Start / Stop pour chronométrer la lecture.
-            </p>
-          </Link>
-          <Link
             href="/enseignant/sons/evaluation-5"
             className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20"
           >

@@ -2,11 +2,13 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ForetMagiqueBackground } from "../../../../../components/MiyazakiDecor";
 import { renderJeu } from "../../../../../components/JeuxSons";
 import { getSonById, getNiveauById } from "../../../../../data/sons-data";
 import { getEnfantSession } from "../../../../../../utils/enfant-session";
 import { saveResultat } from "../../../../../data/resultats-storage";
+import { getSharedSonsForEleve, getNiveauxEvalPartagesPourEleve } from "../../../../../data/sons-partages";
 
 const IconLeaf = () => (
   <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
@@ -22,10 +24,41 @@ export default function EnfantJeuNiveauPage() {
 
   const son = getSonById(sonId);
   const niveau = son ? getNiveauById(sonId, niveauId) : undefined;
+  const [access, setAccess] = useState<"loading" | "ok" | "denied">("loading");
+
+  useEffect(() => {
+    const session = getEnfantSession();
+    if (!session?.id || !son || !niveau) {
+      setAccess("denied");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      if (niveau.type === "eval") {
+        const pairs = await getNiveauxEvalPartagesPourEleve(session.id);
+        const ok = pairs.some((p) => p.son_id === sonId && p.niveau_id === niveauId);
+        if (!cancelled) setAccess(ok ? "ok" : "denied");
+        return;
+      }
+      const shared = await getSharedSonsForEleve(session.id);
+      if (!cancelled) setAccess(shared.includes(sonId) ? "ok" : "denied");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sonId, niveauId, son, niveau]);
+
+  useEffect(() => {
+    if (access === "denied") router.replace("/enfant/sons");
+  }, [access, router]);
 
   const handleTermine = async (
     reussiOrPoints: boolean | number,
-    detail?: { points: number; pointsMax: number; exercices?: { type: string; titre: string; points: number; pointsMax: number }[] }
+    detail?: {
+      points: number;
+      pointsMax: number;
+      exercices?: { type: string; titre: string; points: number; pointsMax: number }[];
+    }
   ) => {
     const session = getEnfantSession();
     const reussi = typeof reussiOrPoints === "number" ? reussiOrPoints > 0 : Boolean(reussiOrPoints);
@@ -41,7 +74,7 @@ export default function EnfantJeuNiveauPage() {
           detail_exercices: Array.isArray(detail.exercices) ? detail.exercices : undefined,
         });
       } else {
-        const points = typeof reussiOrPoints === "number" ? reussiOrPoints : (reussi ? 1 : 0);
+        const points = typeof reussiOrPoints === "number" ? reussiOrPoints : reussi ? 1 : 0;
         await saveResultat({
           eleve_id: session.id,
           son_id: son.id,
@@ -69,6 +102,17 @@ export default function EnfantJeuNiveauPage() {
           <Link href="/enfant/sons" className="mt-4 inline-block text-[#4a7c5a]">
             ← Retour
           </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (access !== "ok") {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
+          <p className="text-[#2d4a3e]/70">{access === "loading" ? "Chargement…" : "Accès non autorisé…"}</p>
         </div>
       </main>
     );
