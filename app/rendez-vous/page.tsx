@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../components/MiyazakiDecor";
 import { SemainierClasse } from "../components/SemainierClasse";
+import { PartageRendezVousJourForm } from "../components/PartageRendezVousJourForm";
 import { supabase } from "../../utils/supabase";
 
 const IconLeaf = () => (
@@ -155,7 +156,8 @@ export default function RendezVousPage() {
           Rendez-vous parents
         </h2>
         <p className="mt-2 text-center text-[#2d4a3e]/80">
-          Choisis un jour puis définis les créneaux que les familles pourront réserver.
+          1) Choisis un jour · 2) Active les créneaux libres · 3) Envoie-les à toute la classe ou
+          aux enfants concernés.
         </p>
 
         <section className="mt-8 rounded-2xl bg-white/95 p-5 shadow-lg">
@@ -263,6 +265,12 @@ export default function RendezVousPage() {
           )}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         </section>
+
+        {date ? (
+          <div className="mt-6">
+            <PartageRendezVousJourForm jour={date} nbCreneaux={creneaux.length} />
+          </div>
+        ) : null}
       </div>
     </main>
   );

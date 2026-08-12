@@ -7,6 +7,7 @@ import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { SemainierClasse } from "../../components/SemainierClasse";
 import { supabase } from "../../../utils/supabase";
 import { getEnfantSession, type EnfantSession } from "../../../utils/enfant-session";
+import { getJoursRendezVousPartagesPourEleve } from "../../data/rendez-vous-partages";
 
 const IconLeaf = () => (
   <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
@@ -45,34 +46,53 @@ export default function EnfantDatesPage() {
     setLoading(true);
     setError(null);
     try {
+      const joursPartages = await getJoursRendezVousPartagesPourEleve(eleveId);
+      if (joursPartages.length === 0) {
+        setCreneaux([]);
+        setLoading(false);
+        return;
+      }
+
       const today = new Date().toISOString().slice(0, 10);
+      const joursFuturs = joursPartages.filter((j) => j >= today);
+      if (joursFuturs.length === 0) {
+        setCreneaux([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: err } = await supabase
         .from("rendez_vous_creneaux")
         .select("id, jour, start_time, end_time, max_eleves, rendez_vous_reservations ( id, eleve_id )")
-        .gte("jour", today)
+        .in("jour", joursFuturs)
         .order("jour", { ascending: true })
         .order("start_time", { ascending: true });
       if (err) throw err;
 
       const list: CreneauEnfant[] =
-        (data as { id: number; jour: string; start_time: string; end_time: string; max_eleves: number; rendez_vous_reservations?: Array<{ id: number; eleve_id: string | number }> }[] | null)?.map(
-          (row) => {
-            const reservationsArr = Array.isArray(row.rendez_vous_reservations)
-              ? row.rendez_vous_reservations
-              : [];
-            const reservationsCount = reservationsArr.length;
-            const dejaInscrit = reservationsArr.some((r) => String(r.eleve_id) === String(eleveId));
-            return {
-              id: row.id,
-              jour: row.jour,
-              start_time: row.start_time,
-              end_time: row.end_time,
-              max_eleves: row.max_eleves,
-              reservations: reservationsCount,
-              dejaInscrit,
-            };
-          }
-        ) ?? [];
+        (data as {
+          id: number;
+          jour: string;
+          start_time: string;
+          end_time: string;
+          max_eleves: number;
+          rendez_vous_reservations?: Array<{ id: number; eleve_id: string | number }>;
+        }[] | null)?.map((row) => {
+          const reservationsArr = Array.isArray(row.rendez_vous_reservations)
+            ? row.rendez_vous_reservations
+            : [];
+          const reservationsCount = reservationsArr.length;
+          const dejaInscrit = reservationsArr.some((r) => String(r.eleve_id) === String(eleveId));
+          return {
+            id: row.id,
+            jour: row.jour,
+            start_time: row.start_time,
+            end_time: row.end_time,
+            max_eleves: row.max_eleves,
+            reservations: reservationsCount,
+            dejaInscrit,
+          };
+        }) ?? [];
 
       setCreneaux(list);
     } catch {
@@ -174,7 +194,7 @@ export default function EnfantDatesPage() {
                 <p className="text-[#2d4a3e]/70">Chargement…</p>
               ) : creneaux.length === 0 ? (
                 <p className="text-[#2d4a3e]/75">
-                  Il n&apos;y a pas encore de rendez-vous prévus. Reviens voir plus tard.
+                  Ton enseignant ne t&apos;a pas encore proposé de créneau. Reviens voir plus tard.
                 </p>
               ) : (
                 <ul className="space-y-4">
