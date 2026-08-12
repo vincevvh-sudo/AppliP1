@@ -7,9 +7,9 @@ import { FaceSelector } from "../../components/bulletin/FaceSelector";
 import { CommentaireAvecGemini } from "../../components/bulletin/CommentaireAvecGemini";
 import {
   getElevesBulletin,
-  addEleveBulletin,
   updateEleveBulletin,
   removeEleveBulletin,
+  getOrCreateEleveBulletinFromClasse,
   getSections,
   addProgrammationSectionsIfMissing,
   addAttendu,
@@ -228,9 +228,11 @@ export default function BulletinPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sections, setSectionsState] = useState<SectionAttendus[]>([]);
   const [editAttendus, setEditAttendus] = useState(false);
-  const [newPrenom, setNewPrenom] = useState("");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [editingAttendu, setEditingAttendu] = useState<{ sectionId: string; attenduId: string; libelle: string } | null>(null);
+  const [editingAttendu, setEditingAttendu] = useState<{
+    sectionId: string;
+    attenduId: string;
+    libelle: string;
+  } | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set());
   const [supabaseEleves, setSupabaseEleves] = useState<EleveRow[]>([]);
@@ -291,27 +293,14 @@ export default function BulletinPage() {
       .finally(() => setLoadingSynthese(false));
   }, [selectedEleve?.id, selectedEleve?.supabaseEleveId]);
 
-  const handleAddEleve = (e: React.FormEvent) => {
-    e.preventDefault();
-    const prenom = newPrenom.trim();
-    if (!prenom) return;
-    if (photoFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        const eleve = addEleveBulletin(prenom, dataUrl);
-        setEleves(getElevesBulletin());
-        setSelectedId(eleve.id);
-        setNewPrenom("");
-        setPhotoFile(null);
-      };
-      reader.readAsDataURL(photoFile);
-    } else {
-      const eleve = addEleveBulletin(prenom);
-      setEleves(getElevesBulletin());
-      setSelectedId(eleve.id);
-      setNewPrenom("");
-    }
+  const handleSelectClasseEleve = (s: EleveRow) => {
+    const bulletinEleve = getOrCreateEleveBulletinFromClasse({
+      id: s.id,
+      prenom: s.prenom,
+      nom: s.nom,
+    });
+    setEleves(getElevesBulletin());
+    setSelectedId(bulletinEleve.id);
   };
 
   const handleRemoveEleve = (id: string) => {
@@ -324,6 +313,7 @@ export default function BulletinPage() {
   const handlePhotoChange = (id: string, file: File | null) => {
     if (!file) {
       updateEleveBulletin(id, { photoDataUrl: null });
+      setEleves(getElevesBulletin());
     } else {
       const reader = new FileReader();
       reader.onload = () => {
@@ -493,7 +483,7 @@ export default function BulletinPage() {
     const supabaseId = selectedEleve.supabaseEleveId ?? null;
     if (supabaseId == null) {
       alert(
-        "Pour envoyer le bulletin à l'enfant, lie d'abord cet élève à un élève de l'app (menu à côté du prénom dans la liste)."
+        "Cet élève n'est pas lié à la classe. Resélectionne-le dans la liste à gauche."
       );
       return;
     }
@@ -580,113 +570,88 @@ export default function BulletinPage() {
       </header>
 
       <div className="bulletin-layout relative z-10 mx-auto flex max-w-6xl flex-col gap-6 p-5 lg:flex-row lg:gap-8">
-        {/* Liste des élèves */}
+        {/* Liste des élèves de la classe */}
         <aside className="no-print w-full shrink-0 rounded-2xl bg-white/95 p-5 shadow-lg lg:w-72">
           <h2 className="font-display text-lg text-[#2d4a3e]">Élèves</h2>
-          <form onSubmit={handleAddEleve} className="mt-3 flex flex-col gap-2">
-            <input
-              type="text"
-              value={newPrenom}
-              onChange={(e) => setNewPrenom(e.target.value)}
-              placeholder="Prénom"
-              className="rounded-xl border border-[#2d4a3e]/20 px-3 py-2 text-[#2d4a3e]"
-            />
-            <label className="flex items-center gap-2 text-sm text-[#2d4a3e]/80">
-              <span>Photo (optionnel)</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                className="text-sm"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={!newPrenom.trim()}
-              className="rounded-xl bg-[#4a7c5a] px-4 py-2 font-semibold text-white disabled:opacity-50"
-            >
-              Ajouter
-            </button>
-          </form>
-          <ul className="mt-4 space-y-2">
-            {eleves.map((e) => (
-              <li
-                key={e.id}
-                className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
-                  selectedId === e.id
-                    ? "border-[#4a7c5a] bg-[#a8d5ba]/30"
-                    : "border-[#2d4a3e]/10 bg-white/80 hover:bg-[#2d4a3e]/5"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(e.id)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#2d4a3e]/10">
-                    {e.photoDataUrl ? (
-                      <img
-                        src={e.photoDataUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-xl text-[#2d4a3e]/50">
-                        👤
-                      </span>
-                    )}
-                  </div>
-                  <span className="truncate font-medium text-[#2d4a3e]">
-                    {e.prenom}
-                  </span>
-                </button>
-                <select
-                  className="shrink-0 max-w-[120px] rounded border border-[#2d4a3e]/20 bg-white px-1 py-0.5 text-xs text-[#2d4a3e]"
-                  title="Lier à un élève de l'app (pour envoyer le bulletin)"
-                  value={e.supabaseEleveId ?? ""}
-                  onChange={(ev) => {
-                    const v = ev.target.value;
-                    updateEleveBulletin(e.id, {
-                      supabaseEleveId: v === "" ? null : v,
-                    });
-                    setEleves(getElevesBulletin());
-                  }}
-                  onClick={(ev) => ev.stopPropagation()}
-                >
-                  <option value="">Non lié</option>
-                  {supabaseEleves.map((s) => (
-                    <option key={s.id} value={s.id}>
+          <p className="mt-1 text-sm text-[#2d4a3e]/70">
+            Clique sur un prénom pour ouvrir son bulletin.
+          </p>
+          <ul className="mt-4 max-h-[70vh] space-y-2 overflow-y-auto pr-1">
+            {supabaseEleves.map((s) => {
+              const linked = eleves.find((e) => String(e.supabaseEleveId ?? "") === String(s.id));
+              const isSelected = linked != null && selectedId === linked.id;
+              return (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectClasseEleve(s)}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                      isSelected
+                        ? "border-[#4a7c5a] bg-[#a8d5ba]/30"
+                        : "border-[#2d4a3e]/10 bg-white/80 hover:border-[#4a7c5a]/40 hover:bg-[#2d4a3e]/5"
+                    }`}
+                  >
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#2d4a3e]/10">
+                      {linked?.photoDataUrl ? (
+                        <img
+                          src={linked.photoDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-lg text-[#2d4a3e]/50">
+                          {(s.prenom?.[0] ?? "?").toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <span className="min-w-0 flex-1 truncate font-medium text-[#2d4a3e]">
                       {s.prenom} {s.nom}
-                    </option>
-                  ))}
-                </select>
-                <label className="shrink-0 cursor-pointer text-[#2d4a3e]/60 hover:text-[#4a7c5a]" title="Changer la photo">
-                  📷
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {supabaseEleves.length === 0 && (
+            <p className="mt-3 text-sm text-[#2d4a3e]/60">
+              Aucun élève dans la classe. Ajoute-les d&apos;abord dans{" "}
+              <Link href="/enseignant/eleves" className="font-semibold text-[#4a7c5a] underline">
+                Élèves
+              </Link>
+              .
+            </p>
+          )}
+          {selectedEleve && (
+            <div className="mt-4 space-y-2 border-t border-[#2d4a3e]/10 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#2d4a3e]/55">
+                Élève sélectionné
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  className="cursor-pointer rounded-lg border border-[#2d4a3e]/15 bg-white px-2 py-1 text-xs text-[#2d4a3e] hover:bg-[#2d4a3e]/5"
+                  title="Changer la photo"
+                >
+                  📷 Photo
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={(ev) => {
                       const f = ev.target.files?.[0];
-                      if (f) handlePhotoChange(e.id, f);
+                      if (f) handlePhotoChange(selectedEleve.id, f);
                     }}
                   />
                 </label>
                 <button
                   type="button"
-                  onClick={() => handleRemoveEleve(e.id)}
-                  className="shrink-0 text-red-500 hover:text-red-700"
-                  title="Supprimer"
+                  onClick={() => handleRemoveEleve(selectedEleve.id)}
+                  className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700 hover:bg-red-100"
+                  title="Supprimer les données bulletin locales"
                 >
-                  ✕
+                  Réinitialiser bulletin
                 </button>
-              </li>
-            ))}
-          </ul>
-          {eleves.length === 0 && (
-            <p className="mt-3 text-sm text-[#2d4a3e]/60">
-              Ajoutez un élève pour commencer.
-            </p>
+              </div>
+            </div>
           )}
         </aside>
 
@@ -702,7 +667,7 @@ export default function BulletinPage() {
           </div>
           {!selectedEleve ? (
             <div className="flex flex-col items-center justify-center py-16 text-[#2d4a3e]/70">
-              <p className="text-lg">Sélectionnez un élève ou ajoutez-en un.</p>
+              <p className="text-lg">Clique sur un élève à gauche pour ouvrir son bulletin.</p>
             </div>
           ) : (
             <>

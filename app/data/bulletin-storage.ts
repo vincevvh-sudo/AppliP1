@@ -99,16 +99,42 @@ export function setElevesBulletin(eleves: EleveBulletin[]): void {
   saveJson(STORAGE_KEYS.ELEVES, eleves);
 }
 
-export function addEleveBulletin(prenom: string, photoDataUrl?: string | null): EleveBulletin {
+export function addEleveBulletin(
+  prenom: string,
+  photoDataUrl?: string | null,
+  supabaseEleveId?: string | null
+): EleveBulletin {
   const eleves = getElevesBulletin();
   const eleve: EleveBulletin = {
     id: genId(),
     prenom: prenom.trim(),
     photoDataUrl: photoDataUrl ?? null,
+    supabaseEleveId: supabaseEleveId ?? null,
   };
   eleves.push(eleve);
   setElevesBulletin(eleves);
   return eleve;
+}
+
+/** Ouvre / crée le bulletin local lié à un élève de la classe (Supabase). */
+export function getOrCreateEleveBulletinFromClasse(eleve: {
+  id: string | number;
+  prenom: string;
+  nom?: string | null;
+}): EleveBulletin {
+  const supabaseId = String(eleve.id);
+  const eleves = getElevesBulletin();
+  const existing = eleves.find((e) => String(e.supabaseEleveId ?? "") === supabaseId);
+  if (existing) {
+    const label = eleve.nom ? `${eleve.prenom} ${eleve.nom}`.trim() : eleve.prenom;
+    if (existing.prenom !== label) {
+      updateEleveBulletin(existing.id, { prenom: label });
+      return { ...existing, prenom: label };
+    }
+    return existing;
+  }
+  const label = eleve.nom ? `${eleve.prenom} ${eleve.nom}`.trim() : eleve.prenom.trim();
+  return addEleveBulletin(label, null, supabaseId);
 }
 
 export function updateEleveBulletin(
