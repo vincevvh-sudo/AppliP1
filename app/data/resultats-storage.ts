@@ -35,8 +35,15 @@ export async function saveResultat(row: Omit<ResultatRow, "id" | "created_at">):
     payload.detail_exercices = row.detail_exercices;
   }
   const { error } = await supabase.from("exercice_resultats").insert(payload);
-  if (error && process.env.NODE_ENV === "development") {
-    console.warn("[resultats-storage] Erreur sauvegarde:", error.message, "→ Vérifiez que la table exercice_resultats existe avec une colonne detail_exercices (jsonb) et que RLS autorise l'insert.");
+  if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[resultats-storage] Erreur sauvegarde:",
+        error.message,
+        "→ Vérifiez que la table exercice_resultats existe avec une colonne detail_exercices (jsonb) et que RLS autorise l'insert."
+      );
+    }
+    throw new Error(error.message || "Impossible d'enregistrer le résultat.");
   }
 }
 
@@ -69,6 +76,59 @@ function normalizeResultatRow(raw: Record<string, unknown>): ResultatRow {
   };
 }
 
+/** Résultats maths historiques encore stockés dans des tables dédiées (ex. centimetre_metre). */
+async function getLegacyMathsResultats(eleveId?: string | number): Promise<ResultatRow[]> {
+  const extras: ResultatRow[] = [];
+  try {
+    let q = supabase
+      .from("centimetre_metre")
+      .select("eleve_id, points_obtenus, score_sur_10, updated_at");
+    if (eleveId != null) q = q.eq("eleve_id", String(eleveId));
+    const { data, error } = await q;
+    if (!error && data) {
+      for (const row of data as {
+        eleve_id: string;
+        points_obtenus: number;
+        updated_at?: string;
+      }[]) {
+        const points = Number(row.points_obtenus ?? 0);
+        const pointsMax = 20;
+        extras.push({
+          eleve_id: String(row.eleve_id),
+          son_id: "maths-centimetre-metre",
+          niveau_id: "maths-centimetre-metre",
+          points,
+          points_max: pointsMax,
+          reussi: points >= Math.ceil(pointsMax * 0.6),
+          detail_exercices: [
+            {
+              type: "centimetre-metre",
+              titre: "Centimètre ou mètre",
+              points,
+              pointsMax,
+            },
+          ],
+          created_at: row.updated_at,
+        });
+      }
+    }
+  } catch {
+    /* table absente : ignorer */
+  }
+  return extras;
+}
+
+function mergeWithLegacy(main: ResultatRow[], legacy: ResultatRow[]): ResultatRow[] {
+  const has = (eleveId: string, sonId: string) =>
+    main.some((r) => String(r.eleve_id) === eleveId && r.son_id === sonId);
+  const extras = legacy.filter((r) => !has(String(r.eleve_id), r.son_id));
+  return [...extras, ...main].sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  });
+}
+
 export async function getResultatsByEleve(eleveId: string | number): Promise<ResultatRow[]> {
   try {
     const { data, error } = await supabase
@@ -77,7 +137,9 @@ export async function getResultatsByEleve(eleveId: string | number): Promise<Res
       .eq("eleve_id", String(eleveId))
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return ((data ?? []) as Record<string, unknown>[]).map(normalizeResultatRow);
+    const main = ((data ?? []) as Record<string, unknown>[]).map(normalizeResultatRow);
+    const legacy = await getLegacyMathsResultats(eleveId);
+    return mergeWithLegacy(main, legacy);
   } catch {
     return [];
   }
@@ -89,7 +151,9 @@ export async function getResultatsAll(): Promise<ResultatRow[]> {
     .select("id, eleve_id, son_id, niveau_id, points, points_max, reussi, created_at, detail_exercices")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map(normalizeResultatRow);
+  const main = ((data ?? []) as Record<string, unknown>[]).map(normalizeResultatRow);
+  const legacy = await getLegacyMathsResultats();
+  return mergeWithLegacy(main, legacy);
 }
 
 /** Supprime un résultat (pour permettre à l'élève de refaire l'évaluation). */

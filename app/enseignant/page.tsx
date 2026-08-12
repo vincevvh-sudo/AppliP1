@@ -49,7 +49,7 @@ const CARDS = [
   { href: "/enseignant/bulletin", icon: IconClipboard, title: "Bulletin", desc: "Bulletins et comportement (attendus, commentaires)", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/sons", icon: IconBook, title: "Forêt des sons", desc: "Partager les sons et exercices aux enfants", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
   { href: "/enseignant/maths", icon: IconMaths, title: "L'arbre des mathématiques", desc: "Exercices et progressions en mathématiques", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },
-  { href: "/rendez-vous", icon: IconCalendar, title: "Agenda & Rendez-vous", desc: "Créneaux de rendez-vous parents", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
+  { href: "/rendez-vous", icon: IconCalendar, title: "Agenda & Rendez-vous", desc: "Créneaux parents + semainier (leçons, devoirs, à savoir)", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
   { href: "/enseignant/resultats", icon: IconTrophy, title: "Résultats", desc: "Voir les résultats des enfants", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec les élèves", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
 ];

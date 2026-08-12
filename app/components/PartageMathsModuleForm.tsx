@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../utils/supabase";
 import type { EleveRow } from "../../utils/supabase";
 import type { MathsExerciceModuleId } from "../data/maths-exercices-modules";
-import { isExerciceModuleShared } from "../data/maths-partages";
 import {
   getEleveIdsPourModule,
   remplacerPartagesModule,
@@ -69,9 +68,7 @@ export function PartageMathsModuleForm({
           const partages = await getEleveIdsPourModule(mid);
           partages.forEach((id) => merged.add(id));
         }
-        if (merged.size === 0 && list.length > 0 && moduleIds.some((mid) => isExerciceModuleShared(mid))) {
-          list.forEach((e) => merged.add(String(e.id)));
-        }
+        // Ne jamais cocher toute la classe automatiquement (ancien booléen legacy).
         setSelected(merged);
       } catch (e) {
         if (!cancelled) {

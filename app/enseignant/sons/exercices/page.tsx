@@ -10,9 +10,6 @@ import {
   shareToAll,
   unshareFromAll,
   shareToEleves,
-  isEvaluationsSharedToAll,
-  getElevesEvaluationsForSon,
-  setPartageEvaluationsToAll,
 } from "../../../data/sons-partages";
 import { supabase } from "../../../../utils/supabase";
 import type { EleveRow } from "../../../../utils/supabase";
@@ -29,7 +26,6 @@ const PARTIES_EXERCICES = PARTIES_FORET.filter((p) => p.id !== "evaluations");
 export default function EnseignantSonsExercicesPage() {
   const [eleves, setEleves] = useState<EleveRow[]>([]);
   const [partages, setPartages] = useState<Record<string, { all: boolean; eleves: number[] }>>({});
-  const [partagesEval, setPartagesEval] = useState<Record<string, { all: boolean; eleves: number[] }>>({});
   const [loading, setLoading] = useState(true);
 
   const allSonIds = PARTIES_EXERCICES.flatMap((p) => p.sonIds);
@@ -50,19 +46,11 @@ export default function EnseignantSonsExercicesPage() {
   useEffect(() => {
     (async () => {
       const p: Record<string, { all: boolean; eleves: number[] }> = {};
-      const pEval: Record<string, { all: boolean; eleves: number[] }> = {};
       for (const sonId of allSonIds) {
-        const [all, eleves, allEval, elevesEval] = await Promise.all([
-          isSonSharedToAll(sonId),
-          getElevesForSon(sonId),
-          isEvaluationsSharedToAll(sonId),
-          getElevesEvaluationsForSon(sonId),
-        ]);
+        const [all, eleves] = await Promise.all([isSonSharedToAll(sonId), getElevesForSon(sonId)]);
         p[sonId] = { all, eleves };
-        pEval[sonId] = { all: allEval, eleves: elevesEval };
       }
       setPartages(p);
-      setPartagesEval(pEval);
     })();
   }, []);
 
@@ -74,35 +62,12 @@ export default function EnseignantSonsExercicesPage() {
     }));
   };
 
-  const handleUnshareAll = async (sonId: string) => {
-    await unshareFromAll(sonId);
-    setPartages((prev) => ({
-      ...prev,
-      [sonId]: { ...prev[sonId], all: false },
-    }));
-  };
-
   const handleShareToEleves = async (sonId: string, eleveIds: number[]) => {
+    await unshareFromAll(sonId);
     await shareToEleves(sonId, eleveIds);
     setPartages((prev) => ({
       ...prev,
-      [sonId]: { ...prev[sonId], eleves: eleveIds },
-    }));
-  };
-
-  const handleToggleEvaluations = async (sonId: string) => {
-    const current = partagesEval[sonId]?.all ?? false;
-    const next = !current;
-    const result = await setPartageEvaluationsToAll(sonId, next);
-    if (!result.ok) {
-      alert(
-        "Impossible d'enregistrer le partage des évaluations. Avez-vous créé la table dans Supabase ? Exécutez le fichier supabase-sons-partages-evaluations.sql dans le SQL Editor."
-      );
-      return;
-    }
-    setPartagesEval((prev) => ({
-      ...prev,
-      [sonId]: { ...prev[sonId], all: next },
+      [sonId]: { all: false, eleves: eleveIds },
     }));
   };
 
@@ -131,11 +96,14 @@ export default function EnseignantSonsExercicesPage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12">
-        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
-          Exercices
-        </h1>
+        <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">Exercices</h1>
         <p className="mt-2 text-[#2d4a3e]/85">
-          Voyelles, consonnes, les sons, fluence et lecture — Phono, images, partage et test par son.
+          Voyelles, consonnes, les sons, fluence et lecture — Phono, images, partage et test par son. Les
+          évaluations se partagent séparément dans{" "}
+          <Link href="/enseignant/sons/evaluations" className="font-semibold underline">
+            Évaluations
+          </Link>
+          .
         </p>
 
         <section className="mt-10">
@@ -174,18 +142,24 @@ export default function EnseignantSonsExercicesPage() {
                         <p className="font-display text-lg text-[#2d4a3e]">
                           {son.grapheme} — {son.phoneme}
                         </p>
-                        <div className="mt-1 flex gap-2">
+                        <div className="mt-1 flex flex-wrap gap-3">
                           <Link
                             href={`/enseignant/sons/jeu/${son.id}`}
                             className="text-sm font-medium text-[#4a7c5a] hover:underline"
                           >
                             Phono 1, Phono 2, Phono Image 1 et Sons images
                           </Link>
+                          <Link
+                            href={`/enseignant/sons/evaluation/${son.id}`}
+                            className="text-sm font-medium text-[#2d4a3e]/70 hover:underline"
+                          >
+                            Partager les évaluations →
+                          </Link>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm text-[#2d4a3e]/80">Partager à :</label>
+                      <label className="text-sm text-[#2d4a3e]/80">Partager exercices à :</label>
                       {loading ? (
                         <span className="text-sm text-[#2d4a3e]/60">Chargement…</span>
                       ) : (
@@ -205,7 +179,7 @@ export default function EnseignantSonsExercicesPage() {
                             else handleShareToEleves(son.id, [parseInt(v, 10)]);
                           }}
                         >
-                          <option value="">— Choisir —</option>
+                          <option value="">— Pas partagé —</option>
                           <option value="all">Tous les enfants</option>
                           {eleves.map((e) => (
                             <option key={e.id} value={e.id}>
@@ -215,34 +189,13 @@ export default function EnseignantSonsExercicesPage() {
                         </select>
                       )}
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#2d4a3e]/10 pt-3">
-                      <span className="text-sm text-[#2d4a3e]/75">Évaluations (Éval 1 à 4) visibles par les enfants :</span>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleEvaluations(son.id)}
-                        className={`rounded-xl px-3 py-1.5 text-sm font-medium ${
-                          partagesEval[son.id]?.all
-                            ? "bg-[#4a7c5a] text-white"
-                            : "border border-[#2d4a3e]/30 text-[#2d4a3e]"
-                        }`}
-                      >
-                        {partagesEval[son.id]?.all ? "Oui ✓" : "Non"}
-                      </button>
-                      <span className="text-xs text-[#2d4a3e]/60">
-                        {partagesEval[son.id]?.all
-                          ? "Les enfants voient les évaluations pour ce son."
-                          : "Seuls les exercices (Phono, Phono images) sont visibles."}
-                      </span>
-                    </div>
                   </div>
                 ))}
               </div>
             )}
             {partie.isLecture && (
               <>
-                <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                  Exercices de lecture.
-                </p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">Exercices de lecture.</p>
                 <div className="mt-4">
                   <Link
                     href="/enseignant/sons/lecture"

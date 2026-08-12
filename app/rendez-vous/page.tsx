@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../components/MiyazakiDecor";
+import { SemainierClasse } from "../components/SemainierClasse";
 import { supabase } from "../../utils/supabase";
 
 const IconLeaf = () => (
@@ -138,10 +139,21 @@ export default function RendezVousPage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-3xl px-5 py-10 sm:py-14">
+      <div className="relative z-10 mx-auto max-w-5xl px-5 py-10 sm:py-14">
         <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl text-center">
-          Rendez-vous parents
+          Agenda & Rendez-vous
         </h1>
+        <p className="mt-2 text-center text-[#2d4a3e]/80">
+          Créneaux parents ci-dessous, et semainier (leçons / devoirs / à savoir) pour la classe.
+        </p>
+
+        <div className="mt-8">
+          <SemainierClasse mode="edit" />
+        </div>
+
+        <h2 className="mt-12 text-center font-display text-xl text-[#2d4a3e]">
+          Rendez-vous parents
+        </h2>
         <p className="mt-2 text-center text-[#2d4a3e]/80">
           Choisis un jour puis définis les créneaux que les familles pourront réserver.
         </p>

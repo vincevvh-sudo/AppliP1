@@ -57,9 +57,9 @@ function getCategorieFromExerciseType(
 ): BulletinCategorieId | null {
   const t = (type ?? "").toLowerCase();
   // Détaillé (évaluations avec detail_exercices)
-  if (t === "image-deux-mots" || t === "entoure-son" || t === "entoure-lettre" || t === "entoure-lettre-dans-mot" || t === "entoure-syllabe" || t === "phrases-vrai-faux" || t === "fluence-chrono") return "francais-lire";
+  if (t === "image-deux-mots" || t === "entoure-son" || t === "entoure-lettre" || t === "entoure-lettre-dans-mot" || t === "entoure-syllabe" || t === "phrases-vrai-faux" || t === "fluence-chrono" || t === "fluence-maison") return "francais-lire";
   if (t === "ecris-syllabe" || t === "relie-ecritures") return "francais-ecrire";
-  if (t === "euros-monnaie" || t === "jours-semaine" || t === "instruments-mesure") return "maths-grandeur";
+  if (t === "euros-monnaie" || t === "jours-semaine" || t === "instruments-mesure" || t === "centimetre-metre") return "maths-grandeur";
   if (t === "repere-son") return "francais-ecouter";
   if (t === "article-le-la") return "francais-parler";
   // Niveau entier (sans détail) : type de niveau
@@ -98,6 +98,9 @@ function getCategorieFromResultIdentifiers(row: ResultatRow): BulletinCategorieI
   const sonId = (row.son_id ?? "").toLowerCase();
   const niveauId = (row.niveau_id ?? "").toLowerCase();
 
+  // Fluence maison (Forêt → Exercices → Fluence)
+  if (niveauId.endsWith("-fluence")) return "francais-lire";
+
   // Lectures globales (syllabes / mots / janvier)
   if (sonId === "lecture" || niveauId.startsWith("lecture-")) return "francais-lire";
 
@@ -120,6 +123,9 @@ function getCategorieFromResultIdentifiers(row: ResultatRow): BulletinCategorieI
 
   // Maths : instruments de mesure (grandeur)
   if (sonId === "maths-instruments-mesure" || niveauId === "maths-instruments-mesure") return "maths-grandeur";
+
+  // Maths : centimètre ou mètre (grandeur)
+  if (sonId === "maths-centimetre-metre" || niveauId === "maths-centimetre-metre") return "maths-grandeur";
 
   // Français : Parler (grilles poésie / famille ; son_id historique savoir-parler-*)
   if (sonId === "savoir-parler-poesie" || sonId === "savoir-parler-famille") return "francais-parler";

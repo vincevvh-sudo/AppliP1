@@ -75,7 +75,8 @@ export default function EnseignantFluenceTestSonPage() {
         <div className="mt-8">
           <FluenceLectureView
             son={son}
-            intro={`L'élève lit à voix haute. Clique sur Start pour démarrer le chronomètre, puis sur Stop quand il a terminé.`}
+            mode="practice"
+            intro={`Aperçu libre : Start / Stop. Chez l’élève, c’est un chrono de 1 minute : il clique ensuite sur la dernière unité lue ; chaque essai apparaît dans Résultats (essai 1, 2, 3…).`}
           />
         </div>
 

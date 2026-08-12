@@ -177,23 +177,26 @@ export async function setPartageEvalNiveau(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const table = "sons_partages_eval_niveaux";
+    // Toujours repartir de zéro pour ce (son, niveau) : évite les partages « fantômes ».
+    const { error: delError } = await supabase
+      .from(table)
+      .delete()
+      .eq("son_id", sonId)
+      .eq("niveau_id", niveauId);
+    if (delError) return { ok: false, error: delError.message };
+
     if (toAll) {
-      await supabase.from(table).delete().eq("son_id", sonId).eq("niveau_id", niveauId);
       const { error } = await supabase.from(table).upsert(
         [{ son_id: sonId, niveau_id: niveauId, eleve_id: 0 }],
         { onConflict: "son_id,niveau_id,eleve_id" }
       );
       if (error) return { ok: false, error: error.message };
-    } else {
-      await supabase.from(table).delete().eq("son_id", sonId).eq("niveau_id", niveauId).eq("eleve_id", 0);
-      if (eleveIds.length > 0) {
-        const rows = eleveIds.map((id) => ({ son_id: sonId, niveau_id: niveauId, eleve_id: id }));
-        const { error } = await supabase.from(table).upsert(rows, { onConflict: "son_id,niveau_id,eleve_id" });
-        if (error) return { ok: false, error: error.message };
-      } else {
-        await supabase.from(table).delete().eq("son_id", sonId).eq("niveau_id", niveauId).neq("eleve_id", 0);
-      }
+    } else if (eleveIds.length > 0) {
+      const rows = eleveIds.map((id) => ({ son_id: sonId, niveau_id: niveauId, eleve_id: id }));
+      const { error } = await supabase.from(table).upsert(rows, { onConflict: "son_id,niveau_id,eleve_id" });
+      if (error) return { ok: false, error: error.message };
     }
+    // eleveIds vide + toAll false = partage retiré (rien réinséré)
     return { ok: true };
   } catch (e) {
     return { ok: false, error: String(e) };
@@ -224,7 +227,7 @@ export async function getPartageEvalNiveauState(
   }
 }
 
-/** Pour un élève : (son_id, niveau_id) des évaluations partagées (table par niveau). Inclut aussi les sons de l’ancienne table = tous les niveaux eval pour ce son. */
+/** Pour un élève : (son_id, niveau_id) des évaluations partagées (table par niveau uniquement). */
 export async function getNiveauxEvalPartagesPourEleve(eleveId: number | string): Promise<{ son_id: string; niveau_id: string }[]> {
   const result: { son_id: string; niveau_id: string }[] = [];
   try {
@@ -249,17 +252,8 @@ export async function getNiveauxEvalPartagesPourEleve(eleveId: number | string):
         result.push({ son_id: r.son_id, niveau_id: r.niveau_id });
       }
     }
-    const legacySons = await getSonsAvecEvaluationsPartagees(Number.isFinite(eleveIdNumber) ? eleveIdNumber : 0);
-    for (const sonId of legacySons) {
-      for (const num of [1, 2, 3, 4]) {
-        const niveau_id = `${sonId}-eval-${num}`;
-        const key = `${sonId}:${niveau_id}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          result.push({ son_id: sonId, niveau_id });
-        }
-      }
-    }
+    // Ancienne table sons_partages_evaluations (Oui/Non global) volontairement ignorée :
+    // les évals ne sont visibles que via un partage explicite par niveau.
   } catch {
     // table may not exist yet
   }

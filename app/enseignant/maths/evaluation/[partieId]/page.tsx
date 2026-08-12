@@ -94,80 +94,112 @@ export default function EnseignantMathsEvaluationPartiePage() {
         ) : partieId === "grandeur" ? (
           <>
             <p className="mt-2 text-sm text-[#2d4a3e]/75">
-              Même disposition que Traitement de données ou Exercice → Grandeur : d&apos;abord le partage, puis la carte
-              vers la fiche détaillée.
+              Chaque évaluation se partage <strong>séparément</strong> : coche les élèves (ou Tous), puis Enregistrer.
+              Sans enregistrement, les enfants n&apos;y ont pas accès.
             </p>
-            <div className="mt-6">
-              <PartageMathsModuleForm
-                moduleId="centimetre-metre"
-                moduleIdsGroup={["centimetre-metre", "euros-monnaie", "jours-semaine", "instruments-mesure"]}
-                compact
-                titreAide="Même liste d’élèves pour tous les exercices de grandeur. SQL Supabase si besoin."
-              />
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
-              <Link
-                href="/enseignant/maths/centimetre-metre"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Centimètre ou mètre</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  20 questions : choisir mètre ou centimètre pour chaque objet. Cotation sur 20, score sur 10 envoyé à l&apos;enfant.
-                </p>
-              </Link>
-              <Link
-                href="/enseignant/maths/euros-monnaie"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Compter les euros</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  20 questions : pièces 1 € et 2 €, billets 5 € et 10 € — total entre 1 et 20 €.
-                </p>
-              </Link>
-              <Link
-                href="/enseignant/maths/jours-semaine"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Les jours de la semaine</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  7 jours mélangés : numéro de 1 (lundi) à 7 (dimanche). Score sur 7.
-                </p>
-              </Link>
-              <Link
-                href="/enseignant/maths/instruments-mesure"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Les instruments de mesure</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  21 images : type de mesure (temps, masse, longueurs, capacité, prix, température). Score sur 21.
-                </p>
-              </Link>
+            <div className="mt-6 space-y-8">
+              {(
+                [
+                  {
+                    id: "centimetre-metre" as const,
+                    titre: "Centimètre ou mètre",
+                    desc: "20 questions : choisir mètre ou centimètre. Cotation sur 20, score sur 10 pour l'enfant.",
+                    href: "/enseignant/maths/centimetre-metre",
+                  },
+                  {
+                    id: "euros-monnaie" as const,
+                    titre: "Compter les euros",
+                    desc: "20 questions : pièces et billets — total entre 1 et 20 €.",
+                    href: "/enseignant/maths/euros-monnaie",
+                  },
+                  {
+                    id: "jours-semaine" as const,
+                    titre: "Les jours de la semaine",
+                    desc: "7 jours mélangés : numéro de 1 (lundi) à 7 (dimanche).",
+                    href: "/enseignant/maths/jours-semaine",
+                  },
+                  {
+                    id: "instruments-mesure" as const,
+                    titre: "Les instruments de mesure",
+                    desc: "21 images : type de mesure (temps, masse, longueurs…).",
+                    href: "/enseignant/maths/instruments-mesure",
+                  },
+                ] as const
+              ).map((mod) => (
+                <div key={mod.id} className="rounded-2xl bg-white/95 p-5 shadow-lg">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-lg text-[#2d4a3e]">{mod.titre}</p>
+                      <p className="mt-1 text-sm text-[#2d4a3e]/70">{mod.desc}</p>
+                    </div>
+                    <Link
+                      href={mod.href}
+                      className="rounded-xl border border-[#2d4a3e]/30 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#c4a8e8]/20"
+                    >
+                      Ouvrir / Tester
+                    </Link>
+                  </div>
+                  <div className="mt-4">
+                    <PartageMathsModuleForm
+                      moduleId={mod.id}
+                      compact
+                      titreAide="Coche les élèves (ou Tous) puis Enregistrer. Bouton Aucun + Enregistrer = plus aucun accès enfant."
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         ) : partieId === "solide-figure" ? (
           <>
             <p className="mt-2 text-sm text-[#2d4a3e]/75">
-              Évaluations en espace et géométrie.
+              Chaque évaluation se partage séparément : coche les élèves (ou Tous), puis Enregistrer.
             </p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Link
-                href="/enseignant/maths/vocabulaire-spatial"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Vocabulaire spatial</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  14 phrases à coter (1 point chacune). Score sur 10. Les enfants reçoivent leur résultat.
-                </p>
-              </Link>
-              <Link
-                href="/enseignant/maths/solides"
-                className="rounded-2xl bg-white/95 p-6 shadow-lg transition hover:-translate-y-1 hover:bg-[#c4a8e8]/20"
-              >
-                <p className="font-display text-lg text-[#2d4a3e]">Solides</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                  2 parties : relier des objets au bon solide, puis Vrai/Faux. Score sur 10 envoyé à l&apos;enfant.
-                </p>
-              </Link>
+            <div className="mt-6 space-y-8">
+              {(
+                [
+                  {
+                    id: "vocabulaire-spatial" as const,
+                    titre: "Vocabulaire spatial",
+                    desc: "14 phrases à coter. Score sur 10.",
+                    href: "/enseignant/maths/vocabulaire-spatial",
+                  },
+                  {
+                    id: "solides" as const,
+                    titre: "Solides",
+                    desc: "Relier des objets + Vrai/Faux. Score sur 10.",
+                    href: "/enseignant/maths/solides",
+                  },
+                  {
+                    id: "quadrilateres" as const,
+                    titre: "Quadrilatères",
+                    desc: "Carré=1, rectangle=2, triangle=3, disque=4.",
+                    href: "/enseignant/maths/quadrilateres",
+                  },
+                ] as const
+              ).map((mod) => (
+                <div key={mod.id} className="rounded-2xl bg-white/95 p-5 shadow-lg">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-lg text-[#2d4a3e]">{mod.titre}</p>
+                      <p className="mt-1 text-sm text-[#2d4a3e]/70">{mod.desc}</p>
+                    </div>
+                    <Link
+                      href={mod.href}
+                      className="rounded-xl border border-[#2d4a3e]/30 px-4 py-2 text-sm font-medium text-[#2d4a3e] hover:bg-[#c4a8e8]/20"
+                    >
+                      Ouvrir / Tester
+                    </Link>
+                  </div>
+                  <div className="mt-4">
+                    <PartageMathsModuleForm
+                      moduleId={mod.id}
+                      compact
+                      titreAide="Coche les élèves (ou Tous) puis Enregistrer. Aucun + Enregistrer = plus d'accès enfant."
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         ) : (

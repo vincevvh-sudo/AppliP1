@@ -1,12 +1,15 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
-import { FluenceLectureView } from "../../../../components/FluenceLectureView";
+import { FluenceLectureView, type FluenceEssaiResult } from "../../../../components/FluenceLectureView";
 import { EvalNiveauAccessGate } from "../../../../components/EvalNiveauAccessGate";
 import { getSonById } from "../../../../data/sons-data";
 import { fluenceNiveauId, getFluenceDisplayLabel } from "../../../../data/fluence-partage";
+import { getEnfantSession } from "../../../../../utils/enfant-session";
+import { getResultatsByEleve, saveResultat } from "../../../../data/resultats-storage";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -18,6 +21,60 @@ function EnfantFluenceSonInner() {
   const params = useParams();
   const sonId = params.sonId as string;
   const son = getSonById(sonId);
+  const [meilleurScore, setMeilleurScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!son) return;
+    const session = getEnfantSession();
+    if (!session?.id) return;
+    let cancelled = false;
+    const niveauId = fluenceNiveauId(son.id);
+    getResultatsByEleve(session.id)
+      .then((rows) => {
+        if (cancelled) return;
+        const fluenceRows = rows.filter((r) => r.son_id === son.id && r.niveau_id === niveauId);
+        if (fluenceRows.length === 0) {
+          setMeilleurScore(null);
+          return;
+        }
+        setMeilleurScore(Math.max(...fluenceRows.map((r) => r.points)));
+      })
+      .catch(() => {
+        if (!cancelled) setMeilleurScore(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [son]);
+
+  const handleEssaiTermine = useCallback(
+    async (result: FluenceEssaiResult) => {
+      if (!son) return;
+      const session = getEnfantSession();
+      if (!session?.id) {
+        throw new Error("Session élève introuvable. Reconnecte-toi.");
+      }
+      await saveResultat({
+        eleve_id: String(session.id),
+        son_id: son.id,
+        niveau_id: fluenceNiveauId(son.id),
+        points: result.points,
+        points_max: result.pointsMax,
+        reussi: true,
+        detail_exercices: [
+          {
+            type: "fluence-maison",
+            titre: `Fluence 1 min — ${getFluenceDisplayLabel(son)}`,
+            points: result.points,
+            pointsMax: result.pointsMax,
+            duree_secondes: result.dureeSecondes,
+          },
+        ],
+      });
+      setMeilleurScore((prev) => (prev == null ? result.points : Math.max(prev, result.points)));
+    },
+    [son]
+  );
 
   if (!son) {
     return (
@@ -60,7 +117,12 @@ function EnfantFluenceSonInner() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <FluenceLectureView son={son} />
+        <FluenceLectureView
+          son={son}
+          mode="record"
+          meilleurScore={meilleurScore}
+          onEssaiTermine={handleEssaiTermine}
+        />
         <div className="mt-12 text-center">
           <Link
             href="/enfant/sons"

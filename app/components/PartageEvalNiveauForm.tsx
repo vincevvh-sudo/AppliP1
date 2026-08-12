@@ -20,7 +20,7 @@ type Props = {
 export function PartageEvalNiveauForm({ sonId, niveauId, titre, description }: Props) {
   const [eleves, setEleves] = useState<EleveRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [partagerTous, setPartagerTous] = useState(true);
+  const [partagerTous, setPartagerTous] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
@@ -107,6 +107,20 @@ export function PartageEvalNiveauForm({ sonId, niveauId, titre, description }: P
     }
   };
 
+  const handleRetirer = async () => {
+    setSaving(true);
+    setMessage(null);
+    const { ok, error } = await setPartageEvalNiveau(sonId, niveauId, false, []);
+    setSaving(false);
+    if (ok) {
+      setPartagerTous(false);
+      setSelected(new Set());
+      setMessage({ type: "ok", text: "Partage retiré : les enfants n'y ont plus accès." });
+    } else {
+      setMessage({ type: "error", text: error ?? "Erreur lors du retrait du partage." });
+    }
+  };
+
   return (
     <div className="mt-8 rounded-2xl border-2 border-[#4a7c5a]/35 bg-[#f0f7f2]/90 p-5 shadow-md">
       <h2 className="font-display text-lg text-[#2d4a3e]">Partager aux élèves</h2>
@@ -177,14 +191,24 @@ export function PartageEvalNiveauForm({ sonId, niveauId, titre, description }: P
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-5 rounded-xl bg-[#4a7c5a] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d6b4d] disabled:opacity-60"
-          >
-            {saving ? "Enregistrement…" : "Enregistrer le partage"}
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl bg-[#4a7c5a] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d6b4d] disabled:opacity-60"
+            >
+              {saving ? "Enregistrement…" : "Enregistrer le partage"}
+            </button>
+            <button
+              type="button"
+              onClick={handleRetirer}
+              disabled={saving}
+              className="rounded-xl border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-800 transition hover:bg-red-100 disabled:opacity-60"
+            >
+              Retirer le partage
+            </button>
+          </div>
 
           {message && (
             <p

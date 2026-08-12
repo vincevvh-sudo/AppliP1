@@ -600,21 +600,24 @@ export function setExerciceModuleEleveIds(moduleId: MathsExerciceModuleId, eleve
   save(state);
 }
 
-/** Pour l'enfant : ids des modules d'exercices accessibles (legacy : booléen seul = toute la classe). */
+/** Pour l'enfant : ids des modules d'exercices accessibles (legacy booléen — déprécié). */
 export function getExercicesModulesPartages(): MathsExerciceModuleId[] {
   const state = load();
-  return MATHS_EXERCICES_MODULES.filter((m) => state.exercicesModules?.[m.id]).map((m) => m.id);
+  return MATHS_EXERCICES_MODULES.filter((m) => {
+    const list = state.exercicesModulesEleves?.[m.id];
+    return Array.isArray(list) && list.length > 0;
+  }).map((m) => m.id);
 }
 
-/** Pour l'enfant : modules accessibles pour cet élève (liste par élève ou legacy « toute la classe »). */
+/**
+ * Pour l'enfant : modules accessibles pour cet élève.
+ * Uniquement via une liste d’élèves explicite — plus jamais « toute la classe » via le vieux booléen.
+ */
 export function getExercicesModulesPartagesPourEleve(eleveId: string | number): MathsExerciceModuleId[] {
   const eid = String(eleveId);
   const state = load();
   return MATHS_EXERCICES_MODULES.filter((m) => {
     const list = state.exercicesModulesEleves?.[m.id];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.includes(eid);
-    }
-    return Boolean(state.exercicesModules?.[m.id]);
+    return Array.isArray(list) && list.length > 0 && list.includes(eid);
   }).map((m) => m.id);
 }

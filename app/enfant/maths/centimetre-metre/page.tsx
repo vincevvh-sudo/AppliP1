@@ -12,6 +12,7 @@ import {
   type Unite,
 } from "../../../data/centimetre-metre-data";
 import { saveCentimetreMetreResult } from "../../../data/centimetre-metre-storage";
+import { saveResultat } from "../../../data/resultats-storage";
 import { moduleEstAccessiblePourEleve } from "../../../data/maths-modules-partages-storage";
 
 const IconLeaf = () => (
@@ -65,7 +66,26 @@ export default function EnfantCentimetreMetrePage() {
     setFinished(true);
     setSaving(true);
     setSaveError(null);
-    saveCentimetreMetreResult(session.id, correct)
+    const total = QUESTIONS_CENTIMETRE_METRE.length;
+    Promise.all([
+      saveCentimetreMetreResult(session.id, correct),
+      saveResultat({
+        eleve_id: String(session.id),
+        son_id: "maths-centimetre-metre",
+        niveau_id: "maths-centimetre-metre",
+        points: correct,
+        points_max: total,
+        reussi: correct >= Math.ceil(total * 0.6),
+        detail_exercices: [
+          {
+            type: "centimetre-metre",
+            titre: TITRE_CENTIMETRE_METRE,
+            points: correct,
+            pointsMax: total,
+          },
+        ],
+      }),
+    ])
       .then(() => {
         setResultSaved(true);
         setSaving(false);

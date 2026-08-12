@@ -167,8 +167,8 @@ export default function EnfantSonsPage() {
                     )}
                     {partie.isEvaluations && (
                       <p className="mt-2 text-sm text-[#2d4a3e]/80">
-                        Les évaluations 1, 2, 3, 4 et 5 sont dans chaque son : ouvre un son ci-dessus puis choisis une
-                        évaluation.
+                        Les évaluations n&apos;apparaissent que si ton maître ou ta maîtresse les a partagées (espace
+                        Évaluations).
                       </p>
                     )}
                     {partie.isLecture && (

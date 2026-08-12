@@ -104,9 +104,11 @@ export default function EnfantEvaluationsPage() {
           });
           continue;
         }
+        // Fluence = exercice partagé, pas une évaluation ici
+        if (typeof p.niveau_id === "string" && p.niveau_id.endsWith("-fluence")) continue;
         const son = getSonById(p.son_id);
         const niveau = son ? getNiveauById(p.son_id, p.niveau_id) : undefined;
-        if (son && niveau) {
+        if (son && niveau && niveau.type === "eval") {
           francais.push({
             son_id: p.son_id,
             niveau_id: p.niveau_id,

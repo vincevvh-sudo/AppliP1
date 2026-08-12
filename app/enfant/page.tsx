@@ -48,20 +48,13 @@ const IconMessage = () => (
   </svg>
 );
 
-const IconLalilo = () => (
-  <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h10M7 11h10M7 15h6M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" />
-  </svg>
-);
-
 const CARDS = [
   { href: "/enfant/evaluations", icon: IconEvaluations, title: "Évaluations", desc: "Français, mathématiques et éveil — les évals partagées par ton maître", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
   { href: "/enfant/resultats", icon: IconResult, title: "Mes résultats", desc: "Voir mes étoiles et mes progrès", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
-  { href: "/enfant/dates", icon: IconCalendar, title: "Les dates", desc: "Voir quand il y a école et les rendez-vous", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
+  { href: "/enfant/dates", icon: IconCalendar, title: "Rendez-vous", desc: "Voir quand il y a école et les rendez-vous", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
   { href: "/enfant/sons", icon: IconExercise, title: "Forêt des sons", desc: "Exercices de lecture et de sons", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
   { href: "/enfant/maths", icon: IconMaths, title: "L'arbre des mathématiques", desc: "Exercices de maths (nombres, grandeur…)", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },
   { href: "/enfant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec la classe et mon maître", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
-  { href: "https://student.lalilo.com/#/class/952786", icon: IconLalilo, title: "Lalilo", desc: "Aller sur Lalilo (site internet)", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
 ];
 
 export default function EnfantPage() {
