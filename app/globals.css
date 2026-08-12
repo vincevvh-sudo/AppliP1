@@ -51,8 +51,17 @@ body {
   animation: shake 0.3s ease-in-out;
 }
 
-/* Bulletin : impression / PDF */
+.print-only {
+  display: none;
+}
+
+/* Bulletin : impression / PDF — compact pour limiter le nombre de pages */
 @media print {
+  @page {
+    size: A4;
+    margin: 8mm 10mm;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -60,72 +69,105 @@ body {
     display: block !important;
   }
   body {
-    background: #fff;
+    background: #fff !important;
   }
   main {
-    background: none;
+    background: none !important;
   }
   .bulletin-layout {
     max-width: none;
     width: 100%;
-    padding: 0;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
   }
-  /* Conteneur flex du bulletin : une seule colonne en impression */
+
   #bulletin-print-area {
-    box-shadow: none;
-    border-radius: 0;
-    padding: 0.5rem;
-    max-width: 100%;
-    width: 100%;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: #fff !important;
   }
-  #bulletin-print-area section {
-    break-inside: avoid;
-    page-break-inside: avoid;
+
+  .bulletin-print-header {
+    margin: 0 0 0.35rem 0 !important;
+    padding: 0 !important;
+    line-height: 1.2;
   }
+  .bulletin-print-header p {
+    margin: 0 !important;
+  }
+
+  .bulletin-synthese {
+    margin-bottom: 0.4rem !important;
+    border: 1px solid #ccc !important;
+  }
+
+  .print-month-page {
+    break-after: auto;
+    page-break-after: auto;
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0 !important;
+  }
+
+  .bulletin-month-title {
+    font-size: 0.95rem !important;
+    margin: 0.35rem 0 0.2rem 0 !important;
+    padding: 0 !important;
+    font-weight: 700;
+  }
+
+  .bulletin-subject-block {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ne pas forcer une page par section (évite 6+ pages) */
+  #bulletin-print-area section.bulletin-section {
+    break-inside: auto;
+    page-break-inside: auto;
+    margin: 0.15rem 0 !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
   #bulletin-print-area table {
-    font-size: 0.6rem;
+    font-size: 0.55rem !important;
     width: 100%;
+    border-collapse: collapse;
   }
+
+  #bulletin-print-area td,
+  #bulletin-print-area th {
+    padding-top: 0.05rem !important;
+    padding-bottom: 0.05rem !important;
+    padding-left: 0.15rem !important;
+    padding-right: 0.15rem !important;
+    line-height: 1.15 !important;
+  }
+
   #bulletin-print-area textarea {
     border: 1px solid #ccc;
     background: #fff;
-    min-height: 2.5em;
+    min-height: 1.5em;
   }
-}
 
-.print-only {
-  display: none;
-}
-
-@media print {
-  .print-month-page {
-    /* On évite de forcer un saut de page après chaque mois pour
-       pouvoir mettre plusieurs mois sur une même feuille si la place le permet. */
-    break-after: auto;
-    page-break-after: auto;
-  }
-  /* Ne jamais imprimer le bloc "Commentaire du mois" quand il est vide */
   .commentaire-mois-empty {
     display: none !important;
   }
-  /* En impression : supprimer les cases commentaire vides (ligne par ligne) */
   .comment-cell-empty-print {
     display: none !important;
   }
-  /* Masquer toute la colonne « Commentaire » si aucun commentaire dans la section */
   .bulletin-no-comments .comment-col-header {
     display: none !important;
   }
-  /* Rendre les lignes des tableaux plus compactes en impression */
-  #bulletin-print-area td,
-  #bulletin-print-area th {
-    padding-top: 0.1rem !important;
-    padding-bottom: 0.1rem !important;
-  }
-  /* Réduire encore la taille des visages en mode impression */
   .bulletin-face-selector button {
-    height: 1.1rem !important;
-    width: 1.1rem !important;
-    font-size: 0.8rem !important;
+    height: 0.95rem !important;
+    width: 0.95rem !important;
+    font-size: 0.7rem !important;
   }
 }

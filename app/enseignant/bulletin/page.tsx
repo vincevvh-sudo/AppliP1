@@ -66,6 +66,8 @@ function SectionTable({
   handleSetEvaluation,
   handleSetCommentaire,
   showEnfantColumn,
+  /** Titre court pour l’écran / l’impression (évite « mois — matière — sous-partie » en double). */
+  titleOverride,
 }: {
   section: SectionAttendus;
   bulletin: ReturnType<typeof getBulletinEleve> | null;
@@ -86,17 +88,19 @@ function SectionTable({
     commentaire: string
   ) => void;
   showEnfantColumn: boolean;
+  titleOverride?: string;
 }) {
   const isCollapsed = collapsedSections.has(section.id);
+  const displayTitle = titleOverride ?? section.titre;
   const sectionHasComments = section.attendus.some((attendu) => {
     const line = bulletin?.sections[section.id]?.[attendu.id];
     return (line?.commentaire ?? "").trim() !== "";
   });
   return (
-    <section className="mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
+    <section className="bulletin-section mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
       <button
         type="button"
-        className="flex w-full items-center justify-between px-4 py-3 text-left font-display text-lg text-[#2d4a3e] hover:bg-[#2d4a3e]/5 transition print:cursor-default"
+        className="flex w-full items-center justify-between px-4 py-3 text-left font-display text-lg text-[#2d4a3e] hover:bg-[#2d4a3e]/5 transition print:cursor-default print:px-1 print:py-0.5 print:text-sm"
         onClick={() =>
           setCollapsedSections((prev) => {
             const next = new Set(prev);
@@ -106,8 +110,8 @@ function SectionTable({
           })
         }
       >
-        <span>{section.titre}</span>
-        <span className="text-[#2d4a3e]/60">
+        <span>{displayTitle}</span>
+        <span className="text-[#2d4a3e]/60 no-print">
           {isCollapsed ? "▶" : "▼"} {section.attendus.length} attendu(s)
         </span>
       </button>
@@ -375,8 +379,11 @@ export default function BulletinPage() {
   const handlePrint = () => {
     if (!selectedEleve) return;
     setCollapsedSections(new Set());
+    const prevTitle = document.title;
+    document.title = `Bulletin — ${selectedEleve.prenom}`;
     setTimeout(() => {
       window.print();
+      document.title = prevTitle;
     }, 400);
   };
 
@@ -661,9 +668,12 @@ export default function BulletinPage() {
           className="min-w-0 flex-1 rounded-2xl bg-white/95 p-6 shadow-lg"
           data-print-month={printMonthId ?? ""}
         >
-          {/* En-tête d'impression (première page uniquement, car placé au début du flux) */}
-          <div className="print-only mb-4">
-            <h1 className="font-display text-xl text-[#2d4a3e]">M. Vincent</h1>
+          {/* En-tête d'impression compact */}
+          <div className="print-only bulletin-print-header">
+            <p className="font-display text-base font-semibold text-[#2d4a3e]">M. Vincent</p>
+            {selectedEleve ? (
+              <p className="text-sm text-[#2d4a3e]">{selectedEleve.prenom}</p>
+            ) : null}
           </div>
           {!selectedEleve ? (
             <div className="flex flex-col items-center justify-center py-16 text-[#2d4a3e]/70">
@@ -713,8 +723,8 @@ export default function BulletinPage() {
                 </button>
               </div>
 
-              {/* En-tête : photo + prénom */}
-              <div className="mb-6 flex flex-wrap items-center gap-4 border-b border-[#2d4a3e]/10 pb-4">
+              {/* En-tête écran : photo + prénom */}
+              <div className="no-print mb-6 flex flex-wrap items-center gap-4 border-b border-[#2d4a3e]/10 pb-4">
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-[#2d4a3e]/20 bg-[#2d4a3e]/5">
                   {selectedEleve.photoDataUrl ? (
                     <img
@@ -736,11 +746,11 @@ export default function BulletinPage() {
                 </div>
               </div>
 
-              {/* Synthèse des évaluations (points par partie et par période) */}
+              {/* Synthèse des évaluations */}
               {selectedEleve.supabaseEleveId != null && (
-                <section className="mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
-                  <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e]">
-                    Synthèse des évaluations (application)
+                <section className="bulletin-synthese mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
+                  <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
+                    Synthèse des évaluations
                   </h2>
                   {loadingSynthese ? (
                     <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
@@ -969,7 +979,7 @@ export default function BulletinPage() {
                     key={month.id}
                     className="mb-10 space-y-6 print-month-page"
                   >
-                    <h2 className="font-display text-xl text-[#2d4a3e]">
+                    <h2 className="bulletin-month-title font-display text-xl text-[#2d4a3e]">
                       {month.label}
                     </h2>
 
@@ -977,6 +987,7 @@ export default function BulletinPage() {
                     {sectionComportement && (
                       <SectionTable
                         section={sectionComportement}
+                        titleOverride="Comportement"
                         bulletin={bulletin}
                         selectedEleve={selectedEleve}
                         collapsedSections={collapsedSections}
@@ -987,37 +998,32 @@ export default function BulletinPage() {
                       />
                     )}
 
-                    {/* 7 grandes parties par mois */}
+                    {/* Matières : un seul titre court (pas de doublon mois / sous-partie) */}
                     {month.subjects.map((subject) => (
-                      <div key={subject.id} className="space-y-3">
-                        <h3 className="font-display text-lg text-[#2d4a3e]">
-                          {subject.label}
-                        </h3>
+                      <div key={subject.id} className="bulletin-subject-block space-y-3">
                         {"subparts" in subject && subject.subparts ? (
                           <div className="space-y-3">
                             {subject.subparts.map((sub) =>
                               sub.section ? (
-                                <div key={sub.id}>
-                                  <h4 className="text-sm font-semibold text-[#2d4a3e]/80">
-                                    {sub.label}
-                                  </h4>
-                                  <SectionTable
-                                    section={sub.section}
-                                    bulletin={bulletin}
-                                    selectedEleve={selectedEleve}
-                                    collapsedSections={collapsedSections}
-                                    setCollapsedSections={setCollapsedSections}
-                                    handleSetEvaluation={handleSetEvaluation}
-                                    handleSetCommentaire={handleSetCommentaire}
-                                    showEnfantColumn={false}
-                                  />
-                                </div>
+                                <SectionTable
+                                  key={sub.id}
+                                  section={sub.section}
+                                  titleOverride={`${subject.label} — ${sub.label}`}
+                                  bulletin={bulletin}
+                                  selectedEleve={selectedEleve}
+                                  collapsedSections={collapsedSections}
+                                  setCollapsedSections={setCollapsedSections}
+                                  handleSetEvaluation={handleSetEvaluation}
+                                  handleSetCommentaire={handleSetCommentaire}
+                                  showEnfantColumn={false}
+                                />
                               ) : null
                             )}
                           </div>
                         ) : subject.section ? (
                           <SectionTable
                             section={subject.section}
+                            titleOverride={subject.label}
                             bulletin={bulletin}
                             selectedEleve={selectedEleve}
                             collapsedSections={collapsedSections}
@@ -1090,8 +1096,11 @@ export default function BulletinPage() {
                         onClick={() => {
                           setCollapsedSections(new Set());
                           setPrintMonthId(month.id);
+                          const prevTitle = document.title;
+                          document.title = `Bulletin — ${selectedEleve.prenom} — ${month.label}`;
                           setTimeout(() => {
                             window.print();
+                            document.title = prevTitle;
                           }, 300);
                         }}
                         className="rounded-xl border border-[#2d4a3e]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[#2d4a3e] shadow-sm transition hover:bg-[#2d4a3e]/5"
@@ -1167,11 +1176,9 @@ export default function BulletinPage() {
                     };
                     return (
                       <div key={month.id} className="print-month-page">
-                        <h3 className="mb-2 font-display text-lg text-[#2d4a3e]">
-                          {month.label}
-                        </h3>
                         <SectionTable
                           section={section}
+                          titleOverride={month.label}
                           bulletin={bulletin}
                           selectedEleve={selectedEleve}
                           collapsedSections={collapsedSections}
