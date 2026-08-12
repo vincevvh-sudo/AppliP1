@@ -7,7 +7,14 @@
 import { getGeminiApiKeyFromEnv } from "./gemini-api-key";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
+/** Pro d’abord (abonnement / facturation AI Studio), Flash en secours. */
+const GEMINI_MODELS = [
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-pro",
+  "gemini-1.5-flash",
+] as const;
 
 export function getGeminiErrorMessage(status: number, errText: string): string {
   if (status === 400) return "Requête invalide. Vérifiez que la clé API Gemini est correcte.";
