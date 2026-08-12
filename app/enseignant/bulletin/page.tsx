@@ -1042,15 +1042,15 @@ export default function BulletinPage() {
                         <label className="mb-2 block font-display text-base text-[#2d4a3e]">
                           Commentaire du mois — {month.label}
                         </label>
-                        <textarea
-                          className="min-h-[120px] w-full rounded-xl border border-[#2d4a3e]/20 px-3 py-2 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50"
-                          placeholder="Commentaire global pour ce mois…"
+                        <CommentaireAvecGemini
+                          variant="month"
+                          libelle={`Commentaire du mois — ${month.label}`}
                           value={commentaireMoisValue}
-                          onChange={(e) =>
+                          onChange={(c) =>
                             handleSetSectionComment(
                               selectedEleve.id,
                               monthCommentSectionId,
-                              e.target.value
+                              c
                             )
                           }
                         />

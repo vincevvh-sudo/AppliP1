@@ -68,16 +68,16 @@ function extractText(data: {
   return { text: fallback, finishReason: candidate?.finishReason };
 }
 
-/** Nettoie la réponse modèle : guillemets, espaces, force une phrase complète si possible. */
-export function cleanBulletinPhrase(raw: string): string {
+/** Nettoie la réponse modèle : guillemets, espaces ; optionnellement une seule phrase. */
+export function cleanBulletinPhrase(raw: string, style: "attendu" | "mois" = "attendu"): string {
   let t = raw.trim();
   t = t.replace(/^["«»']+|["«»']+$/g, "").trim();
-  // Enlever préambules du type "Voici une reformulation :"
   t = t.replace(/^(voici|suggestion|reformulation|commentaire)\s*[:：]\s*/i, "").trim();
   t = t.replace(/\s+/g, " ");
-  // Une seule phrase si le modèle en a mis plusieurs
-  const firstSentence = t.match(/^[\s\S]+?[.!?…](?=\s|$)/);
-  if (firstSentence) t = firstSentence[0].trim();
+  if (style === "attendu") {
+    const firstSentence = t.match(/^[\s\S]+?[.!?…](?=\s|$)/);
+    if (firstSentence) t = firstSentence[0].trim();
+  }
   return t;
 }
 
@@ -98,7 +98,11 @@ type GenerateResult =
   | { ok: true; text: string }
   | { ok: false; error: string; status: number };
 
-export async function generateBulletinComment(prompt: string): Promise<GenerateResult> {
+export async function generateBulletinComment(
+  prompt: string,
+  options?: { style?: "attendu" | "mois" }
+): Promise<GenerateResult> {
+  const style = options?.style ?? "attendu";
   const apiKey = getGeminiApiKeyFromEnv();
   if (!apiKey) {
     return {
@@ -109,12 +113,13 @@ export async function generateBulletinComment(prompt: string): Promise<GenerateR
   }
 
   const key = apiKey.replace(/^["']|["']$/g, "").trim();
+  const maxTokens = style === "mois" ? 2048 : 1024;
   // maxOutputTokens élevé : Gemini 2.5 réserve une partie au thinking.
   // thinkingBudget: 0 désactive le thinking quand le modèle le permet.
   const geminiBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
-      maxOutputTokens: 1024,
+      maxOutputTokens: maxTokens,
       temperature: 0.45,
       thinkingConfig: { thinkingBudget: 0 },
     },
@@ -124,7 +129,7 @@ export async function generateBulletinComment(prompt: string): Promise<GenerateR
   const geminiBodyLegacy = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
-      maxOutputTokens: 512,
+      maxOutputTokens: style === "mois" ? 1024 : 512,
       temperature: 0.45,
     },
   });
@@ -142,7 +147,6 @@ export async function generateBulletinComment(prompt: string): Promise<GenerateR
         if (!res.ok) {
           const errText = await res.text();
           lastError = getGeminiErrorMessage(res.status, errText);
-          // thinkingConfig non supporté → essayer le body legacy
           if (
             body === geminiBody &&
             (res.status === 400 || errText.toLowerCase().includes("thinking"))
@@ -150,39 +154,38 @@ export async function generateBulletinComment(prompt: string): Promise<GenerateR
             continue;
           }
           if (res.status === 404 || errText.includes("not found") || errText.includes("Invalid model")) {
-            break; // prochain modèle
+            break;
           }
           return { ok: false, status: 502, error: lastError };
         }
 
         const data = (await res.json()) as Parameters<typeof extractText>[0];
         let { text } = extractText(data);
-        text = cleanBulletinPhrase(text);
+        text = cleanBulletinPhrase(text, style);
 
         if (!text) {
           lastError = "Réponse vide de Gemini.";
           continue;
         }
 
-        // Si coupé (MAX_TOKENS / phrase incomplète), un second essai avec body legacy + prompt rappel
         if (looksTruncated(text)) {
           const retryPrompt = `${prompt}
 
-IMPORTANT : ta réponse précédente était incomplète (« ${text} »). Réécris UNE phrase COMPLÈTE qui se termine par un point.`;
+IMPORTANT : ta réponse précédente était incomplète (« ${text} »). Réécris un texte COMPLET qui se termine par un point.`;
           const retryRes = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{ parts: [{ text: retryPrompt }] }],
               generationConfig: {
-                maxOutputTokens: 1024,
+                maxOutputTokens: maxTokens,
                 temperature: 0.35,
               },
             }),
           });
           if (retryRes.ok) {
             const retryData = (await retryRes.json()) as Parameters<typeof extractText>[0];
-            const retryText = cleanBulletinPhrase(extractText(retryData).text);
+            const retryText = cleanBulletinPhrase(extractText(retryData).text, style);
             if (retryText && !looksTruncated(retryText)) {
               return { ok: true, text: retryText };
             }

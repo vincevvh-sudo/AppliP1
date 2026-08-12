@@ -39,18 +39,32 @@ interface SpeechRecognitionAlternative {
 }
 
 type Props = {
+  /** Contexte (attendu ou libellé du mois). */
   libelle: string;
-  niveauEnseignant: NiveauAcquisition;
+  niveauEnseignant?: NiveauAcquisition;
   value: string;
   onChange: (commentaire: string) => void;
+  /**
+   * line = commentaire d’un attendu (une phrase + bouton Suggérer).
+   * month = commentaire global du mois (micro + reformuler, texte plus long).
+   */
+  variant?: "line" | "month";
+  rows?: number;
+  placeholder?: string;
+  className?: string;
 };
 
 export function CommentaireAvecGemini({
   libelle,
-  niveauEnseignant,
+  niveauEnseignant = null,
   value,
   onChange,
+  variant = "line",
+  rows,
+  placeholder,
+  className,
 }: Props) {
+  const isMonth = variant === "month";
   const [loading, setLoading] = useState(false);
   const [loadingReformulate, setLoadingReformulate] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +135,7 @@ export function CommentaireAvecGemini({
         body: JSON.stringify({
           libelle,
           niveau: niveauEnseignant ?? "non_acquis",
+          style: isMonth ? "mois" : "attendu",
         }),
       });
       const data = await res.json();
@@ -149,6 +164,7 @@ export function CommentaireAvecGemini({
           text: trimmed,
           libelle,
           niveau: niveauEnseignant ?? undefined,
+          style: isMonth ? "mois" : "attendu",
         }),
       });
       const data = await res.json();
@@ -164,15 +180,26 @@ export function CommentaireAvecGemini({
     }
   };
 
+  const textareaRows = rows ?? (isMonth ? 5 : 2);
+  const ph =
+    placeholder ??
+    (isMonth
+      ? "Parle ou écris le bilan du mois, puis « Reformuler »…"
+      : "Parle ou écris, puis « Reformuler » pour une phrase complète…");
+
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-start gap-2">
+    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
+      <div className={`flex flex-wrap items-start gap-2 ${isMonth ? "flex-col sm:flex-row" : ""}`}>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Parle ou écris, puis « Reformuler » pour une phrase complète…"
-          rows={2}
-          className="min-w-0 flex-1 rounded-lg border border-[#2d4a3e]/20 bg-white/90 px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 min-w-[200px]"
+          placeholder={ph}
+          rows={textareaRows}
+          className={
+            isMonth
+              ? "min-h-[120px] w-full min-w-0 flex-1 rounded-xl border border-[#2d4a3e]/20 bg-white/90 px-3 py-2 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50"
+              : "min-w-0 min-w-[200px] flex-1 rounded-lg border border-[#2d4a3e]/20 bg-white/90 px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/50"
+          }
         />
         <div className="no-print flex shrink-0 flex-wrap items-center gap-1">
           {canDictate && (
@@ -189,21 +216,23 @@ export function CommentaireAvecGemini({
               {listening ? "⏹️" : "🎤"}
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSuggest}
-            disabled={loading}
-            className="rounded-lg bg-[#4a7c5a] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#3d6b4d] disabled:opacity-50"
-            title="Suggérer un commentaire à partir de l'attendu et du niveau"
-          >
-            {loading ? "…" : "✨ Suggérer"}
-          </button>
+          {!isMonth && (
+            <button
+              type="button"
+              onClick={handleSuggest}
+              disabled={loading}
+              className="rounded-lg bg-[#4a7c5a] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#3d6b4d] disabled:opacity-50"
+              title="Suggérer un commentaire à partir de l'attendu et du niveau"
+            >
+              {loading ? "…" : "✨ Suggérer"}
+            </button>
+          )}
           <button
             type="button"
             onClick={handleReformulate}
             disabled={loadingReformulate || !value.trim()}
-            className="rounded-lg bg-[#2d4a3e] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#1e3a2e] disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Reformuler le commentaire avec Gemini (à partir de vos mots)"
+            className="rounded-lg bg-[#2d4a3e] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#1e3a2e] disabled:cursor-not-allowed disabled:opacity-50"
+            title="Reformuler avec Gemini"
           >
             {loadingReformulate ? "…" : "Reformuler"}
           </button>
