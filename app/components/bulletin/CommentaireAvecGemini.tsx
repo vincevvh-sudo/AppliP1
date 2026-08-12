@@ -170,7 +170,7 @@ export function CommentaireAvecGemini({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Commentaire… (parlez ou tapez, puis reformulez avec Gemini)"
+          placeholder="Parle ou écris, puis « Reformuler » pour une phrase complète…"
           rows={2}
           className="min-w-0 flex-1 rounded-lg border border-[#2d4a3e]/20 bg-white/90 px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 min-w-[200px]"
         />
