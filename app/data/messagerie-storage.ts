@@ -60,14 +60,24 @@ export type MessagerieViewer =
 
 /** Récupère ou crée la conversation groupe. */
 export async function getConversationGroupe(): Promise<Conversation | null> {
-  let { data, error } = await supabase
+  const { data: rows, error } = await supabase
     .from("conversations")
     .select("*")
     .eq("type", "groupe")
     .is("eleve_id", null)
-    .maybeSingle();
-  if (error) return null;
-  if (data) return data as Conversation;
+    .order("id", { ascending: true });
+  if (error) {
+    console.error("[messagerie] getConversationGroupe select:", error.message, error.code);
+    return null;
+  }
+  const list = (rows ?? []) as Conversation[];
+  if (list.length > 0) {
+    const keep = list[0];
+    if (list.length > 1) {
+      await mergeDuplicateConversations(keep, list.slice(1));
+    }
+    return keep;
+  }
   const { data: inserted, error: errInsert } = await supabase
     .from("conversations")
     .insert({ type: "groupe", eleve_id: null })
@@ -77,26 +87,56 @@ export async function getConversationGroupe(): Promise<Conversation | null> {
   return inserted as Conversation;
 }
 
+/** Fusionne les doublons : messages → conversation conservée, puis suppression des extras. */
+async function mergeDuplicateConversations(keep: Conversation, duplicates: Conversation[]): Promise<void> {
+  for (const dup of duplicates) {
+    await supabase.from("messages").update({ conversation_id: keep.id }).eq("conversation_id", dup.id);
+    await supabase.from("conversations").delete().eq("id", dup.id);
+  }
+}
+
 /** Récupère ou crée la conversation directe entre enseignant et un élève. */
 export async function getConversationDirecte(eleveId: number | string): Promise<Conversation | null> {
   const id = String(eleveId);
-  let { data, error } = await supabase
+  // .maybeSingle() plante (PGRST116) s'il y a plusieurs lignes — on gère les doublons ici.
+  const { data: rows, error } = await supabase
     .from("conversations")
     .select("*")
     .eq("type", "direct")
     .eq("eleve_id", id)
-    .maybeSingle();
+    .order("id", { ascending: true });
   if (error) {
     console.error("[messagerie] getConversationDirecte select:", error.message, error.code);
     return null;
   }
-  if (data) return data as Conversation;
+  const list = (rows ?? []) as Conversation[];
+  if (list.length > 0) {
+    const keep = list[0];
+    if (list.length > 1) {
+      console.warn(
+        `[messagerie] ${list.length} conversations directes pour élève ${id} — fusion vers #${keep.id}`
+      );
+      await mergeDuplicateConversations(keep, list.slice(1));
+    }
+    return keep;
+  }
   const { data: inserted, error: errInsert } = await supabase
     .from("conversations")
     .insert({ type: "direct", eleve_id: id })
     .select()
     .single();
   if (errInsert || !inserted) {
+    // Course : une autre requête a créé la conversation entre-temps
+    if (errInsert?.code === "23505") {
+      const { data: again } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("type", "direct")
+        .eq("eleve_id", id)
+        .order("id", { ascending: true })
+        .limit(1);
+      if (again?.[0]) return again[0] as Conversation;
+    }
     console.error(
       "[messagerie] getConversationDirecte insert:",
       errInsert?.message,
@@ -154,11 +194,21 @@ export async function getConversationsEnseignant(): Promise<
   );
 
   const result: { conversation: Conversation; eleve?: { id: number | string; prenom: string; nom: string } }[] = [];
+  const seenDirectEleves = new Set<string>();
+  let groupeAdded = false;
   for (const c of (convs ?? []) as Conversation[]) {
-    const eleve = c.eleve_id ? elevesById[String(c.eleve_id)] : undefined;
-    if (c.type === "groupe" || eleve) {
-      result.push({ conversation: c, eleve });
+    if (c.type === "groupe") {
+      if (groupeAdded) continue;
+      groupeAdded = true;
+      result.push({ conversation: c });
+      continue;
     }
+    const eleve = c.eleve_id ? elevesById[String(c.eleve_id)] : undefined;
+    if (!eleve) continue;
+    const key = String(c.eleve_id);
+    if (seenDirectEleves.has(key)) continue;
+    seenDirectEleves.add(key);
+    result.push({ conversation: c, eleve });
   }
   result.sort((a, b) => {
     if (a.conversation.type === "groupe" && b.conversation.type !== "groupe") return -1;
