@@ -1,17 +1,27 @@
 /**
  * Partage des sons aux élèves via Supabase (Forêt des sons / « rivière de sons »).
  * - sons_partages : partage des EXERCICES (Phono 1, 2, Phono Image 1, 2)
- * - sons_partages_evaluations : partage des ÉVALUATIONS (Éval 1, 2, 3, 4) — séparé, à activer par l'enseignant
- * eleve_id = 0 => partagé à tous les élèves
- *
- * Nouvelle évaluation côté français : voir docs/PARTAGE-EVALUATIONS.md (section Forêt des sons).
+ * - sons_partages_evaluations : partage des ÉVALUATIONS (Éval 1, 2, 3, 4) — séparé
+ * - sons_partages_eval_niveaux : partage par évaluation (Éval 1–4, lecture, fluence…)
+ * eleve_id = "0" => partagé à tous les élèves (UUID élèves supportés en TEXT)
  */
 
 import { supabase } from "../../utils/supabase";
 
+/** Marqueur « toute la classe » (compatible INT historique et TEXT). */
+export const PARTAGE_TOUS_ELEVES = "0";
+
+function isTousMarker(id: unknown): boolean {
+  return id === 0 || id === "0" || String(id) === "0";
+}
+
+function normalizeEleveId(id: string | number): string {
+  return String(id);
+}
+
 export type PartageRow = {
   son_id: string;
-  eleve_id: number;
+  eleve_id: string | number;
 };
 
 // ——— Exercices (sons_partages) ———
@@ -22,7 +32,7 @@ export async function isSonSharedToAll(sonId: string): Promise<boolean> {
       .from("sons_partages")
       .select("eleve_id")
       .eq("son_id", sonId)
-      .eq("eleve_id", 0)
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES)
       .maybeSingle();
     return !!data;
   } catch {
@@ -30,14 +40,16 @@ export async function isSonSharedToAll(sonId: string): Promise<boolean> {
   }
 }
 
-export async function getElevesForSon(sonId: string): Promise<number[]> {
+export async function getElevesForSon(sonId: string): Promise<string[]> {
   try {
     const { data } = await supabase
       .from("sons_partages")
       .select("eleve_id")
       .eq("son_id", sonId)
-      .neq("eleve_id", 0);
-    return (data ?? []).map((r) => r.eleve_id);
+      .neq("eleve_id", PARTAGE_TOUS_ELEVES);
+    return (data ?? [])
+      .map((r: { eleve_id: string | number }) => String(r.eleve_id))
+      .filter((id) => !isTousMarker(id));
   } catch {
     return [];
   }
@@ -45,37 +57,34 @@ export async function getElevesForSon(sonId: string): Promise<number[]> {
 
 export async function shareToAll(sonId: string): Promise<void> {
   await supabase.from("sons_partages").upsert(
-    [{ son_id: sonId, eleve_id: 0 }],
+    [{ son_id: sonId, eleve_id: PARTAGE_TOUS_ELEVES }],
     { onConflict: "son_id,eleve_id" }
   );
 }
 
-export async function shareToEleves(sonId: string, eleveIds: number[]): Promise<void> {
-  await supabase.from("sons_partages").delete().eq("son_id", sonId).neq("eleve_id", 0);
-  if (eleveIds.length > 0) {
-    await supabase
-      .from("sons_partages")
-      .insert(eleveIds.map((id) => ({ son_id: sonId, eleve_id: id })));
+export async function shareToEleves(sonId: string, eleveIds: Array<string | number>): Promise<void> {
+  await supabase.from("sons_partages").delete().eq("son_id", sonId).neq("eleve_id", PARTAGE_TOUS_ELEVES);
+  const unique = [...new Set(eleveIds.map(normalizeEleveId).filter((id) => id && !isTousMarker(id)))];
+  if (unique.length > 0) {
+    await supabase.from("sons_partages").insert(unique.map((eleve_id) => ({ son_id: sonId, eleve_id })));
   }
 }
 
 export async function unshareFromAll(sonId: string): Promise<void> {
-  await supabase.from("sons_partages").delete().eq("son_id", sonId).eq("eleve_id", 0);
+  await supabase.from("sons_partages").delete().eq("son_id", sonId).eq("eleve_id", PARTAGE_TOUS_ELEVES);
 }
 
 export async function getSharedSonsForEleve(eleveId: number | string): Promise<string[]> {
   try {
-    const eleveIdNumber = typeof eleveId === "number" ? eleveId : Number(eleveId);
+    const id = normalizeEleveId(eleveId);
     const { data: all } = await supabase
       .from("sons_partages")
       .select("son_id")
-      .eq("eleve_id", 0);
-    const { data: indiv } = Number.isFinite(eleveIdNumber)
-      ? await supabase.from("sons_partages").select("son_id").eq("eleve_id", eleveIdNumber)
-      : { data: null as any };
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES);
+    const { data: indiv } = await supabase.from("sons_partages").select("son_id").eq("eleve_id", id);
     const ids = new Set<string>();
-    (all ?? []).forEach((r: any) => ids.add(String(r.son_id)));
-    (indiv ?? []).forEach((r: any) => ids.add(String(r.son_id)));
+    (all ?? []).forEach((r: { son_id: string }) => ids.add(String(r.son_id)));
+    (indiv ?? []).forEach((r: { son_id: string }) => ids.add(String(r.son_id)));
     return Array.from(ids);
   } catch {
     return [];
@@ -90,7 +99,7 @@ export async function isEvaluationsSharedToAll(sonId: string): Promise<boolean> 
       .from("sons_partages_evaluations")
       .select("eleve_id")
       .eq("son_id", sonId)
-      .eq("eleve_id", 0)
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES)
       .maybeSingle();
     if (error) return false;
     return !!data;
@@ -99,23 +108,28 @@ export async function isEvaluationsSharedToAll(sonId: string): Promise<boolean> 
   }
 }
 
-export async function getElevesEvaluationsForSon(sonId: string): Promise<number[]> {
+export async function getElevesEvaluationsForSon(sonId: string): Promise<string[]> {
   try {
     const { data } = await supabase
       .from("sons_partages_evaluations")
       .select("eleve_id")
       .eq("son_id", sonId)
-      .neq("eleve_id", 0);
-    return (data ?? []).map((r) => r.eleve_id);
+      .neq("eleve_id", PARTAGE_TOUS_ELEVES);
+    return (data ?? [])
+      .map((r: { eleve_id: string | number }) => String(r.eleve_id))
+      .filter((id) => !isTousMarker(id));
   } catch {
     return [];
   }
 }
 
-export async function setPartageEvaluationsToAll(sonId: string, partager: boolean): Promise<{ ok: boolean; error?: string }> {
+export async function setPartageEvaluationsToAll(
+  sonId: string,
+  partager: boolean
+): Promise<{ ok: boolean; error?: string }> {
   if (partager) {
     const { error } = await supabase.from("sons_partages_evaluations").upsert(
-      [{ son_id: sonId, eleve_id: 0 }],
+      [{ son_id: sonId, eleve_id: PARTAGE_TOUS_ELEVES }],
       { onConflict: "son_id,eleve_id" }
     );
     if (error) return { ok: false, error: error.message };
@@ -124,60 +138,70 @@ export async function setPartageEvaluationsToAll(sonId: string, partager: boolea
       .from("sons_partages_evaluations")
       .delete()
       .eq("son_id", sonId)
-      .eq("eleve_id", 0);
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES);
     if (error) return { ok: false, error: error.message };
   }
   return { ok: true };
 }
 
-export async function setPartageEvaluationsToEleves(sonId: string, eleveIds: number[]): Promise<void> {
-  await supabase.from("sons_partages_evaluations").delete().eq("son_id", sonId).neq("eleve_id", 0);
-  if (eleveIds.length > 0) {
+export async function setPartageEvaluationsToEleves(
+  sonId: string,
+  eleveIds: Array<string | number>
+): Promise<void> {
+  await supabase
+    .from("sons_partages_evaluations")
+    .delete()
+    .eq("son_id", sonId)
+    .neq("eleve_id", PARTAGE_TOUS_ELEVES);
+  const unique = [...new Set(eleveIds.map(normalizeEleveId).filter((id) => id && !isTousMarker(id)))];
+  if (unique.length > 0) {
     await supabase
       .from("sons_partages_evaluations")
-      .insert(eleveIds.map((id) => ({ son_id: sonId, eleve_id: id })));
+      .insert(unique.map((eleve_id) => ({ son_id: sonId, eleve_id })));
   }
 }
 
-/** Pour un élève, renvoie les son_id pour lesquels les évaluations sont partagées (ancienne table = toutes les évals 1-4 pour ce son). */
-export async function getSonsAvecEvaluationsPartagees(eleveId: number): Promise<string[]> {
+export async function isEvaluationsSharedForEleve(
+  sonId: string,
+  eleveId: number | string
+): Promise<boolean> {
   try {
+    const id = normalizeEleveId(eleveId);
     const { data: all } = await supabase
       .from("sons_partages_evaluations")
       .select("son_id")
-      .eq("eleve_id", 0);
+      .eq("son_id", sonId)
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES)
+      .maybeSingle();
+    if (all) return true;
     const { data: indiv } = await supabase
       .from("sons_partages_evaluations")
       .select("son_id")
-      .eq("eleve_id", eleveId);
-    const ids = new Set<string>();
-    (all ?? []).forEach((r) => ids.add(r.son_id));
-    (indiv ?? []).forEach((r) => ids.add(r.son_id));
-    return Array.from(ids);
+      .eq("son_id", sonId)
+      .eq("eleve_id", id)
+      .maybeSingle();
+    return !!indiv;
   } catch {
-    return [];
+    return false;
   }
 }
 
-// ——— Partage par évaluation (1 à la fois : Éval 1, 2, 3 ou 4) ———
-// Table : sons_partages_eval_niveaux (son_id, niveau_id, eleve_id). eleve_id = 0 => tous les élèves.
+// ——— Partage par évaluation (Éval 1–4, lecture, fluence…) ———
 
 export type PartageEvalNiveauRow = {
   son_id: string;
   niveau_id: string;
-  eleve_id: number;
+  eleve_id: string | number;
 };
 
-/** Partage une évaluation (ex: Éval 1) pour un son : à tous les élèves (eleve_id=0) ou à des élèves précis. */
 export async function setPartageEvalNiveau(
   sonId: string,
   niveauId: string,
   toAll: boolean,
-  eleveIds: number[] = []
+  eleveIds: Array<string | number> = []
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const table = "sons_partages_eval_niveaux";
-    // Toujours repartir de zéro pour ce (son, niveau) : évite les partages « fantômes ».
     const { error: delError } = await supabase
       .from(table)
       .delete()
@@ -187,27 +211,38 @@ export async function setPartageEvalNiveau(
 
     if (toAll) {
       const { error } = await supabase.from(table).upsert(
-        [{ son_id: sonId, niveau_id: niveauId, eleve_id: 0 }],
+        [{ son_id: sonId, niveau_id: niveauId, eleve_id: PARTAGE_TOUS_ELEVES }],
         { onConflict: "son_id,niveau_id,eleve_id" }
       );
       if (error) return { ok: false, error: error.message };
     } else if (eleveIds.length > 0) {
-      const rows = eleveIds.map((id) => ({ son_id: sonId, niveau_id: niveauId, eleve_id: id }));
+      const unique = [
+        ...new Set(eleveIds.map(normalizeEleveId).filter((id) => id && !isTousMarker(id))),
+      ];
+      if (unique.length === 0) return { ok: true };
+      const rows = unique.map((eleve_id) => ({ son_id: sonId, niveau_id: niveauId, eleve_id }));
       const { error } = await supabase.from(table).upsert(rows, { onConflict: "son_id,niveau_id,eleve_id" });
-      if (error) return { ok: false, error: error.message };
+      if (error) {
+        if (/invalid input syntax|integer|uuid/i.test(error.message)) {
+          return {
+            ok: false,
+            error:
+              "La base n'accepte pas encore les identifiants élèves (UUID). Exécute supabase-sons-partages-eleve-id-text.sql dans Supabase → SQL Editor, puis réessaie.",
+          };
+        }
+        return { ok: false, error: error.message };
+      }
     }
-    // eleveIds vide + toAll false = partage retiré (rien réinséré)
     return { ok: true };
   } catch (e) {
     return { ok: false, error: String(e) };
   }
 }
 
-/** État actuel du partage pour un (son_id, niveau_id) : tous les élèves, ou liste d’élèves précis. */
 export async function getPartageEvalNiveauState(
   sonId: string,
   niveauId: string
-): Promise<{ toAll: boolean; eleveIds: number[] }> {
+): Promise<{ toAll: boolean; eleveIds: string[] }> {
   try {
     const { data } = await supabase
       .from("sons_partages_eval_niveaux")
@@ -215,28 +250,32 @@ export async function getPartageEvalNiveauState(
       .eq("son_id", sonId)
       .eq("niveau_id", niveauId);
     const rows = data ?? [];
-    if (rows.some((r: { eleve_id: number }) => r.eleve_id === 0)) {
+    if (rows.some((r: { eleve_id: string | number }) => isTousMarker(r.eleve_id))) {
       return { toAll: true, eleveIds: [] };
     }
     return {
       toAll: false,
-      eleveIds: rows.map((r: { eleve_id: number }) => r.eleve_id).filter((id: number) => id !== 0),
+      eleveIds: rows
+        .map((r: { eleve_id: string | number }) => String(r.eleve_id))
+        .filter((id) => !isTousMarker(id)),
     };
   } catch {
     return { toAll: false, eleveIds: [] };
   }
 }
 
-/** Pour un élève : (son_id, niveau_id) des évaluations partagées (table par niveau uniquement). */
-export async function getNiveauxEvalPartagesPourEleve(eleveId: number | string): Promise<{ son_id: string; niveau_id: string }[]> {
+export async function getNiveauxEvalPartagesPourEleve(
+  eleveId: number | string
+): Promise<{ son_id: string; niveau_id: string }[]> {
   const result: { son_id: string; niveau_id: string }[] = [];
   try {
     const table = "sons_partages_eval_niveaux";
-    const eleveIdNumber = typeof eleveId === "number" ? eleveId : Number(eleveId);
-    const { data: all } = await supabase.from(table).select("son_id, niveau_id").eq("eleve_id", 0);
-    const { data: indiv } = Number.isFinite(eleveIdNumber)
-      ? await supabase.from(table).select("son_id, niveau_id").eq("eleve_id", eleveIdNumber)
-      : { data: null as any };
+    const id = normalizeEleveId(eleveId);
+    const { data: all } = await supabase
+      .from(table)
+      .select("son_id, niveau_id")
+      .eq("eleve_id", PARTAGE_TOUS_ELEVES);
+    const { data: indiv } = await supabase.from(table).select("son_id, niveau_id").eq("eleve_id", id);
     const seen = new Set<string>();
     for (const r of all ?? []) {
       const key = `${r.son_id}:${r.niveau_id}`;
@@ -252,8 +291,6 @@ export async function getNiveauxEvalPartagesPourEleve(eleveId: number | string):
         result.push({ son_id: r.son_id, niveau_id: r.niveau_id });
       }
     }
-    // Ancienne table sons_partages_evaluations (Oui/Non global) volontairement ignorée :
-    // les évals ne sont visibles que via un partage explicite par niveau.
   } catch {
     // table may not exist yet
   }

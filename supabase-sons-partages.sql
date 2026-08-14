@@ -5,7 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS sons_partages (
   son_id TEXT NOT NULL,
-  eleve_id INT NOT NULL DEFAULT 0,
+  eleve_id TEXT NOT NULL DEFAULT '0',
   PRIMARY KEY (son_id, eleve_id)
 );
 

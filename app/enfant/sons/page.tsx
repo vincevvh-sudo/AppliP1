@@ -22,20 +22,27 @@ const IconLeaf = () => (
 );
 
 export default function EnfantSonsPage() {
+  const [session, setSession] = useState<ReturnType<typeof getEnfantSession>>(null);
   const [sharedIds, setSharedIds] = useState<string[]>([]);
   const [dicteesPartagees, setDicteesPartagees] = useState<number[]>([]);
   const [dicteesMotsPartagees, setDicteesMotsPartagees] = useState<number[]>([]);
   const [fluenceSonIds, setFluenceSonIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const session = getEnfantSession();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!session) return;
+    const s = getEnfantSession();
+    setSession(s);
+    setReady(true);
+    if (!s) {
+      setLoading(false);
+      return;
+    }
     Promise.all([
-      getSharedSonsForEleve(session.id),
-      getDicteesPartagesPourEleve(session.id),
-      getDicteesMotsPartagesPourEleve(session.id as number),
-      getNiveauxEvalPartagesPourEleve(session.id),
+      getSharedSonsForEleve(s.id),
+      getDicteesPartagesPourEleve(s.id),
+      getDicteesMotsPartagesPourEleve(s.id as number),
+      getNiveauxEvalPartagesPourEleve(s.id),
     ]).then(([ids, dictees, dicteesMots, niveaux]) => {
       setSharedIds(ids);
       setDicteesPartagees(dictees);
@@ -47,7 +54,7 @@ export default function EnfantSonsPage() {
       setFluenceSonIds(fluenceIds);
       setLoading(false);
     });
-  }, [session?.id]);
+  }, []);
 
   const allSonIds = PARTIES_FORET.flatMap((p) => p.sonIds);
   // Uniquement les sons explicitement partagés (jamais « tout » par défaut).
@@ -57,6 +64,17 @@ export default function EnfantSonsPage() {
   function getSonsToShowInPartie(partie: (typeof PARTIES_FORET)[0]) {
     if (partie.sonIds.length === 0) return [];
     return getSonsByPartie(partie).filter((s) => idsToShow.includes(s.id));
+  }
+
+  if (!ready) {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
+          <p className="text-[#2d4a3e]/70">Chargement…</p>
+        </div>
+      </main>
+    );
   }
 
   if (!session) {

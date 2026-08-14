@@ -5,12 +5,12 @@
 -- =============================================================================
 
 -- Table : une ligne = une évaluation (niveau) partagée à un élève ou à tous.
--- son_id + niveau_id (ex: "s-eval-1") + eleve_id (0 = tous les élèves).
+-- son_id + niveau_id (ex: "s-eval-1") + eleve_id ('0' = tous les élèves).
 
 CREATE TABLE IF NOT EXISTS sons_partages_eval_niveaux (
   son_id TEXT NOT NULL,
   niveau_id TEXT NOT NULL,
-  eleve_id INT NOT NULL,
+  eleve_id TEXT NOT NULL,
   PRIMARY KEY (son_id, niveau_id, eleve_id)
 );
 

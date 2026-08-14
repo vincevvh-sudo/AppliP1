@@ -78,11 +78,7 @@ export function PartageEvalNiveauForm({ sonId, niveauId, titre, description }: P
     setSaving(true);
     setMessage(null);
     const toAll = partagerTous;
-    const eleveIds = toAll
-      ? []
-      : [...selected]
-          .map((id) => Number(id))
-          .filter((n) => Number.isFinite(n));
+    const eleveIds = toAll ? [] : [...selected].map(String).filter((id) => id.length > 0);
     if (!toAll && eleveIds.length === 0) {
       setMessage({
         type: "error",

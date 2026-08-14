@@ -7,11 +7,11 @@
 -- Table pour le partage des ÉVALUATIONS (séparé des exercices).
 -- Les exercices (Phono 1, 2, Phono Image 1, 2) sont gérés par sons_partages.
 -- Les évaluations (Éval 1, 2, 3, 4) ne sont visibles par l'enfant que si présentes ici.
--- eleve_id = 0 => évaluations partagées à tous les élèves pour ce son.
+-- eleve_id = '0' => évaluations partagées à tous les élèves pour ce son.
 
 CREATE TABLE IF NOT EXISTS sons_partages_evaluations (
   son_id TEXT NOT NULL,
-  eleve_id INT NOT NULL,
+  eleve_id TEXT NOT NULL,
   PRIMARY KEY (son_id, eleve_id)
 );
 
