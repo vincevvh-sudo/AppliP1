@@ -86,6 +86,8 @@ type Props = {
   canCreatePoll?: boolean;
   onCreatePoll?: (payload: { question: string; options: string[]; closesAt?: string | null }) => Promise<void>;
   onVotePoll?: (pollId: number, optionId: number) => Promise<void>;
+  /** Sur mobile : zone de messages plus haute (plein écran). */
+  compactMobile?: boolean;
 };
 
 export function ChatMessagerie({
@@ -103,6 +105,7 @@ export function ChatMessagerie({
   canCreatePoll = false,
   onCreatePoll,
   onVotePoll,
+  compactMobile = false,
 }: Props) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -306,7 +309,13 @@ export function ChatMessagerie({
         </button>
       </div>
 
-      <div className="flex-1 min-h-[200px] max-h-[50vh] overflow-y-auto rounded-xl border border-[#2d4a3e]/15 bg-white/80 p-4 space-y-3 mb-4">
+      <div
+        className={`flex-1 overflow-y-auto rounded-xl border border-[#2d4a3e]/15 bg-white/80 p-4 space-y-3 mb-4 ${
+          compactMobile
+            ? "min-h-[40vh] max-h-[min(70vh,calc(100dvh-14rem))] sm:min-h-[200px] sm:max-h-[50vh]"
+            : "min-h-[200px] max-h-[50vh]"
+        }`}
+      >
         {messages.length === 0 ? (
           <p className="text-center text-[#2d4a3e]/60 py-6">Aucun message. Écris le premier !</p>
         ) : (

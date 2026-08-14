@@ -32,6 +32,7 @@ function EnfantMessageriePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
+  const hasOpenChat = typeParam === "groupe" || typeParam === "direct";
   const convType = typeParam === "groupe" ? "groupe" : "direct";
 
   const [session, setSession] = useState<{ id: number | string; prenom: string } | null>(null);
@@ -46,7 +47,11 @@ function EnfantMessageriePageInner() {
   });
   const [pollsByMessageId, setPollsByMessageId] = useState<Record<number, PollWithDetails>>({});
 
-  const conversationId = convType === "direct" ? convDirecteId : convGroupeId;
+  const conversationId = !hasOpenChat
+    ? null
+    : convType === "direct"
+      ? convDirecteId
+      : convGroupeId;
 
   useEffect(() => {
     const s = getEnfantSession();
@@ -88,6 +93,11 @@ function EnfantMessageriePageInner() {
   }, []);
 
   useEffect(() => {
+    if (!hasOpenChat) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
     if (!conversationId) {
       setMessages([]);
       setLoading(false);
@@ -107,7 +117,7 @@ function EnfantMessageriePageInner() {
       clearInterval(interval);
       unsub();
     };
-  }, [conversationId]);
+  }, [hasOpenChat, conversationId]);
 
   const handleSend = async (content: string, replyToMessageId?: number | null) => {
     if (!session) {
@@ -256,54 +266,68 @@ function EnfantMessageriePageInner() {
       <ForetMagiqueBackground />
 
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/enfant" className="flex items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#b8d4e8]/80 text-[#2d4a3e]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
+          <Link
+            href="/enfant"
+            className="flex min-w-0 items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b8d4e8]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Messagerie
+            <span className="truncate">Messagerie</span>
           </Link>
-          <Link href="/enfant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
-            ← Retour
-          </Link>
+          {hasOpenChat ? (
+            <Link
+              href="/enfant/messagerie"
+              className="shrink-0 rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
+            >
+              ← Conversations
+            </Link>
+          ) : (
+            <Link
+              href="/enfant"
+              className="shrink-0 rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
+            >
+              ← Retour
+            </Link>
+          )}
         </div>
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-6">
-        <div className="mb-4 flex gap-2">
-          <Link
-            href="/enfant/messagerie?type=groupe"
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              convType === "groupe"
-                ? "bg-[#4a7c5a] text-white"
-                : "bg-white/80 text-[#2d4a3e]"
-            }`}
-          >
-            Groupe classe
-            {unreadCounts.groupe > 0 && (
-              <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
-                {unreadCounts.groupe}
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/enfant/messagerie?type=direct"
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              convType === "direct"
-                ? "bg-[#4a7c5a] text-white"
-                : "bg-white/80 text-[#2d4a3e]"
-            }`}
-          >
-            Avec mon maître / ma maîtresse
-            {unreadCounts.direct > 0 && (
-              <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
-                {unreadCounts.direct}
-              </span>
-            )}
-          </Link>
-        </div>
-
-        {loading ? (
+        {!hasOpenChat ? (
+          <div className="space-y-3">
+            <p className="mb-2 text-sm text-[#2d4a3e]/80">Choisis une conversation :</p>
+            <Link
+              href="/enfant/messagerie?type=groupe"
+              className="flex items-center justify-between rounded-2xl bg-white/95 px-5 py-4 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/30"
+            >
+              <div>
+                <p className="font-display text-lg text-[#2d4a3e]">Groupe classe</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Messages avec toute la classe</p>
+              </div>
+              {unreadCounts.groupe > 0 && (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                  {unreadCounts.groupe}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/enfant/messagerie?type=direct"
+              className="flex items-center justify-between rounded-2xl bg-white/95 px-5 py-4 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/30"
+            >
+              <div>
+                <p className="font-display text-lg text-[#2d4a3e]">Avec mon maître / ma maîtresse</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/70">Messages privés</p>
+              </div>
+              {unreadCounts.direct > 0 && (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                  {unreadCounts.direct}
+                </span>
+              )}
+            </Link>
+          </div>
+        ) : loading ? (
           <p className="text-[#2d4a3e]/70">Chargement…</p>
         ) : !conversationId ? (
           <div className="rounded-2xl bg-white/95 p-6 shadow-lg">
@@ -314,6 +338,9 @@ function EnfantMessageriePageInner() {
               Demande à ton maître ou ta maîtresse de mettre à jour la base (script
               supabase-messagerie-eleve-id-uuid.sql), puis réessaie.
             </p>
+            <Link href="/enfant/messagerie" className="mt-4 inline-block text-sm font-medium text-[#4a7c5a]">
+              ← Retour aux conversations
+            </Link>
           </div>
         ) : (
           <ChatMessagerie
@@ -329,6 +356,7 @@ function EnfantMessageriePageInner() {
             titreConversation={titre}
             pollsByMessageId={pollsByMessageId}
             onVotePoll={handleVotePoll}
+            compactMobile
           />
         )}
       </div>

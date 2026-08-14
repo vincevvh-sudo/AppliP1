@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
@@ -28,11 +28,24 @@ const IconLeaf = () => (
   </svg>
 );
 
-export default function EnseignantMessageriePage() {
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isDesktop;
+}
+
+function EnseignantMessagerieInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const convIdParam = searchParams.get("conv");
   const conversationId = convIdParam ? parseInt(convIdParam, 10) : null;
+  const isDesktop = useIsDesktop();
 
   const [conversations, setConversations] = useState<
     { conversation: Conversation; eleve?: { id: string | number; prenom: string; nom: string } }[]
@@ -51,18 +64,7 @@ export default function EnseignantMessageriePage() {
     await getConversationGroupe();
     const convs = await getConversationsEnseignant();
     setConversations(convs);
-    if (convs.length > 0 && !conversationId) {
-      setCurrentConv(convs[0]);
-    }
-  }, [conversationId]);
-
-  const fetchMessages = useCallback(async () => {
-    if (!conversationId) return;
-    const msgs = await getMessages(conversationId);
-    setMessages(msgs);
-    const polls = await getPollsByMessageIds(msgs.map((m) => m.id));
-    setPollsByMessageId(polls);
-  }, [conversationId]);
+  }, []);
 
   useEffect(() => {
     fetchConversations();
@@ -70,15 +72,17 @@ export default function EnseignantMessageriePage() {
 
   const conversationIds = conversations.map((c) => c.conversation.id).join(",");
 
+  // Desktop : ouvrir automatiquement la 1re conversation. Mobile : rester sur la liste.
   useEffect(() => {
-    if (conversations.length > 0 && !conversationId) {
+    if (isDesktop === null || conversations.length === 0) return;
+    if (isDesktop && !conversationId) {
       router.replace(`/enseignant/messagerie?conv=${conversations[0].conversation.id}`);
     }
-  }, [conversationIds, conversationId, router]);
+  }, [isDesktop, conversationIds, conversationId, conversations, router]);
 
   useEffect(() => {
     const conv = conversations.find((c) => c.conversation.id === conversationId);
-    if (conversationId && !conv && conversations.length > 0) {
+    if (conversationId && !conv && conversations.length > 0 && isDesktop) {
       router.replace(`/enseignant/messagerie?conv=${conversations[0].conversation.id}`);
       return;
     }
@@ -98,12 +102,11 @@ export default function EnseignantMessageriePage() {
         clearInterval(interval);
         unsub();
       };
-    } else {
-      setCurrentConv(conversations[0] ?? null);
-      setMessages([]);
-      setLoading(false);
     }
-  }, [conversationId, conversationIds, router]);
+    setCurrentConv(null);
+    setMessages([]);
+    setLoading(false);
+  }, [conversationId, conversationIds, conversations, isDesktop, router]);
 
   const handleSend = async (content: string, replyToMessageId?: number | null) => {
     if (!conversationId) {
@@ -142,7 +145,6 @@ export default function EnseignantMessageriePage() {
       merged.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
       return merged;
     });
-    // Ne pas appeler handleRefresh() ici : il remplaçait la liste et pouvait masquer le message venant d’être envoyé.
   };
 
   const handleSendFile = async (file: File, replyToMessageId?: number | null) => {
@@ -288,93 +290,144 @@ export default function EnseignantMessageriePage() {
         ? `${currentConv.eleve.prenom} ${currentConv.eleve.nom}`
         : "Messagerie";
 
+  const showMobileList = isDesktop === false && !conversationId;
+  const showMobileChat = isDesktop === false && !!conversationId;
+  const showDesktop = isDesktop === true;
+
+  const conversationList = (
+    <div className="flex flex-col space-y-1">
+      <p className="mb-2 text-sm font-medium text-[#2d4a3e]/80">Conversations</p>
+      <p className="mb-2 text-xs text-[#2d4a3e]/60">Groupe classe ou message à un élève :</p>
+      <div className="flex-1 space-y-1">
+        {conversations.map(({ conversation, eleve }) => {
+          const label =
+            conversation.type === "groupe"
+              ? "Groupe classe"
+              : eleve
+                ? `${eleve.prenom} ${eleve.nom}`
+                : `Élève #${conversation.eleve_id}`;
+          return (
+            <Link
+              key={conversation.id}
+              href={`/enseignant/messagerie?conv=${conversation.id}`}
+              className={`flex items-center justify-between rounded-xl px-3 py-3 text-sm transition md:py-2 ${
+                conversationId === conversation.id
+                  ? "bg-[#4a7c5a] text-white"
+                  : "bg-white/90 text-[#2d4a3e] hover:bg-[#2d4a3e]/10 md:bg-transparent"
+              }`}
+            >
+              <span className="font-medium">{label}</span>
+              {(unreadByConversation[conversation.id] ?? 0) > 0 && (
+                <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                  {unreadByConversation[conversation.id]}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={() => void handleClearAll()}
+        disabled={clearingAll}
+        className="mt-4 w-full rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-60"
+        title="Utile en fin d'année pour repartir à zéro"
+      >
+        {clearingAll ? "Effacement…" : "Tout effacer"}
+      </button>
+    </div>
+  );
+
+  const chatPanel = !conversationId ? (
+    <p className="rounded-2xl bg-white/95 p-8 text-center text-[#2d4a3e]/70">
+      Choisis une conversation dans la liste.
+    </p>
+  ) : loading ? (
+    <p className="text-[#2d4a3e]/70">Chargement…</p>
+  ) : (
+    <ChatMessagerie
+      messages={messages}
+      authorType="enseignant"
+      elevesById={elevesById}
+      onSend={handleSend}
+      onSendFile={handleSendFile}
+      onDelete={handleDelete}
+      canSendPdf
+      onRefresh={handleRefresh}
+      titreConversation={titre}
+      pollsByMessageId={pollsByMessageId}
+      canCreatePoll
+      onCreatePoll={handleCreatePoll}
+      onVotePoll={handleVotePoll}
+      compactMobile
+    />
+  );
+
   return (
     <main className="relative min-h-screen text-[#2d4a3e]">
       <ForetMagiqueBackground />
 
       <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/enseignant" className="flex items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#b8d4e8]/80 text-[#2d4a3e]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
+          <Link
+            href="/enseignant"
+            className="flex min-w-0 items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b8d4e8]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Messagerie
+            <span className="truncate">Messagerie</span>
           </Link>
-          <Link href="/enseignant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
-            ← Retour
-          </Link>
+          {showMobileChat ? (
+            <Link
+              href="/enseignant/messagerie"
+              className="shrink-0 rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
+            >
+              ← Conversations
+            </Link>
+          ) : (
+            <Link
+              href="/enseignant"
+              className="shrink-0 rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
+            >
+              ← Retour
+            </Link>
+          )}
         </div>
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-6">
-        <div className="flex gap-4">
-          <aside className="w-56 shrink-0 space-y-1 rounded-2xl border border-[#2d4a3e]/20 bg-white/95 p-3 flex flex-col">
-            <p className="mb-2 text-sm font-medium text-[#2d4a3e]/80">Conversations</p>
-            <p className="text-xs text-[#2d4a3e]/60 mb-2">Groupe classe ou message à un élève :</p>
-            <div className="flex-1 space-y-1">
-              {conversations.map(({ conversation, eleve }) => (
-                <Link
-                  key={conversation.id}
-                  href={`/enseignant/messagerie?conv=${conversation.id}`}
-                  className={`block rounded-xl px-3 py-2 text-sm transition ${
-                    conversationId === conversation.id
-                      ? "bg-[#4a7c5a] text-white"
-                      : "text-[#2d4a3e] hover:bg-[#2d4a3e]/10"
-                  }`}
-                >
-                  <span className="inline-flex items-center">
-                    {conversation.type === "groupe"
-                      ? "Groupe classe"
-                      : eleve
-                        ? `${eleve.prenom} ${eleve.nom}`
-                        : `Élève #${conversation.eleve_id}`}
-                    {(unreadByConversation[conversation.id] ?? 0) > 0 && (
-                      <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
-                        {unreadByConversation[conversation.id]}
-                      </span>
-                    )}
-                  </span>
-                </Link>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleClearAll()}
-              disabled={clearingAll}
-              className="mt-4 w-full rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-60"
-              title="Utile en fin d'année pour repartir à zéro"
-            >
-              {clearingAll ? "Effacement…" : "Tout effacer"}
-            </button>
-          </aside>
+        {isDesktop === null && <p className="text-[#2d4a3e]/70">Chargement…</p>}
 
-          <div className="flex-1 min-w-0">
-            {!conversationId ? (
-              <p className="rounded-2xl bg-white/95 p-8 text-center text-[#2d4a3e]/70">
-                Choisis une conversation dans la liste.
-              </p>
-            ) : loading ? (
-              <p className="text-[#2d4a3e]/70">Chargement…</p>
-            ) : (
-              <ChatMessagerie
-                messages={messages}
-                authorType="enseignant"
-                elevesById={elevesById}
-                onSend={handleSend}
-                onSendFile={handleSendFile}
-                onDelete={handleDelete}
-                canSendPdf
-                onRefresh={handleRefresh}
-                titreConversation={titre}
-                pollsByMessageId={pollsByMessageId}
-                canCreatePoll
-                onCreatePoll={handleCreatePoll}
-                onVotePoll={handleVotePoll}
-              />
-            )}
+        {showMobileList && (
+          <div className="rounded-2xl border border-[#2d4a3e]/20 bg-white/95 p-4 shadow-lg">
+            {conversationList}
           </div>
-        </div>
+        )}
+
+        {showMobileChat && <div className="min-w-0">{chatPanel}</div>}
+
+        {showDesktop && (
+          <div className="flex gap-4">
+            <aside className="flex w-56 shrink-0 flex-col space-y-1 rounded-2xl border border-[#2d4a3e]/20 bg-white/95 p-3">
+              {conversationList}
+            </aside>
+            <div className="min-w-0 flex-1">{chatPanel}</div>
+          </div>
+        )}
       </div>
     </main>
+  );
+}
+
+export default function EnseignantMessageriePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-[#2d4a3e]">Chargement…</div>
+      }
+    >
+      <EnseignantMessagerieInner />
+    </Suspense>
   );
 }
