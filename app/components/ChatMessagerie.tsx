@@ -194,6 +194,8 @@ export function ChatMessagerie({
       setInput("");
       setReplyTo(null);
       await onRefresh();
+    } catch {
+      // garde le texte saisi pour pouvoir réessayer
     } finally {
       setSending(false);
     }

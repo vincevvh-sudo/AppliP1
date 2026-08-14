@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS conversations (
   id BIGSERIAL PRIMARY KEY,
   type TEXT NOT NULL CHECK (type IN ('groupe', 'direct')),
-  eleve_id INT REFERENCES eleves(id) ON DELETE CASCADE,
+  eleve_id UUID REFERENCES eleves(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS messages (
   id BIGSERIAL PRIMARY KEY,
   conversation_id BIGINT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   author_type TEXT NOT NULL CHECK (author_type IN ('enseignant', 'eleve')),
-  eleve_id INT REFERENCES eleves(id) ON DELETE SET NULL,
+  eleve_id UUID REFERENCES eleves(id) ON DELETE SET NULL,
   content TEXT,
   attachment_url TEXT,
   attachment_type TEXT,

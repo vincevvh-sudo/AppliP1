@@ -110,7 +110,15 @@ function EnfantMessageriePageInner() {
   }, [conversationId]);
 
   const handleSend = async (content: string, replyToMessageId?: number | null) => {
-    if (!conversationId || !session) return;
+    if (!session) {
+      throw new Error("Session élève manquante.");
+    }
+    if (!conversationId) {
+      alert(
+        "Impossible d'ouvrir la conversation. Dans Supabase → SQL Editor, exécute supabase-messagerie-eleve-id-uuid.sql puis réessaie."
+      );
+      throw new Error("Pas de conversation");
+    }
     const txt = (content || "").trim();
     if (!txt) return;
     const newMsg: Message = {
@@ -133,16 +141,21 @@ function EnfantMessageriePageInner() {
     if (!saved) {
       setMessages((prev) => prev.filter((m) => m.id !== newMsg.id));
       alert(
-        "Impossible d'enregistrer le message. Si tu réponds à un message, exécute aussi supabase-messagerie-repondre-supprimer.sql dans Supabase."
+        "Impossible d'enregistrer le message. Vérifie que supabase-messagerie-eleve-id-uuid.sql a bien été exécuté dans Supabase."
       );
-      return;
+      throw new Error("Échec enregistrement message");
     }
     const msgs = await getMessages(conversationId);
     setMessages(msgs);
   };
 
   const handleSendFile = async (file: File, replyToMessageId?: number | null) => {
-    if (!conversationId || !session) return;
+    if (!conversationId || !session) {
+      alert(
+        "Impossible d'ouvrir la conversation. Exécute supabase-messagerie-eleve-id-uuid.sql dans Supabase."
+      );
+      throw new Error("Pas de conversation");
+    }
     const url = await uploadFileMessagerie(file);
     if (!url) throw new Error("Erreur upload");
     const saved = await sendMessage({
@@ -155,10 +168,14 @@ function EnfantMessageriePageInner() {
       attachment_name: file.name,
       reply_to_message_id: replyToMessageId ?? null,
     });
-    if (saved) {
-      const msgs = await getMessages(conversationId);
-      setMessages(msgs);
+    if (!saved) {
+      alert(
+        "Impossible d'enregistrer le fichier. Vérifie supabase-messagerie-eleve-id-uuid.sql dans Supabase."
+      );
+      throw new Error("Échec enregistrement fichier");
     }
+    const msgs = await getMessages(conversationId);
+    setMessages(msgs);
   };
 
   const handleDelete = async (messageId: number) => {
@@ -288,6 +305,16 @@ function EnfantMessageriePageInner() {
 
         {loading ? (
           <p className="text-[#2d4a3e]/70">Chargement…</p>
+        ) : !conversationId ? (
+          <div className="rounded-2xl bg-white/95 p-6 shadow-lg">
+            <p className="font-medium text-[#b45309]">
+              Impossible d&apos;ouvrir cette conversation pour le moment.
+            </p>
+            <p className="mt-2 text-sm text-[#2d4a3e]/80">
+              Demande à ton maître ou ta maîtresse de mettre à jour la base (script
+              supabase-messagerie-eleve-id-uuid.sql), puis réessaie.
+            </p>
+          </div>
         ) : (
           <ChatMessagerie
             messages={messages}

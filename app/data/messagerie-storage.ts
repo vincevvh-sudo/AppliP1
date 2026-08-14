@@ -79,20 +79,32 @@ export async function getConversationGroupe(): Promise<Conversation | null> {
 
 /** Récupère ou crée la conversation directe entre enseignant et un élève. */
 export async function getConversationDirecte(eleveId: number | string): Promise<Conversation | null> {
+  const id = String(eleveId);
   let { data, error } = await supabase
     .from("conversations")
     .select("*")
     .eq("type", "direct")
-    .eq("eleve_id", eleveId)
+    .eq("eleve_id", id)
     .maybeSingle();
-  if (error) return null;
+  if (error) {
+    console.error("[messagerie] getConversationDirecte select:", error.message, error.code);
+    return null;
+  }
   if (data) return data as Conversation;
   const { data: inserted, error: errInsert } = await supabase
     .from("conversations")
-    .insert({ type: "direct", eleve_id: eleveId })
+    .insert({ type: "direct", eleve_id: id })
     .select()
     .single();
-  if (errInsert || !inserted) return null;
+  if (errInsert || !inserted) {
+    console.error(
+      "[messagerie] getConversationDirecte insert:",
+      errInsert?.message,
+      errInsert?.code,
+      errInsert?.details
+    );
+    return null;
+  }
   return inserted as Conversation;
 }
 
@@ -100,7 +112,7 @@ export async function getConversationDirecte(eleveId: number | string): Promise<
 export async function ensureConversationsPourTousEleves(): Promise<void> {
   const { data: eleves } = await supabase.from("eleves").select("id");
   if (!eleves?.length) return;
-  for (const e of eleves as { id: number }[]) {
+  for (const e of eleves as { id: number | string }[]) {
     await getConversationDirecte(e.id);
   }
 }
@@ -224,7 +236,7 @@ export async function sendMessage(row: {
   const payload: Record<string, unknown> = {
     conversation_id: row.conversation_id,
     author_type: row.author_type,
-    eleve_id: row.eleve_id ?? null,
+    eleve_id: row.eleve_id != null ? String(row.eleve_id) : null,
     content: row.content ?? "",
   };
   if (row.attachment_url != null) payload.attachment_url = row.attachment_url;

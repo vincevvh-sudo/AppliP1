@@ -106,7 +106,10 @@ export default function EnseignantMessageriePage() {
   }, [conversationId, conversationIds, router]);
 
   const handleSend = async (content: string, replyToMessageId?: number | null) => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      alert("Aucune conversation sélectionnée.");
+      throw new Error("Pas de conversation");
+    }
     const txt = (content || "").trim();
     if (!txt) return;
     const newMsg: Message = {
@@ -131,7 +134,7 @@ export default function EnseignantMessageriePage() {
       alert(
         "Impossible d'enregistrer le message. Si tu réponds à un message, exécute aussi supabase-messagerie-repondre-supprimer.sql dans Supabase."
       );
-      return;
+      throw new Error("Échec enregistrement message");
     }
     setMessages((prev) => {
       const withoutOptimistic = prev.filter((m) => m.id !== newMsg.id);
