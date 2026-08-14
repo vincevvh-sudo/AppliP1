@@ -25,7 +25,7 @@ const PARTIES_EXERCICES = PARTIES_FORET.filter((p) => p.id !== "evaluations");
 
 export default function EnseignantSonsExercicesPage() {
   const [eleves, setEleves] = useState<EleveRow[]>([]);
-  const [partages, setPartages] = useState<Record<string, { all: boolean; eleves: number[] }>>({});
+  const [partages, setPartages] = useState<Record<string, { all: boolean; eleves: string[] }>>({});
   const [loading, setLoading] = useState(true);
 
   const allSonIds = PARTIES_EXERCICES.flatMap((p) => p.sonIds);
@@ -45,7 +45,7 @@ export default function EnseignantSonsExercicesPage() {
 
   useEffect(() => {
     (async () => {
-      const p: Record<string, { all: boolean; eleves: number[] }> = {};
+      const p: Record<string, { all: boolean; eleves: string[] }> = {};
       for (const sonId of allSonIds) {
         const [all, eleves] = await Promise.all([isSonSharedToAll(sonId), getElevesForSon(sonId)]);
         p[sonId] = { all, eleves };
@@ -62,7 +62,7 @@ export default function EnseignantSonsExercicesPage() {
     }));
   };
 
-  const handleShareToEleves = async (sonId: string, eleveIds: number[]) => {
+  const handleShareToEleves = async (sonId: string, eleveIds: string[]) => {
     await unshareFromAll(sonId);
     await shareToEleves(sonId, eleveIds);
     setPartages((prev) => ({
@@ -176,7 +176,7 @@ export default function EnseignantSonsExercicesPage() {
                             const v = e.target.value;
                             if (v === "all") handleShareAll(son.id);
                             else if (v === "" || v === "none") handleShareToEleves(son.id, []);
-                            else handleShareToEleves(son.id, [parseInt(v, 10)]);
+                            else handleShareToEleves(son.id, [v]);
                           }}
                         >
                           <option value="">— Pas partagé —</option>
