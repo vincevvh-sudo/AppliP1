@@ -137,17 +137,49 @@ export default function EnfantDatesPage() {
     return [...map.entries()];
   }, [creneaux]);
 
-  const handleChoisir = async (creneau: CreneauEnfant) => {
-    if (!session) return;
-    if (creneau.dejaInscrit) return;
+  const handleToggleCreneau = async (creneau: CreneauEnfant) => {
+    if (!session || saving) return;
+
+    // Déjà choisi → annuler
+    if (creneau.dejaInscrit) {
+      setSaving(true);
+      setError(null);
+      try {
+        const { error: err } = await supabase
+          .from("rendez_vous_reservations")
+          .delete()
+          .eq("creneau_id", creneau.id)
+          .eq("eleve_id", session.id);
+        if (err) throw err;
+        await fetchCreneaux(session.id);
+      } catch {
+        setError("Erreur lors de l'annulation. Réessaie plus tard.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const placesRestantes = creneau.max_eleves - creneau.reservations;
     if (placesRestantes <= 0) {
       setError("Ce créneau est déjà complet.");
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
+      // Un seul créneau à la fois : retirer les inscriptions précédentes
+      const autresInscrits = creneaux.filter((c) => c.dejaInscrit && c.id !== creneau.id);
+      for (const autre of autresInscrits) {
+        const { error: delErr } = await supabase
+          .from("rendez_vous_reservations")
+          .delete()
+          .eq("creneau_id", autre.id)
+          .eq("eleve_id", session.id);
+        if (delErr) throw delErr;
+      }
+
       const { error: err } = await supabase.from("rendez_vous_reservations").insert({
         creneau_id: creneau.id,
         eleve_id: session.id,
@@ -156,25 +188,6 @@ export default function EnfantDatesPage() {
       await fetchCreneaux(session.id);
     } catch {
       setError("Erreur lors de l'inscription. Réessaie plus tard.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAnnuler = async (creneau: CreneauEnfant) => {
-    if (!session) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const { error: err } = await supabase
-        .from("rendez_vous_reservations")
-        .delete()
-        .eq("creneau_id", creneau.id)
-        .eq("eleve_id", session.id);
-      if (err) throw err;
-      await fetchCreneaux(session.id);
-    } catch {
-      setError("Erreur lors de l'annulation. Réessaie plus tard.");
     } finally {
       setSaving(false);
     }
@@ -193,59 +206,47 @@ export default function EnfantDatesPage() {
           Ton enseignant ne t&apos;a pas encore proposé de créneau. Reviens voir plus tard.
         </p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
+          <p className="text-sm text-[#2d4a3e]/75">
+            Touche une heure pour la choisir (en vert). Touche une autre heure pour changer, ou
+            re-touche la verte pour annuler.
+          </p>
           {creneauxParJour.map(([jour, slots]) => (
             <div key={jour}>
-              <h3 className="mb-3 font-display text-base capitalize text-[#2d4a3e]">
+              <h3 className="mb-2 font-display text-sm capitalize text-[#2d4a3e]/80">
                 {formatJourLabel(jour)}
               </h3>
-              <ul className="space-y-3">
+              <div className="flex flex-wrap gap-2">
                 {slots.map((c) => {
                   const placesRestantes = Math.max(0, c.max_eleves - c.reservations);
+                  const complet = !c.dejaInscrit && placesRestantes <= 0;
                   return (
-                    <li
+                    <button
                       key={c.id}
-                      className="flex flex-col gap-3 rounded-2xl border border-[#2d4a3e]/15 bg-white px-4 py-4 shadow-sm"
-                    >
-                      <div>
-                        <p className="font-display text-xl font-semibold text-[#2d4a3e]">
-                          {c.start_time.slice(0, 5)} – {c.end_time.slice(0, 5)}
-                        </p>
-                        <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                          {c.reservations}/{c.max_eleves} inscrits ·{" "}
-                          {placesRestantes === 0
+                      type="button"
+                      disabled={saving || complet}
+                      onClick={() => handleToggleCreneau(c)}
+                      title={
+                        c.dejaInscrit
+                          ? "Ton créneau — touche pour annuler"
+                          : complet
                             ? "Complet"
-                            : `${placesRestantes} place(s) restante(s)`}
-                        </p>
-                      </div>
-                      {c.dejaInscrit ? (
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <span className="text-sm font-semibold text-[#4a7c5a]">
-                            Tu es inscrit à ce créneau
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleAnnuler(c)}
-                            disabled={saving}
-                            className="min-h-12 w-full rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 sm:w-auto"
-                          >
-                            Annuler
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleChoisir(c)}
-                          disabled={saving || placesRestantes === 0}
-                          className="min-h-12 w-full rounded-xl bg-[#4a7c5a] px-4 py-3 text-base font-semibold text-white hover:bg-[#3d6b4d] disabled:opacity-50"
-                        >
-                          {placesRestantes === 0 ? "Complet" : "Je choisis ce créneau"}
-                        </button>
-                      )}
-                    </li>
+                            : "Touche pour choisir"
+                      }
+                      className={`min-h-11 rounded-xl px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed ${
+                        c.dejaInscrit
+                          ? "border-2 border-[#2d6b4a] bg-[#4a7c5a] text-white shadow-md"
+                          : complet
+                            ? "border border-[#2d4a3e]/15 bg-[#2d4a3e]/10 text-[#2d4a3e]/40 line-through"
+                            : "border border-[#2d4a3e]/20 bg-white text-[#2d4a3e] hover:border-[#4a7c5a] hover:bg-[#4a7c5a]/10"
+                      }`}
+                    >
+                      {c.start_time.slice(0, 5)}
+                      <span className="font-normal opacity-80">–{c.end_time.slice(0, 5)}</span>
+                    </button>
                   );
                 })}
-              </ul>
+              </div>
             </div>
           ))}
         </div>
@@ -330,7 +331,7 @@ export default function EnfantDatesPage() {
             <section className="rounded-2xl bg-white/95 p-4 shadow-lg sm:p-5">
               <h2 className="font-display text-lg text-[#2d4a3e]">Créneaux disponibles</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                Appuie sur le créneau qui te convient.
+                Touche l&apos;heure qui te convient — elle devient verte.
               </p>
               <div className="mt-4">{listeCreneaux}</div>
             </section>
