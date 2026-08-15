@@ -23,7 +23,7 @@ export default function EnseignantSonsPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a8d5ba]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Français — Exercices
+            Français
           </Link>
           <Link
             href="/enseignant"
@@ -36,7 +36,7 @@ export default function EnseignantSonsPage() {
 
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
-          Français — Exercices
+          Français
         </h1>
         <p className="mt-2 text-[#2d4a3e]/85">
           Choisis une partie : exercices (voyelles, consonnes, sons, lecture) ou évaluations.
