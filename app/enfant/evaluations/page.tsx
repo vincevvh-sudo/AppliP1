@@ -18,6 +18,8 @@ import {
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE_MOTS } from "../../data/dictee-mots-data";
 import { getMathsThemesEvaluationsPartagesPourEleve, getOperationsSeriesPartages } from "../../data/maths-partages";
+import { getModulesAccessiblesPourEleve } from "../../data/maths-modules-partages-storage";
+import { MATHS_EXERCICES_MODULES, type MathsExerciceModuleId } from "../../data/maths-exercices-modules";
 import { getSonById, getNiveauById } from "../../data/sons-data";
 import { PARTIES_MATHS } from "../../data/maths-data";
 import { getOperationsSerie, type OperationSerieId } from "../../data/maths-operations";
@@ -36,11 +38,6 @@ const IconFrancais = () => (
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-  </svg>
-);
-const IconEveil = () => (
-  <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0h.5a2.5 2.5 0 002.5-2.5V3.935M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 const IconEcouterLire = () => (
@@ -66,6 +63,7 @@ export default function EnfantEvaluationsPage() {
   const [evalDicteesMots, setEvalDicteesMots] = useState<EvalDicteeMots[]>([]);
   const [evalMaths, setEvalMaths] = useState<EvalMaths[]>([]);
   const [evalOpsSeries, setEvalOpsSeries] = useState<string[]>([]);
+  const [evalMathsModules, setEvalMathsModules] = useState<MathsExerciceModuleId[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,11 +73,12 @@ export default function EnfantEvaluationsPage() {
       router.replace("/enfant");
       return;
     }
-      Promise.all([
+    Promise.all([
       getNiveauxEvalPartagesPourEleve(s.id),
       getDicteesMotsPartagesPourEleve(s.id as number),
       Promise.resolve(getMathsThemesEvaluationsPartagesPourEleve(s.id)),
-    ]).then(([pairs, dicteesMotsNums, mathsIds]) => {
+      getModulesAccessiblesPourEleve(s.id),
+    ]).then(([pairs, dicteesMotsNums, mathsIds, modulesIds]) => {
       const francais: EvalFrancais[] = [];
       for (const p of pairs) {
         if (p.son_id === LECTURE_SON_ID && isLectureEvalNiveauId(p.niveau_id)) {
@@ -145,6 +144,7 @@ export default function EnfantEvaluationsPage() {
       }
       setEvalMaths(maths);
       setEvalOpsSeries(getOperationsSeriesPartages());
+      setEvalMathsModules(modulesIds);
       setLoading(false);
     });
   }, [router]);
@@ -152,6 +152,14 @@ export default function EnfantEvaluationsPage() {
   if (!session) {
     return null;
   }
+
+  const mathsModulesAffiches = MATHS_EXERCICES_MODULES.filter((m) =>
+    evalMathsModules.includes(m.id)
+  );
+  const hasMaths =
+    mathsModulesAffiches.length > 0 || evalMaths.length > 0 || evalOpsSeries.length > 0;
+  const hasAnyEval =
+    evalFrancais.length > 0 || evalDicteesMots.length > 0 || hasMaths;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -181,9 +189,13 @@ export default function EnfantEvaluationsPage() {
 
         {loading ? (
           <p className="mt-10 text-center text-[#2d4a3e]/70">Chargement…</p>
+        ) : !hasAnyEval ? (
+          <p className="mt-10 rounded-2xl bg-white/95 p-8 text-center text-[#2d4a3e]/75 shadow-lg">
+            Aucune évaluation partagée pour le moment. Demande à ton maître ou ta maîtresse !
+          </p>
         ) : (
           <div className="mt-10 space-y-10">
-            {/* Français — Français (hors écouter-lire, voir section dédiée) */}
+            {/* Français (hors écouter-lire, voir section dédiée) */}
             {(evalFrancais.some((e) => e.son_id !== ECOUTER_LIRE_SON_ID) || evalDicteesMots.length > 0) && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <div className="flex items-center gap-3">
@@ -195,11 +207,7 @@ export default function EnfantEvaluationsPage() {
                   <p className="text-sm text-[#2d4a3e]/70">Évaluations partagées</p>
                 </div>
               </div>
-              {evalFrancais.filter((e) => e.son_id !== ECOUTER_LIRE_SON_ID).length === 0 &&
-              evalDicteesMots.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/60">Aucune évaluation français partagée pour le moment.</p>
-              ) : (
-                <>
+              <>
                   {evalFrancais.filter(
                     (e) => e.son_id !== LECTURE_SON_ID && e.son_id !== ECOUTER_LIRE_SON_ID
                   ).length > 0 && (
@@ -271,8 +279,7 @@ export default function EnfantEvaluationsPage() {
                       </ul>
                     </>
                   )}
-                </>
-              )}
+              </>
             </section>
             )}
 
@@ -305,7 +312,8 @@ export default function EnfantEvaluationsPage() {
               </section>
             )}
 
-            {/* Mathématiques — Mathématiques */}
+            {/* Mathématiques — uniquement les évaluations / modules partagés */}
+            {hasMaths && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c4a8e8]/60 text-[#2d4a3e]">
@@ -313,50 +321,20 @@ export default function EnfantEvaluationsPage() {
                 </div>
                 <div>
                   <h2 className="font-display text-xl text-[#2d4a3e]">Mathématiques</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">Mathématiques — évaluations partagées</p>
+                  <p className="text-sm text-[#2d4a3e]/70">Évaluations partagées</p>
                 </div>
               </div>
               <ul className="mt-4 flex flex-col gap-2">
-                <li>
-                  <Link
-                    href="/enfant/maths/centimetre-metre"
-                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Centimètre ou mètre</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/maths/euros-monnaie"
-                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Compter les euros</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/maths/jours-semaine"
-                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Les jours de la semaine</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/maths/instruments-mesure"
-                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Les instruments de mesure</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/enfant/maths/vocabulaire-spatial"
-                    className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                  >
-                    <span className="font-semibold text-[#2d4a3e]">Vocabulaire spatial</span>
-                  </Link>
-                </li>
+                {mathsModulesAffiches.map((m) => (
+                  <li key={m.id}>
+                    <Link
+                      href={m.hrefEnfant}
+                      className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                    >
+                      <span className="font-semibold text-[#2d4a3e]">{m.titre}</span>
+                    </Link>
+                  </li>
+                ))}
                 {evalMaths.map((e) => (
                   <li key={e.themeId}>
                     <Link
@@ -367,41 +345,22 @@ export default function EnfantEvaluationsPage() {
                     </Link>
                   </li>
                 ))}
-                {evalOpsSeries.length > 0 &&
-                  evalOpsSeries.map((sid) => {
-                      const { titre } = getOperationsSerie(sid as OperationSerieId);
-                      return (
-                        <li key={`op-${sid}`}>
-                          <Link
-                            href={`/enfant/maths/operations/${sid}`}
-                            className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
-                          >
-                            <span className="font-semibold text-[#2d4a3e]">{titre}</span>
-                          </Link>
-                        </li>
-                      );
-                    })}
+                {evalOpsSeries.map((sid) => {
+                  const { titre } = getOperationsSerie(sid as OperationSerieId);
+                  return (
+                    <li key={`op-${sid}`}>
+                      <Link
+                        href={`/enfant/maths/operations/${sid}`}
+                        className="block rounded-xl bg-[#c4a8e8]/20 px-4 py-3 transition hover:bg-[#c4a8e8]/40"
+                      >
+                        <span className="font-semibold text-[#2d4a3e]">{titre}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
-              {evalMaths.length === 0 && evalOpsSeries.length === 0 && (
-                <p className="mt-2 text-sm text-[#2d4a3e]/60">
-                  Aucune évaluation « nombres » ou opérations partagée pour le moment (en plus des liens ci-dessus).
-                </p>
-              )}
             </section>
-
-            {/* Éveil */}
-            <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#ffd4a3]/60 text-[#2d4a3e]">
-                  <IconEveil />
-                </div>
-                <div>
-                  <h2 className="font-display text-xl text-[#2d4a3e]">Éveil</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">Évaluations à venir</p>
-                </div>
-              </div>
-              <p className="mt-4 text-sm text-[#2d4a3e]/60">Aucune évaluation éveil pour le moment.</p>
-            </section>
+            )}
           </div>
         )}
 
