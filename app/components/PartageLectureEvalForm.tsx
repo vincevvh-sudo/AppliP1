@@ -8,14 +8,14 @@ type Props = {
   titre: string;
 };
 
-/** Partage des évaluations lecture (Forêt des sons). */
+/** Partage des évaluations lecture (Français). */
 export function PartageLectureEvalForm({ niveauId, titre }: Props) {
   return (
     <PartageEvalNiveauForm
       sonId={LECTURE_SON_ID}
       niveauId={niveauId}
       titre={titre}
-      description={`Comme pour les autres évaluations de la Forêt des sons : « ${titre} » n'apparaît dans l'espace élève que si tu le partages ici (à tous ou aux enfants choisis).`}
+      description={`Comme pour les autres évaluations de Français : « ${titre} » n'apparaît dans l'espace élève que si tu le partages ici (à tous ou aux enfants choisis).`}
     />
   );
 }

@@ -84,13 +84,13 @@ export default function EnseignantSonsExercicesPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a8d5ba]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Forêt des sons — Exercices
+            Français — Exercices
           </Link>
           <Link
             href="/enseignant/sons"
             className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
           >
-            ← Retour à la Forêt des sons
+            ← Retour à Français
           </Link>
         </div>
       </header>
@@ -214,7 +214,7 @@ export default function EnseignantSonsExercicesPage() {
           href="/enseignant/sons"
           className="mt-12 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
         >
-          ← Retour à la Forêt des sons
+          ← Retour à Français
         </Link>
       </div>
     </main>

@@ -608,7 +608,7 @@ function EnseignantResultatsContent() {
           <p className="mt-8 text-[#2d4a3e]/70">Chargement…</p>
         ) : filtered.length === 0 ? (
           <p className="mt-8 rounded-2xl bg-white/95 p-8 text-center text-[#2d4a3e]/70 shadow-lg">
-            Aucun résultat pour le moment. Les évaluations des élèves apparaîtront ici après qu&apos;ils aient terminé une évaluation (Forêt des sons, mathématiques, etc.).
+            Aucun résultat pour le moment. Les évaluations des élèves apparaîtront ici après qu&apos;ils aient terminé une évaluation (Français, mathématiques, etc.).
           </p>
         ) : vueMode === "lettre" ? (
           <div className="mt-8 space-y-8">

@@ -69,7 +69,7 @@ export default function EnseignantFluenceTestSonPage() {
           sonId={son.id}
           niveauId={fluenceNiveauId(son.id)}
           titre={`Fluence — ${displayLabel}`}
-          description={`Partage « ${displayLabel} » cette semaine : les enfants le verront dans la Forêt des sons → Fluence. Tu peux partager une seule fluence à la fois (ex. Voyelle 1, puis plus tard Voyelle 2).`}
+          description={`Partage « ${displayLabel} » cette semaine : les enfants le verront dans Français → Fluence. Tu peux partager une seule fluence à la fois (ex. Voyelle 1, puis plus tard Voyelle 2).`}
         />
 
         <div className="mt-8">

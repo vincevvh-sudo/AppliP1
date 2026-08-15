@@ -57,7 +57,7 @@ export default function EnseignantMathsExercicePartiePage() {
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           {isNombres
             ? "Choisis un thème (feuilles d'exercices), puis partage exercices / évaluations depuis chaque thème."
-            : "Choisis les élèves qui peuvent accéder à chaque exercice dans l'arbre des mathématiques (côté enfant). Si la table Supabase n'est pas créée, exécute le fichier SQL indiqué dans les messages d'erreur."}
+            : "Choisis les élèves qui peuvent accéder à chaque exercice dans Mathématiques (côté enfant). Si la table Supabase n'est pas créée, exécute le fichier SQL indiqué dans les messages d'erreur."}
         </p>
 
         {isNombres && partie.themes.length > 0 ? (

@@ -183,7 +183,7 @@ export default function EnfantEvaluationsPage() {
           <p className="mt-10 text-center text-[#2d4a3e]/70">Chargement…</p>
         ) : (
           <div className="mt-10 space-y-10">
-            {/* Français — Forêt des sons (hors écouter-lire, voir section dédiée) */}
+            {/* Français — Français (hors écouter-lire, voir section dédiée) */}
             {(evalFrancais.some((e) => e.son_id !== ECOUTER_LIRE_SON_ID) || evalDicteesMots.length > 0) && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function EnfantEvaluationsPage() {
                 </div>
                 <div>
                   <h2 className="font-display text-xl text-[#2d4a3e]">Français</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">Forêt des sons — évaluations partagées</p>
+                  <p className="text-sm text-[#2d4a3e]/70">Évaluations partagées</p>
                 </div>
               </div>
               {evalFrancais.filter((e) => e.son_id !== ECOUTER_LIRE_SON_ID).length === 0 &&
@@ -246,7 +246,7 @@ export default function EnfantEvaluationsPage() {
                                 className="block rounded-xl bg-[#a8d5ba]/20 px-4 py-3 transition hover:bg-[#a8d5ba]/40"
                               >
                                 <span className="font-semibold text-[#2d4a3e]">{e.titre}</span>
-                                <span className="ml-2 text-[#2d4a3e]/70">— Forêt des sons</span>
+                                <span className="ml-2 text-[#2d4a3e]/70">— Français</span>
                               </Link>
                             </li>
                           ))}
@@ -305,7 +305,7 @@ export default function EnfantEvaluationsPage() {
               </section>
             )}
 
-            {/* Mathématiques — Arbre des mathématiques */}
+            {/* Mathématiques — Mathématiques */}
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c4a8e8]/60 text-[#2d4a3e]">
@@ -313,7 +313,7 @@ export default function EnfantEvaluationsPage() {
                 </div>
                 <div>
                   <h2 className="font-display text-xl text-[#2d4a3e]">Mathématiques</h2>
-                  <p className="text-sm text-[#2d4a3e]/70">L&apos;arbre des mathématiques — évaluations partagées</p>
+                  <p className="text-sm text-[#2d4a3e]/70">Mathématiques — évaluations partagées</p>
                 </div>
               </div>
               <ul className="mt-4 flex flex-col gap-2">

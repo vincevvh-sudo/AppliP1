@@ -19,7 +19,7 @@ export default function EnfantMathsPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c4a8e8]/80 text-[#2d4a3e]">
               <IconMaths />
             </span>
-            L&apos;arbre des mathématiques
+            Mathématiques
           </Link>
           <Link href="/enfant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
             ← Retour
@@ -29,7 +29,7 @@ export default function EnfantMathsPage() {
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12">
         <h1 className="font-display text-2xl text-white sm:text-3xl">
-          L&apos;arbre des mathématiques
+          Mathématiques
         </h1>
         <p className="mt-2 text-sm text-white/95">
           Choisis Exercice ou Évaluation.

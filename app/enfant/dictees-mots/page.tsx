@@ -56,7 +56,7 @@ export default function EnfantDicteesMotsPage() {
             href="/enfant/sons"
             className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
           >
-            ← Retour à la Forêt des sons
+            ← Retour à Français
           </Link>
         </div>
       </header>

@@ -41,7 +41,7 @@ export default function EnfantLecturePage() {
           href="/enfant/sons"
           className="mt-12 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
         >
-          ← Retour à la Forêt des sons
+          ← Retour à Français
         </Link>
       </div>
     </main>

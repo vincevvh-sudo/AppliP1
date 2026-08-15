@@ -20,7 +20,7 @@ export default function EnseignantMathsPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c4a8e8]/80 text-[#2d4a3e]">
               <IconMaths />
             </span>
-            L&apos;arbre des mathématiques
+            Mathématiques
           </Link>
           <Link href="/enseignant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
             ← Tableau de bord
@@ -30,7 +30,7 @@ export default function EnseignantMathsPage() {
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
         <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">
-          L&apos;arbre des mathématiques
+          Mathématiques
         </h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
           Choisis Exercice ou Évaluation.

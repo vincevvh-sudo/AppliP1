@@ -192,7 +192,7 @@ export default function EnseignantEvaluation5Page() {
         <div className="mt-6 rounded-2xl border-2 border-[#4a7c5a]/40 bg-[#a8d5ba]/20 p-4">
           <p className="font-display text-[#2d4a3e]">Tester et partager</p>
           <p className="mt-1 text-sm text-[#2d4a3e]/70">
-            Teste chaque dictée comme un élève, puis partage-la avec tous les enfants ou avec un seul élève (Forêt des sons → Dictées).
+            Teste chaque dictée comme un élève, puis partage-la avec tous les enfants ou avec un seul élève (Français → Dictées).
           </p>
           <div className="mt-6 space-y-6">
             {[1, 2, 3, 4, 5].map((num) => {

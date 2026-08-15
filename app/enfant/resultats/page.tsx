@@ -132,13 +132,13 @@ export default function EnfantResultatsPage() {
         ) : resultats.length === 0 ? (
           <div className="mt-8 rounded-2xl bg-white/95 p-8 text-center shadow-lg">
             <p className="text-[#2d4a3e]/70">
-              Tu n&apos;as pas encore fait d&apos;évaluations. Continue à t&apos;entraîner dans la Forêt des sons !
+              Tu n&apos;as pas encore fait d&apos;évaluations. Continue à t&apos;entraîner en français !
             </p>
             <Link
               href="/enfant/sons"
               className="mt-4 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
             >
-              Aller à la Forêt des sons
+              Aller à Français
             </Link>
           </div>
         ) : (

@@ -49,7 +49,7 @@ export default function EnfantDicteesPage() {
               Dictées de syllabes
             </Link>
             <Link href="/enfant/sons" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
-              ← Retour à la Forêt des sons
+              ← Retour à Français
             </Link>
           </div>
         </header>
@@ -58,7 +58,7 @@ export default function EnfantDicteesPage() {
             Ton maître ou ta maîtresse n&apos;a pas encore partagé les dictées de syllabes. Demande-lui de les partager depuis l&apos;Évaluation 5 — Dictées.
           </p>
           <Link href="/enfant/sons" className="mt-6 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]">
-            ← Retour à la Forêt des sons
+            ← Retour à Français
           </Link>
         </div>
       </main>
@@ -83,7 +83,7 @@ export default function EnfantDicteesPage() {
             href="/enfant/sons"
             className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
           >
-            ← Retour à la Forêt des sons
+            ← Retour à Français
           </Link>
         </div>
       </header>
@@ -119,7 +119,7 @@ export default function EnfantDicteesPage() {
           href="/enfant/sons"
           className="mt-12 inline-block rounded-xl bg-[#4a7c5a] px-6 py-3 font-semibold text-white transition hover:bg-[#3d6b4d]"
         >
-          ← Retour à la Forêt des sons
+          ← Retour à Français
         </Link>
       </div>
     </main>

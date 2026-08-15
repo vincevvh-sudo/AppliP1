@@ -22,7 +22,7 @@ export default function EnseignantMathsPartiePage() {
         <ForetMagiqueBackground />
         <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
           <p>Partie introuvable.</p>
-          <Link href="/enseignant/maths" className="mt-4 inline-block text-[#4a7c5a]">← Arbre des mathématiques</Link>
+          <Link href="/enseignant/maths" className="mt-4 inline-block text-[#4a7c5a]">← Mathématiques</Link>
         </div>
       </main>
     );
@@ -40,7 +40,7 @@ export default function EnseignantMathsPartiePage() {
             {partie.titre}
           </Link>
           <Link href="/enseignant/maths" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
-            ← Arbre des mathématiques
+            ← Mathématiques
           </Link>
         </div>
       </header>

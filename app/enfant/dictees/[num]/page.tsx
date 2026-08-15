@@ -139,7 +139,7 @@ export default function EnfantDicteeNumPage() {
         <div className="relative z-10 mx-auto max-w-2xl px-5 py-16 text-center">
           <p>Dictée introuvable.</p>
           <Link href="/enfant/sons" className="mt-4 inline-block text-[#4a7c5a]">
-            ← Retour à la Forêt des sons
+            ← Retour à Français
           </Link>
         </div>
       </main>
@@ -274,7 +274,7 @@ export default function EnfantDicteeNumPage() {
                 href="/enfant/sons"
                 className="rounded-xl bg-[#2d4a3e]/15 px-8 py-3 font-semibold text-[#2d4a3e] transition hover:bg-[#2d4a3e]/25"
               >
-                Retour à la Forêt des sons
+                Retour à Français
               </Link>
             </div>
           </div>

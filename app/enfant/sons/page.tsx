@@ -104,7 +104,7 @@ export default function EnfantSonsPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a8d5ba]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
-            Forêt des sons
+            Français
           </Link>
           <Link
             href="/enfant"
