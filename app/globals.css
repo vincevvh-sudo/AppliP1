@@ -55,6 +55,10 @@ body {
   display: none;
 }
 
+.rdv-print-only {
+  display: none;
+}
+
 /* Bulletin : impression / PDF — compact pour limiter le nombre de pages */
 @media print {
   @page {
@@ -68,12 +72,31 @@ body {
   .print-only {
     display: block !important;
   }
+  .rdv-print-only {
+    display: block !important;
+  }
   body {
     background: #fff !important;
   }
   main {
     background: none !important;
   }
+
+  #rdv-print-area {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #000 !important;
+  }
+  #rdv-print-area table {
+    font-size: 12pt !important;
+    width: 100%;
+  }
+  #rdv-print-area th,
+  #rdv-print-area td {
+    padding: 0.35rem 0.5rem 0.35rem 0 !important;
+  }
+
   .bulletin-layout {
     max-width: none;
     width: 100%;

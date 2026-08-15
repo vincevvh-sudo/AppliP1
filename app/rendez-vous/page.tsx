@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../components/MiyazakiDecor";
 import { SemainierClasse } from "../components/SemainierClasse";
@@ -13,6 +13,8 @@ const IconLeaf = () => (
   </svg>
 );
 
+type EleveNom = { id: string; prenom: string; nom: string };
+
 type Creneau = {
   id: number;
   jour: string;
@@ -20,7 +22,21 @@ type Creneau = {
   end_time: string;
   max_eleves: number;
   reservations: number;
+  eleves: EleveNom[];
 };
+
+function formatJourLabel(jour: string) {
+  return new Date(`${jour}T12:00:00`).toLocaleDateString("fr-BE", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatHeure(t: string) {
+  return t.slice(0, 5);
+}
 
 export default function RendezVousPage() {
   const [date, setDate] = useState<string>(() => {
@@ -39,7 +55,9 @@ export default function RendezVousPage() {
     try {
       const { data, error: err } = await supabase
         .from("rendez_vous_creneaux")
-        .select("id, jour, start_time, end_time, max_eleves, rendez_vous_reservations ( id )")
+        .select(
+          "id, jour, start_time, end_time, max_eleves, rendez_vous_reservations ( id, eleve_id )"
+        )
         .eq("jour", jour)
         .order("start_time");
       if (err) {
@@ -50,17 +68,59 @@ export default function RendezVousPage() {
         setCreneaux([]);
         return;
       }
-      const list =
-        (data as any[] | null)?.map((row) => ({
-          id: row.id as number,
-          jour: row.jour as string,
-          start_time: row.start_time as string,
-          end_time: row.end_time as string,
-          max_eleves: row.max_eleves as number,
-          reservations: Array.isArray(row.rendez_vous_reservations)
-            ? row.rendez_vous_reservations.length
-            : 0,
-        })) ?? [];
+
+      const rows =
+        (data as
+          | {
+              id: number;
+              jour: string;
+              start_time: string;
+              end_time: string;
+              max_eleves: number;
+              rendez_vous_reservations?: Array<{ id: number; eleve_id: string | number }>;
+            }[]
+          | null) ?? [];
+
+      const eleveIds = [
+        ...new Set(
+          rows.flatMap((row) =>
+            (row.rendez_vous_reservations ?? []).map((r) => String(r.eleve_id))
+          )
+        ),
+      ];
+
+      const elevesById: Record<string, EleveNom> = {};
+      if (eleveIds.length > 0) {
+        const { data: elevesData } = await supabase
+          .from("eleves")
+          .select("id, prenom, nom")
+          .in("id", eleveIds);
+        for (const e of (elevesData ?? []) as EleveNom[]) {
+          elevesById[String(e.id)] = {
+            id: String(e.id),
+            prenom: e.prenom,
+            nom: e.nom,
+          };
+        }
+      }
+
+      const list: Creneau[] = rows.map((row) => {
+        const reservationsArr = Array.isArray(row.rendez_vous_reservations)
+          ? row.rendez_vous_reservations
+          : [];
+        const eleves = reservationsArr
+          .map((r) => elevesById[String(r.eleve_id)])
+          .filter(Boolean) as EleveNom[];
+        return {
+          id: row.id,
+          jour: row.jour,
+          start_time: row.start_time,
+          end_time: row.end_time,
+          max_eleves: row.max_eleves,
+          reservations: reservationsArr.length,
+          eleves,
+        };
+      });
       setCreneaux(list);
     } catch {
       setError("Impossible de charger les créneaux pour ce jour.");
@@ -73,6 +133,25 @@ export default function RendezVousPage() {
   useEffect(() => {
     if (date) fetchCreneaux(date);
   }, [date, fetchCreneaux]);
+
+  const creneauxReserves = useMemo(
+    () =>
+      creneaux
+        .filter((c) => c.eleves.length > 0)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [creneaux]
+  );
+
+  const handlePrintPlanning = () => {
+    if (creneauxReserves.length === 0) {
+      alert("Aucun rendez-vous réservé pour ce jour pour le moment.");
+      return;
+    }
+    const prevTitle = document.title;
+    document.title = `Rendez-vous — ${formatJourLabel(date)}`;
+    window.print();
+    document.title = prevTitle;
+  };
 
   const handleToggleSlot = async (startHHmm: string, endHHmm: string, existing?: Creneau) => {
     if (!date) return;
@@ -95,14 +174,12 @@ export default function RendezVousPage() {
       }
     } else {
       const max = Math.max(1, Number.parseInt(defaultMax || "1", 10));
-      const { error: err } = await supabase
-        .from("rendez_vous_creneaux")
-        .insert({
-          jour: date,
-          start_time: `${startHHmm}:00`,
-          end_time: `${endHHmm}:00`,
-          max_eleves: max,
-        });
+      const { error: err } = await supabase.from("rendez_vous_creneaux").insert({
+        jour: date,
+        start_time: `${startHHmm}:00`,
+        end_time: `${endHHmm}:00`,
+        max_eleves: max,
+      });
       if (err) {
         console.error("Supabase rendez_vous_creneaux insert error:", err);
         const message =
@@ -115,32 +192,36 @@ export default function RendezVousPage() {
       }
     }
     await fetchCreneaux(date);
-    try {
-      // nothing
-    } finally {
-      setSaving(false);
-    }
+    setSaving(false);
   };
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
-      <ForetMagiqueBackground />
+      <div className="no-print">
+        <ForetMagiqueBackground />
+      </div>
 
-      <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md">
+      <header className="relative z-10 border-b border-[#2d4a3e]/10 bg-[#fef9f3]/95 backdrop-blur-md no-print">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/enseignant" className="flex items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]">
+          <Link
+            href="/enseignant"
+            className="flex items-center gap-2 font-display text-xl tracking-wide text-[#2d4a3e]"
+          >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffd4a3]/80 text-[#2d4a3e]">
               <IconLeaf />
             </span>
             Agenda & Rendez-vous
           </Link>
-          <Link href="/enseignant" className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20">
+          <Link
+            href="/enseignant"
+            className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
+          >
             ← Retour
           </Link>
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-5xl px-5 py-10 sm:py-14">
+      <div className="relative z-10 mx-auto max-w-5xl px-5 py-10 sm:py-14 no-print">
         <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl text-center">
           Agenda & Rendez-vous
         </h1>
@@ -173,7 +254,7 @@ export default function RendezVousPage() {
               />
             </label>
             <span className="text-sm text-[#2d4a3e]/70">
-              {date ? new Date(date).toLocaleDateString("fr-BE", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : ""}
+              {date ? formatJourLabel(date) : ""}
             </span>
           </div>
         </section>
@@ -223,8 +304,9 @@ export default function RendezVousPage() {
                     const endHHmm = `${String(h2).padStart(2, "0")}:${String(mm2).padStart(2, "0")}`;
                     const key = `${startHHmm}-${endHHmm}`;
                     const existing = map.get(key);
-                    const placesRestantes =
-                      existing ? Math.max(0, existing.max_eleves - existing.reservations) : Number.parseInt(defaultMax || "1", 10);
+                    const placesRestantes = existing
+                      ? Math.max(0, existing.max_eleves - existing.reservations)
+                      : Number.parseInt(defaultMax || "1", 10);
                     items.push(
                       <button
                         key={key}
@@ -240,7 +322,11 @@ export default function RendezVousPage() {
                         }`}
                         title={
                           existing
-                            ? `${startHHmm} – ${endHHmm} · ${existing.reservations}/${existing.max_eleves} inscrits`
+                            ? `${startHHmm} – ${endHHmm} · ${existing.reservations}/${existing.max_eleves} inscrits${
+                                existing.eleves.length
+                                  ? ` · ${existing.eleves.map((e) => e.prenom).join(", ")}`
+                                  : ""
+                              }`
                             : `${startHHmm} – ${endHHmm} · cliquez pour proposer ce créneau`
                         }
                       >
@@ -250,7 +336,12 @@ export default function RendezVousPage() {
                         {existing ? (
                           <span className="text-[10px] text-[#2d4a3e]/75">
                             {existing.reservations}/{existing.max_eleves} inscrits ·{" "}
-                            {placesRestantes === 0 ? "Complet" : `${placesRestantes} place(s) restantes`}
+                            {placesRestantes === 0
+                              ? "Complet"
+                              : `${placesRestantes} place(s) restantes`}
+                            {existing.eleves.length > 0
+                              ? ` · ${existing.eleves.map((e) => e.prenom).join(", ")}`
+                              : ""}
                           </span>
                         ) : (
                           <span className="text-[10px] text-[#2d4a3e]/50">Libre</span>
@@ -271,6 +362,82 @@ export default function RendezVousPage() {
             <PartageRendezVousJourForm jour={date} nbCreneaux={creneaux.length} />
           </div>
         ) : null}
+
+        <section className="mt-6 rounded-2xl bg-white/95 p-5 shadow-lg">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg text-[#2d4a3e]">
+                Planning des rendez-vous
+              </h2>
+              <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                Liste des créneaux déjà choisis par les enfants pour{" "}
+                <span className="font-semibold">{formatJourLabel(date)}</span>.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handlePrintPlanning}
+              disabled={creneauxReserves.length === 0}
+              className="rounded-xl bg-[#4a7c5a] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d6b4d] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Imprimer les rendez-vous
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="mt-4 text-sm text-[#2d4a3e]/70">Chargement…</p>
+          ) : creneauxReserves.length === 0 ? (
+            <p className="mt-4 text-sm text-[#2d4a3e]/70">
+              Aucun enfant n&apos;a encore choisi de créneau pour ce jour.
+            </p>
+          ) : (
+            <ul className="mt-4 divide-y divide-[#2d4a3e]/10 rounded-xl border border-[#2d4a3e]/10 bg-white/90">
+              {creneauxReserves.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3"
+                >
+                  <span className="font-semibold text-[#2d4a3e]">
+                    {formatHeure(c.start_time)} – {formatHeure(c.end_time)}
+                  </span>
+                  <span className="text-[#2d4a3e]/90">
+                    {c.eleves.map((e) => e.prenom).join(", ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {/* Zone d'impression : date + heures + prénoms */}
+      <div id="rdv-print-area" className="rdv-print-only bg-white text-[#111]">
+        <h1 className="mb-1 text-xl font-bold">Rendez-vous parents</h1>
+        <p className="mb-6 text-base capitalize">{formatJourLabel(date)}</p>
+        {creneauxReserves.length === 0 ? (
+          <p>Aucun rendez-vous réservé.</p>
+        ) : (
+          <table className="w-full border-collapse text-base">
+            <thead>
+              <tr>
+                <th className="border-b border-black pb-2 pr-6 text-left">Heure</th>
+                <th className="border-b border-black pb-2 text-left">Enfant</th>
+              </tr>
+            </thead>
+            <tbody>
+              {creneauxReserves.map((c) => (
+                <tr key={c.id}>
+                  <td className="border-b border-gray-300 py-2 pr-6 align-top whitespace-nowrap">
+                    {formatHeure(c.start_time)} – {formatHeure(c.end_time)}
+                  </td>
+                  <td className="border-b border-gray-300 py-2 align-top">
+                    {c.eleves.map((e) => e.prenom).join(", ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </main>
   );
