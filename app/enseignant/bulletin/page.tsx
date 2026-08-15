@@ -474,11 +474,24 @@ export default function BulletinPage() {
           selectedEleve!.id,
           `mois-${monthId}-commentaire`
         ),
+        commentaireSynthese: getSectionComment(
+          selectedEleve!.id,
+          "synthese-commentaire"
+        ),
+        synthese: syntheseEval
+          ? BULLETIN_SYNTHESE_CATEGORIES.map((cat) => ({
+              label: cat.label,
+              maxPoints: cat.maxPoints,
+              P1: syntheseEval[cat.id].P1,
+              P2: syntheseEval[cat.id].P2,
+              P3: syntheseEval[cat.id].P3,
+            }))
+          : undefined,
         comportement,
         attendus,
       };
     },
-    [bulletin, sectionComportement, selectedEleve]
+    [bulletin, sectionComportement, selectedEleve, syntheseEval]
   );
 
   const handleEnvoyerBulletinMois = async (
@@ -746,73 +759,114 @@ export default function BulletinPage() {
                 </div>
               </div>
 
-              {/* Synthèse des évaluations */}
+              {/* Page 1 impression : synthèse + commentaire */}
               {selectedEleve.supabaseEleveId != null && (
-                <section className="bulletin-synthese mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
-                  <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
-                    Synthèse des évaluations
-                  </h2>
-                  {loadingSynthese ? (
-                    <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
-                  ) : syntheseEval ? (
-                    <div className="overflow-x-auto px-4 pb-4">
-                      <table className="w-full border-collapse text-sm">
-                        <thead>
-                          <tr className="border-b border-[#2d4a3e]/20">
-                            <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
-                              Partie
-                            </th>
-                            <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                              P1 (août–oct.)
-                            </th>
-                            <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                              P2 (nov.–fév.)
-                            </th>
-                            <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                              P3 (mars–juin)
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {BULLETIN_SYNTHESE_CATEGORIES.map((cat) => (
-                            <tr
-                              key={cat.id}
-                              className="border-b border-[#2d4a3e]/10"
-                            >
-                              <td className="py-2 pr-4 text-[#2d4a3e]">
-                                {cat.label}
-                              </td>
-                              <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                {formatNoteSurBarème(
-                                  syntheseEval[cat.id].P1,
-                                  cat.maxPoints
-                                )}
-                              </td>
-                              <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                {formatNoteSurBarème(
-                                  syntheseEval[cat.id].P2,
-                                  cat.maxPoints
-                                )}
-                              </td>
-                              <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                {formatNoteSurBarème(
-                                  syntheseEval[cat.id].P3,
-                                  cat.maxPoints
-                                )}
-                              </td>
+                <div className="bulletin-page-synthese">
+                  <section className="bulletin-synthese mb-4 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
+                    <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
+                      Synthèse des évaluations
+                    </h2>
+                    {loadingSynthese ? (
+                      <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
+                    ) : syntheseEval ? (
+                      <div className="overflow-x-auto px-4 pb-4">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b border-[#2d4a3e]/20">
+                              <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
+                                Partie
+                              </th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
+                                P1 (août–oct.)
+                              </th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
+                                P2 (nov.–fév.)
+                              </th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
+                                P3 (mars–juin)
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {BULLETIN_SYNTHESE_CATEGORIES.map((cat) => (
+                              <tr
+                                key={cat.id}
+                                className="border-b border-[#2d4a3e]/10"
+                              >
+                                <td className="py-2 pr-4 text-[#2d4a3e]">
+                                  {cat.label}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(
+                                    syntheseEval[cat.id].P1,
+                                    cat.maxPoints
+                                  )}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(
+                                    syntheseEval[cat.id].P2,
+                                    cat.maxPoints
+                                  )}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(
+                                    syntheseEval[cat.id].P3,
+                                    cat.maxPoints
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="p-4 text-sm text-[#2d4a3e]/60">
+                        Aucun résultat d&apos;évaluation pour cet élève.
+                      </p>
+                    )}
+                  </section>
+
+                  <section
+                    className={`bulletin-commentaire-synthese mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 p-4 ${
+                      getSectionComment(selectedEleve.id, "synthese-commentaire").trim() === ""
+                        ? "commentaire-synthese-empty-print"
+                        : ""
+                    }`}
+                  >
+                    <h2 className="mb-2 font-display text-lg text-[#2d4a3e] print:text-sm">
+                      Commentaire
+                    </h2>
+                    <div className="no-print">
+                      <CommentaireAvecGemini
+                        variant="month"
+                        libelle={`Commentaire — synthèse des évaluations — ${selectedEleve.prenom}`}
+                        value={getSectionComment(
+                          selectedEleve.id,
+                          "synthese-commentaire"
+                        )}
+                        onChange={(c) =>
+                          handleSetSectionComment(
+                            selectedEleve.id,
+                            "synthese-commentaire",
+                            c
+                          )
+                        }
+                        placeholder="Dicte ou écris un commentaire sur les résultats scolaires…"
+                        rows={5}
+                      />
                     </div>
-                  ) : (
-                    <p className="p-4 text-sm text-[#2d4a3e]/60">
-                      Aucun résultat d&apos;évaluation pour cet élève.
-                    </p>
-                  )}
-                </section>
+                    {getSectionComment(selectedEleve.id, "synthese-commentaire").trim() !==
+                      "" && (
+                      <p className="print-only whitespace-pre-wrap text-[#2d4a3e]/90">
+                        {getSectionComment(selectedEleve.id, "synthese-commentaire")}
+                      </p>
+                    )}
+                  </section>
+                </div>
               )}
 
+              {/* Page 2+ impression : attendus / mois */}
+              <div className="bulletin-page-attendus">
               {/* Édition des attendus (toggle) */}
               {editAttendus && (
                 <section className="no-print mb-6 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
@@ -1192,6 +1246,7 @@ export default function BulletinPage() {
                   })}
                 </div>
               )}
+              </div>
             </>
           )}
         </div>

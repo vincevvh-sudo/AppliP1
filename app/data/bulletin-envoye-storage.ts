@@ -13,9 +13,22 @@ export type BulletinEnvoyeLigne = {
   commentaire: string;
 };
 
+/** Snapshot de la synthèse des évaluations (page 1 du bulletin). */
+export type BulletinEnvoyeSyntheseRow = {
+  label: string;
+  maxPoints: number;
+  P1: { points: number; pointsMax: number };
+  P2: { points: number; pointsMax: number };
+  P3: { points: number; pointsMax: number };
+};
+
 export type BulletinEnvoyeData = {
   sectionTitle: string;
   commentaireMois: string;
+  /** Commentaire global sous la synthèse des évaluations. */
+  commentaireSynthese?: string;
+  /** Tableau de synthèse (points par période) au moment de l'envoi. */
+  synthese?: BulletinEnvoyeSyntheseRow[];
   comportement: BulletinEnvoyeLigne[];
   attendus: BulletinEnvoyeLigne[];
 };

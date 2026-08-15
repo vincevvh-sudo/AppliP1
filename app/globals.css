@@ -105,6 +105,26 @@ body {
     border: 1px solid #ccc !important;
   }
 
+  /* Page 1 : synthèse + commentaire → page suivante = attendus */
+  .bulletin-page-synthese {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .bulletin-commentaire-synthese {
+    margin-top: 0.5rem !important;
+  }
+  .bulletin-commentaire-synthese h2,
+  .bulletin-commentaire-synthese h3 {
+    font-size: 0.95rem !important;
+    margin: 0.25rem 0 !important;
+  }
+  .bulletin-commentaire-synthese p {
+    font-size: 0.75rem !important;
+    line-height: 1.35 !important;
+    white-space: pre-wrap;
+  }
+
   .print-month-page {
     break-after: auto;
     page-break-after: auto;
@@ -157,6 +177,9 @@ body {
   }
 
   .commentaire-mois-empty {
+    display: none !important;
+  }
+  .commentaire-synthese-empty-print h2 {
     display: none !important;
   }
   .comment-cell-empty-print {
