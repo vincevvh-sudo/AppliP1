@@ -21,6 +21,7 @@ import {
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { Message, PollWithDetails } from "../../data/messagerie-storage";
 import { supabase } from "../../../utils/supabase";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -29,6 +30,7 @@ const IconLeaf = () => (
 );
 
 function EnfantMessageriePageInner() {
+  useMarkEnfantSectionSeen("messagerie");
   const router = useRouter();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");

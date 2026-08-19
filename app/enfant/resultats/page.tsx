@@ -11,6 +11,7 @@ import { getEnfantSession } from "../../../utils/enfant-session";
 import type { ResultatRow } from "../../data/resultats-storage";
 import type { BulletinEnvoyeRow } from "../../data/bulletin-envoye-storage";
 import { getManualCategoryLabel } from "../../data/manual-evaluations";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -37,6 +38,7 @@ function getResultTitle(r: ResultatRow): string {
 
 export default function EnfantResultatsPage() {
   const router = useRouter();
+  useMarkEnfantSectionSeen("resultats");
   const [resultats, setResultats] = useState<ResultatRow[]>([]);
   const [bulletins, setBulletins] = useState<BulletinEnvoyeRow[]>([]);
   const [loading, setLoading] = useState(true);

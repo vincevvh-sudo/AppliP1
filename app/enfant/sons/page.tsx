@@ -14,6 +14,7 @@ import {
   sonIdFromFluenceNiveauId,
 } from "../../data/fluence-partage";
 import { getEnfantSession } from "../../../utils/enfant-session";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
   <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
@@ -22,6 +23,7 @@ const IconLeaf = () => (
 );
 
 export default function EnfantSonsPage() {
+  useMarkEnfantSectionSeen("francais");
   const [session, setSession] = useState<ReturnType<typeof getEnfantSession>>(null);
   const [sharedIds, setSharedIds] = useState<string[]>([]);
   const [dicteesPartagees, setDicteesPartagees] = useState<number[]>([]);

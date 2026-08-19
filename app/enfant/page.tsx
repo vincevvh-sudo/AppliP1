@@ -10,6 +10,11 @@ import { getAvatarFromStorage, getAvatarPhotoFromStorage, setAvatarPhotoInStorag
 import { supabase } from "../../utils/supabase";
 import type { EleveRow } from "../../utils/supabase";
 import { getEnfantSession, setEnfantSession, clearEnfantSession } from "../../utils/enfant-session";
+import {
+  getEnfantNouveautes,
+  type EnfantNouveautes,
+  type EnfantSectionKey,
+} from "../data/enfant-nouveautes";
 
 const IconLeaf = () => (
   <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
@@ -48,13 +53,21 @@ const IconMessage = () => (
   </svg>
 );
 
-const CARDS = [
-  { href: "/enfant/evaluations", icon: IconEvaluations, title: "Évaluations", desc: "Français, mathématiques et éveil — les évals partagées par ton maître", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
-  { href: "/enfant/resultats", icon: IconResult, title: "Mes résultats", desc: "Voir mes étoiles et mes progrès", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
-  { href: "/enfant/dates", icon: IconCalendar, title: "Rendez-vous", desc: "Créneaux avec le maître + leçons, devoirs et à savoir de la semaine", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
-  { href: "/enfant/sons", icon: IconExercise, title: "Français", desc: "Exercices de lecture et de sons", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
-  { href: "/enfant/maths", icon: IconMaths, title: "Mathématiques", desc: "Exercices de maths (nombres, grandeur…)", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },
-  { href: "/enfant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec la classe et mon maître", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
+const CARDS: {
+  href: string;
+  icon: () => React.JSX.Element;
+  title: string;
+  desc: string;
+  color: string;
+  hoverColor: string;
+  section: EnfantSectionKey;
+}[] = [
+  { href: "/enfant/evaluations", icon: IconEvaluations, title: "Évaluations", desc: "Français, mathématiques et éveil — les évals partagées par ton maître", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]", section: "evaluations" },
+  { href: "/enfant/resultats", icon: IconResult, title: "Mes résultats", desc: "Voir mes étoiles et mes progrès", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]", section: "resultats" },
+  { href: "/enfant/dates", icon: IconCalendar, title: "Rendez-vous", desc: "Créneaux avec le maître + leçons, devoirs et à savoir de la semaine", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]", section: "rendezvous" },
+  { href: "/enfant/sons", icon: IconExercise, title: "Français", desc: "Exercices de lecture et de sons", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]", section: "francais" },
+  { href: "/enfant/maths", icon: IconMaths, title: "Mathématiques", desc: "Exercices de maths (nombres, grandeur…)", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]", section: "maths" },
+  { href: "/enfant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec la classe et mon maître", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]", section: "messagerie" },
 ];
 
 export default function EnfantPage() {
@@ -68,6 +81,21 @@ export default function EnfantPage() {
   const [selectedEleve, setSelectedEleve] = useState<EleveRow | null>(null);
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
+  const [nouveautes, setNouveautes] = useState<EnfantNouveautes | null>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setNouveautes(null);
+      return;
+    }
+    let cancelled = false;
+    getEnfantNouveautes(session.id).then((n) => {
+      if (!cancelled) setNouveautes(n);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   const fetchEleves = useCallback(async () => {
     try {
@@ -238,9 +266,17 @@ export default function EnfantPage() {
           <div className="grid gap-8 sm:grid-cols-3">
             {CARDS.map((card) => {
               const isExternal = card.href.startsWith("http");
-              const className = `group flex flex-col items-center gap-5 rounded-[2rem] bg-white/95 p-8 shadow-lg backdrop-blur transition hover:-translate-y-2 hover:shadow-xl ${card.hoverColor}`;
+              const hasNew = nouveautes?.[card.section] === true;
+              const className = `group relative flex flex-col items-center gap-5 rounded-[2rem] bg-white/95 p-8 shadow-lg backdrop-blur transition hover:-translate-y-2 hover:shadow-xl ${card.hoverColor}`;
               const content = (
                 <>
+                  {hasNew && (
+                    <span
+                      className="absolute right-4 top-4 h-3.5 w-3.5 rounded-full bg-red-500 shadow ring-2 ring-white"
+                      title="Nouveau !"
+                      aria-label="Nouveau contenu"
+                    />
+                  )}
                   <div className={`flex h-24 w-24 items-center justify-center rounded-[1.5rem] ${card.color} text-[#2d4a3e] transition group-hover:scale-110`}>
                     <card.icon />
                   </div>

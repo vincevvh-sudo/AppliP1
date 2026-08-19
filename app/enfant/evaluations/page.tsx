@@ -24,6 +24,7 @@ import { getSonById, getNiveauById } from "../../data/sons-data";
 import { PARTIES_MATHS } from "../../data/maths-data";
 import { getOperationsSerie, type OperationSerieId } from "../../data/maths-operations";
 import { getEnfantSession } from "../../../utils/enfant-session";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -58,6 +59,7 @@ type EvalMaths = { themeId: string; titre: string };
 
 export default function EnfantEvaluationsPage() {
   const router = useRouter();
+  useMarkEnfantSectionSeen("evaluations");
   const [session, setSession] = useState<ReturnType<typeof getEnfantSession>>(null);
   const [evalFrancais, setEvalFrancais] = useState<EvalFrancais[]>([]);
   const [evalDicteesMots, setEvalDicteesMots] = useState<EvalDicteeMots[]>([]);

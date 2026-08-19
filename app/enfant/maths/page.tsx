@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10,6 +11,7 @@ const IconMaths = () => (
 );
 
 export default function EnfantMathsPage() {
+  useMarkEnfantSectionSeen("maths");
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />

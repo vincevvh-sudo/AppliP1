@@ -8,6 +8,7 @@ import { SemainierClasse } from "../../components/SemainierClasse";
 import { supabase } from "../../../utils/supabase";
 import { getEnfantSession, type EnfantSession } from "../../../utils/enfant-session";
 import { getJoursRendezVousPartagesPourEleve } from "../../data/rendez-vous-partages";
+import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
   <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
@@ -40,6 +41,7 @@ function formatJourLabel(jour: string) {
 
 export default function EnfantDatesPage() {
   const router = useRouter();
+  useMarkEnfantSectionSeen("rendezvous");
   const [session, setSession] = useState<EnfantSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
