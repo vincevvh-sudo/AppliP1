@@ -118,7 +118,7 @@ export function PartageEvalNiveauForm({ sonId, niveauId, titre, description }: P
   };
 
   return (
-    <div className="mt-8 rounded-2xl border-2 border-[#4a7c5a]/35 bg-[#f0f7f2]/90 p-5 shadow-md">
+    <div className="mt-4 rounded-2xl border-2 border-[#4a7c5a]/35 bg-[#f0f7f2]/90 p-5 shadow-md sm:mt-6">
       <h2 className="font-display text-lg text-[#2d4a3e]">Partager aux élèves</h2>
       <p className="mt-1 text-sm text-[#2d4a3e]/75">
         {description ??

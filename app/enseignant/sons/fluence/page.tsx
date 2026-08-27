@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../components/MiyazakiDecor";
+import { PartageEvalNiveauForm } from "../../../components/PartageEvalNiveauForm";
 import { PARTIES_FORET, getSonsByPartie } from "../../../data/sons-data";
-import { FLUENCE_VOYELLE_LABEL, getFluenceDisplayLabel } from "../../../data/fluence-partage";
+import {
+  FLUENCE_VOYELLE_LABEL,
+  fluenceNiveauId,
+  getFluenceDisplayLabel,
+} from "../../../data/fluence-partage";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -22,6 +28,8 @@ function getFluenceLabel(partieId: string, son: { id: string; grapheme: string }
 }
 
 export default function EnseignantFluencePage() {
+  const [partageOuvertId, setPartageOuvertId] = useState<string | null>(null);
+
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
@@ -47,9 +55,8 @@ export default function EnseignantFluencePage() {
       <div className="relative z-10 mx-auto max-w-2xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e]">Choisir une fluence</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/75">
-          Chaque semaine, ouvre une fluence (ex. <strong>Voyelle 1</strong>), teste-la, puis{" "}
-          <strong>partage-la</strong> aux enfants. Tu peux partager Voyelle 1, puis plus tard Voyelle 2, etc.
-          — chacune séparément.
+          Pour chaque fluence : <strong>Tester</strong>, puis <strong>Partager</strong> à tous les élèves ou à
+          ceux que tu choisis. Sans partage, les enfants ne la voient pas.
         </p>
 
         {PARTIES_FLUENCE.map((partie) => {
@@ -58,25 +65,48 @@ export default function EnseignantFluencePage() {
           return (
             <section key={partie.id} className="mt-10">
               <h2 className="font-display text-lg font-semibold text-[#2d4a3e]">{partie.titre}</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="mt-3 space-y-3">
                 {sons.map((son, index) => {
                   const label = getFluenceLabel(partie.id, son, index);
                   const isVoyelleNum = partie.id === "voyelles" && index < 3;
+                  const niveauId = fluenceNiveauId(son.id);
+                  const ouvert = partageOuvertId === son.id;
                   return (
                     <div
                       key={son.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/95 p-6 shadow-lg transition hover:bg-[#a8d5ba]/20"
+                      className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:bg-[#a8d5ba]/10"
                     >
-                      <div>
-                        <p className="font-display text-lg text-[#2d4a3e]">{label}</p>
-                        {!isVoyelleNum && <p className="mt-1 text-sm text-[#2d4a3e]/70">{son.phoneme}</p>}
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display text-lg text-[#2d4a3e]">{label}</p>
+                          {!isVoyelleNum && (
+                            <p className="mt-1 text-sm text-[#2d4a3e]/70">{son.phoneme}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Link
+                            href={`/enseignant/sons/fluence/test/${son.id}`}
+                            className="rounded-xl border border-[#2d4a3e]/30 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#a8d5ba]/30"
+                          >
+                            Tester
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setPartageOuvertId(ouvert ? null : son.id)}
+                            className="rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3d6b4d]"
+                          >
+                            {ouvert ? "Fermer le partage" : "Partager"}
+                          </button>
+                        </div>
                       </div>
-                      <Link
-                        href={`/enseignant/sons/fluence/test/${son.id}`}
-                        className="rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3d6b4d]"
-                      >
-                        Tester / Partager
-                      </Link>
+                      {ouvert && (
+                        <PartageEvalNiveauForm
+                          sonId={son.id}
+                          niveauId={niveauId}
+                          titre={`Fluence — ${label}`}
+                          description={`Partage « ${label} » : les enfants le verront dans Français → Fluence. Tu peux partager une fluence à la fois (ex. Voyelle 1, puis plus tard Voyelle 2).`}
+                        />
+                      )}
                     </div>
                   );
                 })}
