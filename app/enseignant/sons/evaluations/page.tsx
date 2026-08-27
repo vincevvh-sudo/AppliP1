@@ -39,8 +39,7 @@ export default function EnseignantSonsEvaluationsPage() {
           Évaluations
         </h1>
         <p className="mt-2 text-[#2d4a3e]/85">
-          Évaluations 1 à 4 par son, dictées de syllabes (Évaluation 5), dictées de mots et
-          Évaluation lecture.
+          Évaluations 1 à 4 par son, dictées, lecture, fluence et autres évaluations.
         </p>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -78,6 +77,15 @@ export default function EnseignantSonsEvaluationsPage() {
             <p className="font-display text-lg text-[#2d4a3e]">Évaluation lecture</p>
             <p className="mt-1 text-sm text-[#2d4a3e]/70">
               Exercices de lecture et évaluation lecture.
+            </p>
+          </Link>
+          <Link
+            href="/enseignant/sons/fluence"
+            className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20 sm:col-span-2"
+          >
+            <p className="font-display text-lg text-[#2d4a3e]">Fluence</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">
+              Tests de lecture rapide (Voyelle 1, 2, 3…). Tester et partager à tous ou à certains élèves.
             </p>
           </Link>
           <Link
