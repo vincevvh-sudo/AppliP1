@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { CommentaireAvecGemini } from "../../../../components/bulletin/CommentaireAvecGemini";
 import type { NiveauAcquisition } from "../../../../data/bulletin-storage";
-import { getElevesBulletin, type EleveBulletin } from "../../../../data/bulletin-storage";
+import { getOrCreateEleveBulletinFromClasse } from "../../../../data/bulletin-storage";
 import {
   CRITERES_POESIE,
   CRITERES_FAMILLE,
@@ -20,6 +20,8 @@ import {
 } from "../../../../data/parler-data";
 import { loadParlerDraft, saveParlerDraft, type ParlerGrilleDraft } from "../../../../data/parler-storage";
 import { saveResultat, deleteResultatsByEleveAndSon, type DetailExerciceEval } from "../../../../data/resultats-storage";
+import { supabase } from "../../../../../utils/supabase";
+import type { EleveRow } from "../../../../../utils/supabase";
 
 const FACES = ["😊", "😐", "😠"] as const;
 const INDEX_TO_NIVEAU: NiveauAcquisition[] = ["acquis", "en_cours", "non_acquis"];
@@ -249,14 +251,33 @@ function TableauEvaluation({
 }
 
 export default function EnseignantParlerPage() {
-  const [eleves, setEleves] = useState<EleveBulletin[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [eleves, setEleves] = useState<EleveRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEleveId, setSelectedEleveId] = useState<string | null>(null);
+  const [kind, setKind] = useState<GrilleKind | null>(null);
 
   useEffect(() => {
-    setEleves(getElevesBulletin());
+    void (async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase.from("eleves").select("*").order("nom").order("prenom");
+        setEleves((data ?? []) as EleveRow[]);
+      } catch {
+        setEleves([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const selected = eleves.find((e) => e.id === selectedId);
+  const selectedEleve = eleves.find((e) => String(e.id) === selectedEleveId) ?? null;
+  const bulletinEleve = selectedEleve
+    ? getOrCreateEleveBulletinFromClasse({
+        id: selectedEleve.id,
+        prenom: selectedEleve.prenom,
+        nom: selectedEleve.nom,
+      })
+    : null;
 
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
@@ -276,56 +297,116 @@ export default function EnseignantParlerPage() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e]">Parler</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/80">
-          Grilles d&apos;évaluation pour la poésie et la présentation de la famille. Choisis un élève : visages enseignant,
-          <strong> points sur 2</strong> par critère, puis une <strong>cote sur 10</strong> envoyée à l&apos;enfant.
+          1) Choisis un élève → 2) Choisis l&apos;évaluation (poésie ou présentation) → 3) Remplis la grille et
+          enregistre la cote pour l&apos;enfant.
         </p>
 
-        <div className="mt-6">
-          <h2 className="font-display text-lg text-[#2d4a3e]">Élève</h2>
-          {eleves.length === 0 ? (
+        {/* Étape 1 : liste des élèves */}
+        <div className="mt-8">
+          <h2 className="font-display text-lg text-[#2d4a3e]">1. Élève</h2>
+          {loading ? (
+            <p className="mt-2 text-sm text-[#2d4a3e]/70">Chargement de la classe…</p>
+          ) : eleves.length === 0 ? (
             <p className="mt-2 text-sm text-[#2d4a3e]/70">
-              Aucun élève. Ajoute des élèves dans le{" "}
-              <Link href="/enseignant/bulletin" className="underline">
-                bulletin
-              </Link>{" "}
-              et lie-les à Supabase pour leur envoyer les résultats.
+              Aucun élève dans la classe. Ajoute-les dans{" "}
+              <Link href="/enseignant/eleves" className="underline">
+                Élèves
+              </Link>
+              .
             </p>
           ) : (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {eleves.map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  onClick={() => setSelectedId(e.id)}
-                  className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    selectedId === e.id ? "bg-[#c4a8e8] text-[#2d4a3e]" : "bg-white/95 text-[#2d4a3e]/80 shadow hover:bg-[#c4a8e8]/30"
-                  }`}
-                >
-                  {e.prenom}
-                  {e.supabaseEleveId != null ? " ✓" : ""}
-                </button>
-              ))}
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+              {eleves.map((e) => {
+                const id = String(e.id);
+                const actif = selectedEleveId === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedEleveId(id);
+                      setKind(null);
+                    }}
+                    className={`rounded-2xl px-4 py-3 text-left text-sm font-medium shadow transition ${
+                      actif
+                        ? "bg-[#c4a8e8] text-[#2d4a3e] ring-2 ring-[#2d4a3e]/30"
+                        : "bg-white/95 text-[#2d4a3e] hover:bg-[#c4a8e8]/25"
+                    }`}
+                  >
+                    <span className="font-display text-base">{e.prenom}</span>
+                    {e.nom ? <span className="ml-1 text-[#2d4a3e]/70">{e.nom}</span> : null}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {selected && (
-          <>
-            <TableauEvaluation
-              titre="Poésie — Je dis ma poésie"
-              criteres={CRITERES_POESIE}
-              kind="poesie"
-              bulletinEleveId={selected.id}
-              supabaseEleveId={selected.supabaseEleveId ?? null}
-            />
-            <TableauEvaluation
-              titre="Présentation de ma famille"
-              criteres={CRITERES_FAMILLE}
-              kind="famille"
-              bulletinEleveId={selected.id}
-              supabaseEleveId={selected.supabaseEleveId ?? null}
-            />
-          </>
+        {/* Étape 2 : type d'évaluation */}
+        {selectedEleve && (
+          <div className="mt-10">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg text-[#2d4a3e]">
+                2. Évaluation pour {selectedEleve.prenom}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedEleveId(null);
+                  setKind(null);
+                }}
+                className="text-sm text-[#2d4a3e]/70 underline hover:text-[#2d4a3e]"
+              >
+                Changer d&apos;élève
+              </button>
+            </div>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setKind("poesie")}
+                className={`rounded-2xl p-5 text-left shadow-lg transition ${
+                  kind === "poesie"
+                    ? "bg-[#a8d5ba]/90 ring-2 ring-[#4a7c5a]"
+                    : "bg-white/95 hover:bg-[#a8d5ba]/30"
+                }`}
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Poésie</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">Je dis ma poésie</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setKind("famille")}
+                className={`rounded-2xl p-5 text-left shadow-lg transition ${
+                  kind === "famille"
+                    ? "bg-[#a8d5ba]/90 ring-2 ring-[#4a7c5a]"
+                    : "bg-white/95 hover:bg-[#a8d5ba]/30"
+                }`}
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Présentation</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">Présentation de ma famille</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Étape 3 : grille */}
+        {bulletinEleve && kind === "poesie" && (
+          <TableauEvaluation
+            titre="Poésie — Je dis ma poésie"
+            criteres={CRITERES_POESIE}
+            kind="poesie"
+            bulletinEleveId={bulletinEleve.id}
+            supabaseEleveId={String(selectedEleve!.id)}
+          />
+        )}
+        {bulletinEleve && kind === "famille" && (
+          <TableauEvaluation
+            titre="Présentation de ma famille"
+            criteres={CRITERES_FAMILLE}
+            kind="famille"
+            bulletinEleveId={bulletinEleve.id}
+            supabaseEleveId={String(selectedEleve!.id)}
+          />
         )}
 
         <Link
