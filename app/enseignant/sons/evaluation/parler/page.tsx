@@ -28,6 +28,18 @@ const INDEX_TO_NIVEAU: NiveauAcquisition[] = ["acquis", "en_cours", "non_acquis"
 
 type Selection = number | null;
 
+/** 😊 acquis = 2, 😐 en cours = 1, 😠 à travailler = 0 */
+function faceToPoints(faceIndex: number): 0 | 1 | 2 {
+  if (faceIndex === 0) return 2;
+  if (faceIndex === 1) return 1;
+  return 0;
+}
+function pointsToFace(pts: 0 | 1 | 2): number {
+  if (pts === 2) return 0;
+  if (pts === 1) return 1;
+  return 2;
+}
+
 function emptyDraft(n: number): ParlerGrilleDraft {
   return {
     enfantSelections: Array(n).fill(null) as Selection[],
@@ -85,12 +97,17 @@ function TableauEvaluation({
     [draft, persistDraft]
   );
 
+  /** Smileys et points restent synchronisés. */
   const onEnseignantSelect = useCallback(
     (idx: number, faceIndex: number) => {
+      const clearing = draft.enseignantSelections[idx] === faceIndex;
       persistDraft({
         ...draft,
         enseignantSelections: draft.enseignantSelections.map((v, i) =>
-          i === idx ? (v === faceIndex ? null : faceIndex) : v
+          i === idx ? (clearing ? null : faceIndex) : v
+        ),
+        pointsParCritere: draft.pointsParCritere.map((v, i) =>
+          i === idx ? (clearing ? null : faceToPoints(faceIndex)) : v
         ),
       });
     },
@@ -99,9 +116,13 @@ function TableauEvaluation({
 
   const onPointsSelect = useCallback(
     (idx: number, pts: 0 | 1 | 2) => {
+      const clearing = draft.pointsParCritere[idx] === pts;
       persistDraft({
         ...draft,
-        pointsParCritere: draft.pointsParCritere.map((v, i) => (i === idx ? (v === pts ? null : pts) : v)),
+        pointsParCritere: draft.pointsParCritere.map((v, i) => (i === idx ? (clearing ? null : pts) : v)),
+        enseignantSelections: draft.enseignantSelections.map((v, i) =>
+          i === idx ? (clearing ? null : pointsToFace(pts)) : v
+        ),
       });
     },
     [draft, persistDraft]
@@ -113,11 +134,11 @@ function TableauEvaluation({
 
   const handleSave = useCallback(async () => {
     if (!supabaseEleveId) {
-      setSaveMsg("Lie cet élève à Supabase (bulletin) pour envoyer la cote à l'enfant.");
+      setSaveMsg("Impossible d'envoyer : élève non trouvé dans la classe. Rechoisis l'élève dans la liste.");
       return;
     }
     if (!tousPointsSaisis) {
-      setSaveMsg("Indique 0, 1 ou 2 points pour chaque critère avant d'enregistrer.");
+      setSaveMsg("Clique un smiley (ou 0 / 1 / 2) pour chaque critère avant d'enregistrer.");
       return;
     }
     setSaving(true);
@@ -139,28 +160,41 @@ function TableauEvaluation({
         reussi: sur10 >= 5,
         detail_exercices: details,
       });
-      setSaveMsg("Cote enregistrée : l'enfant la voit dans Mes résultats.");
-    } catch {
-      setSaveMsg("Erreur d'enregistrement. Vérifie Supabase (exercice_resultats).");
+      setSaveMsg(`Cote ${sur10}/10 enregistrée et envoyée : ${titre} — l'enfant la voit dans Mes résultats.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erreur d'enregistrement";
+      setSaveMsg(`Erreur : ${msg}`);
     } finally {
       setSaving(false);
     }
-  }, [supabaseEleveId, tousPointsSaisis, sonId, niveauId, criteres, draft.pointsParCritere, sur10]);
+  }, [
+    supabaseEleveId,
+    tousPointsSaisis,
+    sonId,
+    niveauId,
+    criteres,
+    draft.pointsParCritere,
+    sur10,
+    titre,
+  ]);
 
   return (
     <section className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">
       <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">{titre}</h2>
       <p className="mt-2 text-sm text-[#2d4a3e]/75">
-        <strong>Enseignant</strong> : visages (😊 acquis, 😐 en cours, 😠 à travailler). <strong>Points</strong> : 0, 1 ou 2 sur 2 par critère.
-        La cote sur 10 est calculée automatiquement.
+        Clique un <strong>smiley</strong> par critère : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. La cote sur 10 se calcule toute
+        seule. Puis <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#4a7c5a]/25 bg-[#e8f5e9]/50 px-4 py-3">
         <span className="text-sm font-medium text-[#2d4a3e]">
-          Total points bruts : <strong>{somme}</strong> / {maxBrut} → <strong className="text-lg text-[#2d6b3e]">{sur10} / 10</strong>
+          Total : <strong>{somme}</strong> / {maxBrut} →{" "}
+          <strong className="text-lg text-[#2d6b3e]">{sur10} / 10</strong>
         </span>
         {!tousPointsSaisis && (
-          <span className="text-xs text-amber-800">Complète les {n} critères (0, 1 ou 2) pour enregistrer.</span>
+          <span className="text-xs text-amber-800">
+            Encore {draft.pointsParCritere.filter((p) => p == null).length} critère(s) sans smiley.
+          </span>
         )}
         <button
           type="button"
@@ -171,7 +205,17 @@ function TableauEvaluation({
           {saving ? "Enregistrement…" : "Enregistrer et envoyer à l'enfant"}
         </button>
       </div>
-      {saveMsg && <p className="mt-2 text-sm text-[#2d4a3e]/85">{saveMsg}</p>}
+      {saveMsg && (
+        <p
+          className={`mt-2 text-sm font-medium ${
+            saveMsg.startsWith("Erreur") || saveMsg.startsWith("Impossible") || saveMsg.startsWith("Clique")
+              ? "text-[#b45309]"
+              : "text-[#2d6b4a]"
+          }`}
+        >
+          {saveMsg}
+        </p>
+      )}
 
       <div className="mt-4 overflow-x-auto">
         <div className="min-w-[820px] rounded-2xl border-2 border-[#2d4a3e]/20 overflow-hidden">
