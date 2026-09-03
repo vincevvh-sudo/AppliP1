@@ -34,13 +34,23 @@ export async function saveResultat(row: Omit<ResultatRow, "id" | "created_at">):
   if (row.detail_exercices != null && Array.isArray(row.detail_exercices)) {
     payload.detail_exercices = row.detail_exercices;
   }
-  const { error } = await supabase.from("exercice_resultats").insert(payload);
+  let { error } = await supabase.from("exercice_resultats").insert(payload);
+  // Si la colonne detail_exercices n'existe pas encore, réessaie sans
+  if (
+    error &&
+    payload.detail_exercices != null &&
+    /detail_exercices|column|schema/i.test(error.message)
+  ) {
+    delete payload.detail_exercices;
+    const retry = await supabase.from("exercice_resultats").insert(payload);
+    error = retry.error;
+  }
   if (error) {
     if (process.env.NODE_ENV === "development") {
       console.warn(
         "[resultats-storage] Erreur sauvegarde:",
         error.message,
-        "→ Vérifiez que la table exercice_resultats existe avec une colonne detail_exercices (jsonb) et que RLS autorise l'insert."
+        "→ Vérifiez que la table exercice_resultats existe et que RLS autorise l'insert."
       );
     }
     throw new Error(error.message || "Impossible d'enregistrer le résultat.");

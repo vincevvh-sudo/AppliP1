@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { CommentaireAvecGemini } from "../../../../components/bulletin/CommentaireAvecGemini";
@@ -49,6 +49,26 @@ function emptyDraft(n: number): ParlerGrilleDraft {
   };
 }
 
+/** Aligne les points sur les smileys (brouillons anciens ou incomplets). */
+function syncPointsFromFaces(draft: ParlerGrilleDraft, n: number): ParlerGrilleDraft {
+  const pointsParCritere = Array.from({ length: n }, (_, i) => {
+    const face = draft.enseignantSelections[i];
+    if (face != null) return faceToPoints(face);
+    const pts = draft.pointsParCritere[i];
+    return pts === 0 || pts === 1 || pts === 2 ? pts : null;
+  });
+  const enseignantSelections = Array.from({ length: n }, (_, i) => {
+    const pts = pointsParCritere[i];
+    if (pts != null) return pointsToFace(pts);
+    return draft.enseignantSelections[i] ?? null;
+  });
+  return { ...draft, pointsParCritere, enseignantSelections };
+}
+
+function pointsComplets(draft: ParlerGrilleDraft): boolean {
+  return draft.pointsParCritere.every((p) => p === 0 || p === 1 || p === 2);
+}
+
 type GrilleKind = "poesie" | "famille";
 
 function TableauEvaluation({
@@ -72,75 +92,94 @@ function TableauEvaluation({
   const [draft, setDraft] = useState<ParlerGrilleDraft>(() => emptyDraft(n));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
 
   useEffect(() => {
     const loaded = loadParlerDraft(bulletinEleveId, kind, n);
-    setDraft(loaded ?? emptyDraft(n));
+    const synced = syncPointsFromFaces(loaded ?? emptyDraft(n), n);
+    setDraft(synced);
+    saveParlerDraft(bulletinEleveId, kind, synced);
     setSaveMsg(null);
   }, [bulletinEleveId, kind, n]);
 
   const persistDraft = useCallback(
-    (next: ParlerGrilleDraft) => {
-      setDraft(next);
-      saveParlerDraft(bulletinEleveId, kind, next);
+    (updater: (prev: ParlerGrilleDraft) => ParlerGrilleDraft) => {
+      setDraft((prev) => {
+        const next = syncPointsFromFaces(updater(prev), n);
+        saveParlerDraft(bulletinEleveId, kind, next);
+        return next;
+      });
     },
-    [bulletinEleveId, kind]
+    [bulletinEleveId, kind, n]
   );
 
   const onCommentaireChange = useCallback(
     (idx: number, commentaire: string) => {
-      persistDraft({
-        ...draft,
-        commentaires: draft.commentaires.map((c, i) => (i === idx ? commentaire : c)),
-      });
+      persistDraft((prev) => ({
+        ...prev,
+        commentaires: prev.commentaires.map((c, i) => (i === idx ? commentaire : c)),
+      }));
     },
-    [draft, persistDraft]
+    [persistDraft]
   );
 
-  /** Smileys et points restent synchronisés. */
   const onEnseignantSelect = useCallback(
     (idx: number, faceIndex: number) => {
-      const clearing = draft.enseignantSelections[idx] === faceIndex;
-      persistDraft({
-        ...draft,
-        enseignantSelections: draft.enseignantSelections.map((v, i) =>
-          i === idx ? (clearing ? null : faceIndex) : v
-        ),
-        pointsParCritere: draft.pointsParCritere.map((v, i) =>
-          i === idx ? (clearing ? null : faceToPoints(faceIndex)) : v
-        ),
+      persistDraft((prev) => {
+        const clearing = prev.enseignantSelections[idx] === faceIndex;
+        return {
+          ...prev,
+          enseignantSelections: prev.enseignantSelections.map((v, i) =>
+            i === idx ? (clearing ? null : faceIndex) : v
+          ),
+          pointsParCritere: prev.pointsParCritere.map((v, i) =>
+            i === idx ? (clearing ? null : faceToPoints(faceIndex)) : v
+          ),
+        };
       });
     },
-    [draft, persistDraft]
+    [persistDraft]
   );
 
   const onPointsSelect = useCallback(
     (idx: number, pts: 0 | 1 | 2) => {
-      const clearing = draft.pointsParCritere[idx] === pts;
-      persistDraft({
-        ...draft,
-        pointsParCritere: draft.pointsParCritere.map((v, i) => (i === idx ? (clearing ? null : pts) : v)),
-        enseignantSelections: draft.enseignantSelections.map((v, i) =>
-          i === idx ? (clearing ? null : pointsToFace(pts)) : v
-        ),
+      persistDraft((prev) => {
+        const clearing = prev.pointsParCritere[idx] === pts;
+        return {
+          ...prev,
+          pointsParCritere: prev.pointsParCritere.map((v, i) => (i === idx ? (clearing ? null : pts) : v)),
+          enseignantSelections: prev.enseignantSelections.map((v, i) =>
+            i === idx ? (clearing ? null : pointsToFace(pts)) : v
+          ),
+        };
       });
     },
-    [draft, persistDraft]
+    [persistDraft]
   );
 
   const somme = sommePointsBruts(draft.pointsParCritere);
   const sur10 = scoreSur10DepuisBrut(somme, maxBrut);
-  const tousPointsSaisis = draft.pointsParCritere.every((p) => p !== null && p !== undefined);
+  const tousPointsSaisis = pointsComplets(draft);
+  const manquants = draft.pointsParCritere.filter((p) => p == null).length;
 
   const handleSave = useCallback(async () => {
+    const current = syncPointsFromFaces(draftRef.current, n);
+    setDraft(current);
+    saveParlerDraft(bulletinEleveId, kind, current);
+
     if (!supabaseEleveId) {
-      setSaveMsg("Impossible d'envoyer : élève non trouvé dans la classe. Rechoisis l'élève dans la liste.");
+      setSaveMsg("Impossible d'envoyer : élève non trouvé. Rechoisis l'élève dans la liste.");
       return;
     }
-    if (!tousPointsSaisis) {
-      setSaveMsg("Clique un smiley (ou 0 / 1 / 2) pour chaque critère avant d'enregistrer.");
+    if (!pointsComplets(current)) {
+      setSaveMsg("Clique un smiley pour CHAQUE critère (ligne), puis réessaie.");
       return;
     }
+
+    const sum = sommePointsBruts(current.pointsParCritere);
+    const score = scoreSur10DepuisBrut(sum, maxBrut);
+
     setSaving(true);
     setSaveMsg(null);
     try {
@@ -148,42 +187,37 @@ function TableauEvaluation({
       const details: DetailExerciceEval[] = criteres.map((libelle, i) => ({
         type: "critere-parler",
         titre: libelle,
-        points: draft.pointsParCritere[i] ?? 0,
+        points: current.pointsParCritere[i] ?? 0,
         pointsMax: 2,
       }));
       await saveResultat({
-        eleve_id: supabaseEleveId,
+        eleve_id: String(supabaseEleveId),
         son_id: sonId,
         niveau_id: niveauId,
-        points: sur10,
+        points: score,
         points_max: 10,
-        reussi: sur10 >= 5,
+        reussi: score >= 5,
         detail_exercices: details,
       });
-      setSaveMsg(`Cote ${sur10}/10 enregistrée et envoyée : ${titre} — l'enfant la voit dans Mes résultats.`);
+      setSaveMsg(
+        `✓ Cote ${score}/10 enregistrée pour « ${titre} ». L'enfant la voit dans Mes résultats.`
+      );
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur d'enregistrement";
-      setSaveMsg(`Erreur : ${msg}`);
+      setSaveMsg(
+        `Erreur : ${msg}. Si ça continue, exécute supabase-exercice-resultats.sql dans Supabase.`
+      );
     } finally {
       setSaving(false);
     }
-  }, [
-    supabaseEleveId,
-    tousPointsSaisis,
-    sonId,
-    niveauId,
-    criteres,
-    draft.pointsParCritere,
-    sur10,
-    titre,
-  ]);
+  }, [bulletinEleveId, kind, n, supabaseEleveId, sonId, niveauId, criteres, maxBrut, titre]);
 
   return (
     <section className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">
       <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">{titre}</h2>
       <p className="mt-2 text-sm text-[#2d4a3e]/75">
-        Clique un <strong>smiley</strong> par critère : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. La cote sur 10 se calcule toute
-        seule. Puis <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+        Pour chaque ligne, clique un smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Quand toutes les lignes sont
+        remplies, clique <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#4a7c5a]/25 bg-[#e8f5e9]/50 px-4 py-3">
@@ -192,14 +226,12 @@ function TableauEvaluation({
           <strong className="text-lg text-[#2d6b3e]">{sur10} / 10</strong>
         </span>
         {!tousPointsSaisis && (
-          <span className="text-xs text-amber-800">
-            Encore {draft.pointsParCritere.filter((p) => p == null).length} critère(s) sans smiley.
-          </span>
+          <span className="text-xs text-amber-800">Encore {manquants} ligne(s) sans smiley.</span>
         )}
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={saving || !tousPointsSaisis}
+          disabled={saving}
           className="ml-auto rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3d6b4d] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Enregistrement…" : "Enregistrer et envoyer à l'enfant"}
@@ -208,9 +240,7 @@ function TableauEvaluation({
       {saveMsg && (
         <p
           className={`mt-2 text-sm font-medium ${
-            saveMsg.startsWith("Erreur") || saveMsg.startsWith("Impossible") || saveMsg.startsWith("Clique")
-              ? "text-[#b45309]"
-              : "text-[#2d6b4a]"
+            saveMsg.startsWith("✓") ? "text-[#2d6b4a]" : "text-[#b45309]"
           }`}
         >
           {saveMsg}
