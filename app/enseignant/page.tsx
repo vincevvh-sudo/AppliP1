@@ -43,8 +43,21 @@ const IconMaths = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
   </svg>
 );
+const IconPresence = () => (
+  <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+  </svg>
+);
 
-const CARDS = [
+const CARDS: {
+  href: string;
+  icon: () => React.JSX.Element;
+  title: string;
+  desc: string;
+  color: string;
+  hoverColor: string;
+  external?: boolean;
+}[] = [
   { href: "/enseignant/eleves", icon: IconUsers, title: "Élèves", desc: "Gérer la liste des élèves et leurs codes", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
   { href: "/enseignant/bulletin", icon: IconClipboard, title: "Bulletin", desc: "Bulletins et comportement (attendus, commentaires)", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/sons", icon: IconBook, title: "Français", desc: "Partager les sons et exercices aux enfants", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
@@ -52,6 +65,15 @@ const CARDS = [
   { href: "/rendez-vous", icon: IconCalendar, title: "Agenda & Rendez-vous", desc: "Créneaux parents + semainier (leçons, devoirs, à savoir)", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
   { href: "/enseignant/resultats", icon: IconTrophy, title: "Résultats", desc: "Voir les résultats des enfants", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec les élèves", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
+  {
+    href: "https://presence.scolares.be/app",
+    icon: IconPresence,
+    title: "Présence",
+    desc: "Prendre les présences (Scolares)",
+    color: "bg-[#ffd4a3]/80",
+    hoverColor: "hover:bg-[#ffd4a3]",
+    external: true,
+  },
 ];
 
 export default function EnseignantPage() {
@@ -87,23 +109,40 @@ export default function EnseignantPage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {CARDS.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className={`group flex flex-col items-center gap-4 rounded-[2rem] bg-white/95 p-6 shadow-lg backdrop-blur transition hover:-translate-y-2 hover:shadow-xl ${card.hoverColor}`}
-            >
-              <div className={`flex h-20 w-20 items-center justify-center rounded-[1.5rem] ${card.color} text-[#2d4a3e] transition group-hover:scale-110`}>
-                <card.icon />
-              </div>
-              <h2 className="font-display text-lg text-[#2d4a3e] text-center">
-                {card.title}
-              </h2>
-              <p className="text-center text-sm text-[#2d4a3e]/75">
-                {card.desc}
-              </p>
-            </Link>
-          ))}
+          {CARDS.map((card) => {
+            const className = `group flex flex-col items-center gap-4 rounded-[2rem] bg-white/95 p-6 shadow-lg backdrop-blur transition hover:-translate-y-2 hover:shadow-xl ${card.hoverColor}`;
+            const content = (
+              <>
+                <div className={`flex h-20 w-20 items-center justify-center rounded-[1.5rem] ${card.color} text-[#2d4a3e] transition group-hover:scale-110`}>
+                  <card.icon />
+                </div>
+                <h2 className="font-display text-lg text-[#2d4a3e] text-center">
+                  {card.title}
+                </h2>
+                <p className="text-center text-sm text-[#2d4a3e]/75">
+                  {card.desc}
+                </p>
+              </>
+            );
+            if (card.external) {
+              return (
+                <a
+                  key={card.href}
+                  href={card.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
+                >
+                  {content}
+                </a>
+              );
+            }
+            return (
+              <Link key={card.href} href={card.href} className={className}>
+                {content}
+              </Link>
+            );
+          })}
         </div>
 
         <footer className="mt-16 text-center text-sm text-[#2d4a3e]/60">
