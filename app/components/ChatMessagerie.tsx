@@ -832,13 +832,27 @@ export function ChatMessagerie({
           )}
           {!isEnseignant && (
             <>
-              <input
-                type="text"
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onPaste={(e) => {
+                  // Garantit le collage texte brut (WhatsApp, Word, etc.)
+                  const pasted = e.clipboardData?.getData("text/plain") ?? e.clipboardData?.getData("text");
+                  if (pasted == null) return;
+                  e.preventDefault();
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? input.length;
+                  const end = el.selectionEnd ?? input.length;
+                  const next = input.slice(0, start) + pasted + input.slice(end);
+                  setInput(next);
+                  requestAnimationFrame(() => {
+                    const pos = start + pasted.length;
+                    el.setSelectionRange(pos, pos);
+                  });
+                }}
                 placeholder={replyTo ? "Écris ta réponse..." : "Écris ton message..."}
-                maxLength={500}
-                className="flex-1 min-w-[150px] rounded-xl border-2 border-[#2d4a3e]/20 px-4 py-3 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 bg-white"
+                rows={2}
+                className="flex-1 min-w-[150px] rounded-xl border-2 border-[#2d4a3e]/20 px-4 py-3 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 bg-white resize-y min-h-[2.75rem]"
               />
               <button
                 type="submit"
@@ -855,14 +869,27 @@ export function ChatMessagerie({
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onPaste={(e) => {
+                const pasted = e.clipboardData?.getData("text/plain") ?? e.clipboardData?.getData("text");
+                if (pasted == null) return;
+                e.preventDefault();
+                const el = e.currentTarget;
+                const start = el.selectionStart ?? input.length;
+                const end = el.selectionEnd ?? input.length;
+                const next = input.slice(0, start) + pasted + input.slice(end);
+                setInput(next);
+                requestAnimationFrame(() => {
+                  const pos = start + pasted.length;
+                  el.setSelectionRange(pos, pos);
+                });
+              }}
               placeholder={
                 replyTo
-                  ? "Écris ou dicte ta réponse…"
-                  : "Parle ou écris, puis « Reformuler » si besoin…"
+                  ? "Écris, colle ou dicte ta réponse…"
+                  : "Écris, colle un texte (WhatsApp, Word…), ou dicte…"
               }
-              rows={3}
-              maxLength={1000}
-              className="w-full rounded-xl border-2 border-[#2d4a3e]/20 px-4 py-3 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 bg-white resize-y min-h-[3rem]"
+              rows={4}
+              className="w-full rounded-xl border-2 border-[#2d4a3e]/20 px-4 py-3 text-[#2d4a3e] placeholder:text-[#2d4a3e]/50 bg-white resize-y min-h-[4rem]"
             />
             <div className="flex flex-wrap gap-2">
               {showMic && (
