@@ -29,7 +29,9 @@ function getResultTitle(r: ResultatRow): string {
 }
 
 function detailLignesVisibles(r: ResultatRow) {
-  return (r.detail_exercices ?? []).filter((ex) => ex.type !== "titre-poesie");
+  return (r.detail_exercices ?? []).filter(
+    (ex) => ex.type !== "titre-poesie" && ex.type !== "titre-presentation"
+  );
 }
 
 export default function EnfantResultatsPage() {

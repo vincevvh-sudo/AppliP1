@@ -193,28 +193,36 @@ export async function deleteResultatsByEleveAndSon(eleveId: string | number, son
   }
 }
 
-/** Titre de poésie stocké dans detail_exercices (type titre-poesie). */
-export function getTitrePoesieFromResultat(r: ResultatRow): string | null {
-  const meta = (r.detail_exercices ?? []).find((ex) => ex.type === "titre-poesie");
+/** Titre (poésie ou présentation) stocké dans detail_exercices. */
+export function getTitreParlerFromResultat(r: ResultatRow): string | null {
+  const meta = (r.detail_exercices ?? []).find(
+    (ex) => ex.type === "titre-poesie" || ex.type === "titre-presentation"
+  );
   const t = meta?.titre?.trim();
   return t || null;
 }
 
+/** @deprecated utiliser getTitreParlerFromResultat */
+export function getTitrePoesieFromResultat(r: ResultatRow): string | null {
+  return getTitreParlerFromResultat(r);
+}
+
 /**
- * Remplace uniquement la cote d’une poésie donnée (même titre),
- * sans effacer les autres poésies de l’année.
+ * Remplace uniquement la cote d’une poésie / présentation (même titre),
+ * sans effacer les autres de l’année.
  */
-export async function deleteResultatsParlerPoesieByTitre(
+export async function deleteResultatsParlerByTitre(
   eleveId: string | number,
-  titrePoesie: string
+  sonId: string,
+  titre: string
 ): Promise<void> {
-  const wanted = titrePoesie.trim().toLowerCase();
+  const wanted = titre.trim().toLowerCase();
   if (!wanted) return;
   try {
     const rows = await getResultatsByEleve(eleveId);
     const toDelete = rows.filter((r) => {
-      if (r.son_id !== "savoir-parler-poesie" || !r.id) return false;
-      const t = getTitrePoesieFromResultat(r);
+      if (r.son_id !== sonId || !r.id) return false;
+      const t = getTitreParlerFromResultat(r);
       return t != null && t.trim().toLowerCase() === wanted;
     });
     for (const r of toDelete) {
@@ -223,4 +231,12 @@ export async function deleteResultatsParlerPoesieByTitre(
   } catch {
     /* ignore */
   }
+}
+
+/** @deprecated utiliser deleteResultatsParlerByTitre */
+export async function deleteResultatsParlerPoesieByTitre(
+  eleveId: string | number,
+  titrePoesie: string
+): Promise<void> {
+  await deleteResultatsParlerByTitre(eleveId, "savoir-parler-poesie", titrePoesie);
 }

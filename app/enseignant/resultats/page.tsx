@@ -242,7 +242,9 @@ function ResultatSingleCard({
   onDelete: (r: ResultatRow) => void;
 }) {
   const eleve = elevesById[String(r.eleve_id)];
-  const details = (r.detail_exercices ?? []).filter((ex) => ex.type !== "titre-poesie");
+  const details = (r.detail_exercices ?? []).filter(
+    (ex) => ex.type !== "titre-poesie" && ex.type !== "titre-presentation"
+  );
   const hasDetail = details.length > 0;
   return (
     <li

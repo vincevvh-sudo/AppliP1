@@ -1,5 +1,5 @@
 /**
- * Évaluations « Parler » (poésie, présentation de la famille).
+ * Évaluations « Parler » (poésie, présentation).
  * Chaque critère est noté 0, 1 ou 2 sur 2 ; la cote finale est sur 10 (normalisée).
  * Les identifiants son_id / niveau_id restent « savoir-parler-* » pour compatibilité Supabase.
  */
@@ -34,6 +34,8 @@ export const NIVEAU_ID_FAMILLE = "savoir-parler-famille";
 
 /** Type dans detail_exercices pour le titre de la poésie. */
 export const DETAIL_TYPE_TITRE_POESIE = "titre-poesie";
+/** Type dans detail_exercices pour le sujet de la présentation. */
+export const DETAIL_TYPE_TITRE_PRESENTATION = "titre-presentation";
 
 export const MAX_BRUT_POESIE = CRITERES_POESIE.length * 2;
 export const MAX_BRUT_FAMILLE = CRITERES_FAMILLE.length * 2;

@@ -16,14 +16,14 @@ import {
   MAX_BRUT_POESIE,
   MAX_BRUT_FAMILLE,
   DETAIL_TYPE_TITRE_POESIE,
+  DETAIL_TYPE_TITRE_PRESENTATION,
   sommePointsBruts,
   scoreSur10DepuisBrut,
 } from "../../../../data/parler-data";
 import { loadParlerDraft, saveParlerDraft, type ParlerGrilleDraft } from "../../../../data/parler-storage";
 import {
   saveResultat,
-  deleteResultatsByEleveAndSon,
-  deleteResultatsParlerPoesieByTitre,
+  deleteResultatsParlerByTitre,
   type DetailExerciceEval,
 } from "../../../../data/resultats-storage";
 import { supabase } from "../../../../../utils/supabase";
@@ -52,7 +52,7 @@ function emptyDraft(n: number): ParlerGrilleDraft {
     enseignantSelections: Array(n).fill(null) as Selection[],
     pointsParCritere: Array(n).fill(null) as (0 | 1 | 2 | null)[],
     commentaires: Array(n).fill(""),
-    titrePoesie: "",
+    titreEvaluation: "",
   };
 }
 
@@ -121,9 +121,9 @@ function TableauEvaluation({
     [bulletinEleveId, kind, n]
   );
 
-  const onTitrePoesieChange = useCallback(
+  const onTitreChange = useCallback(
     (value: string) => {
-      persistDraft((prev) => ({ ...prev, titrePoesie: value }));
+      persistDraft((prev) => ({ ...prev, titreEvaluation: value }));
     },
     [persistDraft]
   );
@@ -186,12 +186,14 @@ function TableauEvaluation({
       setSaveMsg("Impossible d'envoyer : élève non trouvé. Rechoisis l'élève dans la liste.");
       return;
     }
-    if (kind === "poesie") {
-      const titre = (current.titrePoesie ?? "").trim();
-      if (!titre) {
-        setSaveMsg("Indique le titre de la poésie (à côté de « Poésie »), puis réessaie.");
-        return;
-      }
+    const titreEval = (current.titreEvaluation ?? current.titrePoesie ?? "").trim();
+    if (!titreEval) {
+      setSaveMsg(
+        kind === "poesie"
+          ? "Indique le titre de la poésie (à côté de « Poésie »), puis réessaie."
+          : "Indique le sujet après « Présentation de », puis réessaie."
+      );
+      return;
     }
     if (!pointsComplets(current)) {
       setSaveMsg("Clique un smiley pour CHAQUE critère (ligne), puis réessaie.");
@@ -200,25 +202,19 @@ function TableauEvaluation({
 
     const sum = sommePointsBruts(current.pointsParCritere);
     const score = scoreSur10DepuisBrut(sum, maxBrut);
-    const titrePoesie = (current.titrePoesie ?? "").trim();
 
     setSaving(true);
     setSaveMsg(null);
     try {
-      if (kind === "poesie") {
-        await deleteResultatsParlerPoesieByTitre(supabaseEleveId, titrePoesie);
-      } else {
-        await deleteResultatsByEleveAndSon(supabaseEleveId, sonId);
-      }
-      const details: DetailExerciceEval[] = [];
-      if (kind === "poesie" && titrePoesie) {
-        details.push({
-          type: DETAIL_TYPE_TITRE_POESIE,
-          titre: titrePoesie,
+      await deleteResultatsParlerByTitre(supabaseEleveId, sonId, titreEval);
+      const details: DetailExerciceEval[] = [
+        {
+          type: kind === "poesie" ? DETAIL_TYPE_TITRE_POESIE : DETAIL_TYPE_TITRE_PRESENTATION,
+          titre: titreEval,
           points: score,
           pointsMax: 10,
-        });
-      }
+        },
+      ];
       for (let i = 0; i < criteres.length; i++) {
         details.push({
           type: "critere-parler",
@@ -237,9 +233,7 @@ function TableauEvaluation({
         detail_exercices: details,
       });
       const label =
-        kind === "poesie" && titrePoesie
-          ? `Poésie — ${titrePoesie}`
-          : titre;
+        kind === "poesie" ? `Poésie — ${titreEval}` : `Présentation de ${titreEval}`;
       setSaveMsg(`✓ Cote ${score}/10 enregistrée pour « ${label} ». L'enfant la voit dans Mes résultats.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur d'enregistrement";
@@ -249,7 +243,9 @@ function TableauEvaluation({
     } finally {
       setSaving(false);
     }
-  }, [bulletinEleveId, kind, n, supabaseEleveId, sonId, niveauId, criteres, maxBrut, titre]);
+  }, [bulletinEleveId, kind, n, supabaseEleveId, sonId, niveauId, criteres, maxBrut]);
+
+  const titreSaisi = draft.titreEvaluation ?? draft.titrePoesie ?? "";
 
   return (
     <section className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">
@@ -260,29 +256,34 @@ function TableauEvaluation({
             <span className="text-xs font-medium text-[#2d4a3e]/70">Titre de la poésie</span>
             <input
               type="text"
-              value={draft.titrePoesie ?? ""}
-              onChange={(e) => onTitrePoesieChange(e.target.value)}
+              value={titreSaisi}
+              onChange={(e) => onTitreChange(e.target.value)}
               placeholder="Ex. : Le corbeau et le renard"
               className="w-full rounded-xl border border-[#2d4a3e]/25 bg-white px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/40 focus:border-[#4a7c5a] focus:outline-none focus:ring-2 focus:ring-[#4a7c5a]/30"
             />
           </label>
         </div>
       ) : (
-        <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">{titre}</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <h2 className="font-display text-xl font-semibold text-[#2d4a3e] shrink-0">
+            Présentation de
+          </h2>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 sm:max-w-md">
+            <span className="text-xs font-medium text-[#2d4a3e]/70">Sujet / titre</span>
+            <input
+              type="text"
+              value={titreSaisi}
+              onChange={(e) => onTitreChange(e.target.value)}
+              placeholder="Ex. : ma famille, mon animal préféré…"
+              className="w-full rounded-xl border border-[#2d4a3e]/25 bg-white px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/40 focus:border-[#4a7c5a] focus:outline-none focus:ring-2 focus:ring-[#4a7c5a]/30"
+            />
+          </label>
+        </div>
       )}
       <p className="mt-2 text-sm text-[#2d4a3e]/75">
-        {kind === "poesie" ? (
-          <>
-            Indique le titre (il y en aura plusieurs dans l&apos;année), puis pour chaque ligne clique un
-            smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
-            <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
-          </>
-        ) : (
-          <>
-            Pour chaque ligne, clique un smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Quand toutes les lignes sont
-            remplies, clique <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
-          </>
-        )}
+        Indique le titre (plusieurs possibles dans l&apos;année), puis pour chaque ligne clique un smiley
+        : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
+        <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#4a7c5a]/25 bg-[#e8f5e9]/50 px-4 py-3">
         <span className="text-sm font-medium text-[#2d4a3e]">
@@ -522,7 +523,9 @@ export default function EnseignantParlerPage() {
                 }`}
               >
                 <p className="font-display text-lg text-[#2d4a3e]">Présentation</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/75">Présentation de ma famille</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                  Présentation de… — tu pourras indiquer le sujet (plusieurs dans l&apos;année).
+                </p>
               </button>
             </div>
           </div>
@@ -540,7 +543,7 @@ export default function EnseignantParlerPage() {
         )}
         {bulletinEleve && kind === "famille" && (
           <TableauEvaluation
-            titre="Présentation de ma famille"
+            titre="Présentation de"
             criteres={CRITERES_FAMILLE}
             kind="famille"
             bulletinEleveId={bulletinEleve.id}
