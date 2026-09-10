@@ -15,6 +15,7 @@ import {
   isFluenceNiveauId,
   sonIdFromFluenceNiveauId,
 } from "../../data/fluence-partage";
+import { getResultatLabelComplet } from "../../data/resultats-labels";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -76,8 +77,9 @@ function getResultLabel(r: ResultatRow): string {
     const cat = r.niveau_id?.replace(/^manuel-/, "");
     return `${getManualCategoryLabel(cat)} — ${titre}`;
   }
-  if (r.son_id === "savoir-parler-poesie") return "Parler — Je dis ma poésie";
-  if (r.son_id === "savoir-parler-famille") return "Parler — Présentation de ma famille";
+  if (r.son_id === "savoir-parler-poesie" || r.son_id === "savoir-parler-famille") {
+    return getResultatLabelComplet(r);
+  }
   if (isFluenceResultat(r)) return getFluenceLabel(r);
   const mathsLabel = MATHS_RESULT_LABELS[r.son_id ?? ""];
   if (mathsLabel) return mathsLabel;
@@ -240,7 +242,8 @@ function ResultatSingleCard({
   onDelete: (r: ResultatRow) => void;
 }) {
   const eleve = elevesById[String(r.eleve_id)];
-  const hasDetail = r.detail_exercices && r.detail_exercices.length > 0;
+  const details = (r.detail_exercices ?? []).filter((ex) => ex.type !== "titre-poesie");
+  const hasDetail = details.length > 0;
   return (
     <li
       key={r.id ?? `${r.eleve_id}-${r.son_id}-${r.niveau_id}-${r.created_at}`}
@@ -260,7 +263,7 @@ function ResultatSingleCard({
       </div>
       {hasDetail ? (
         <ul className="mt-3 space-y-1 border-l-2 border-[#2d4a3e]/25 pl-3 text-sm text-[#2d4a3e]/90">
-          {r.detail_exercices!.map((ex, i) => (
+          {details.map((ex, i) => (
             <li key={i} className="flex justify-between gap-2">
               <span>{ex.titre}</span>
               <span className="font-medium tabular-nums text-[#2d4a3e]">

@@ -27,11 +27,20 @@ export function isFluenceResultat(r: ResultatRow): boolean {
   );
 }
 
+export function getTitrePoesieLabel(r: ResultatRow): string | null {
+  const meta = (r.detail_exercices ?? []).find((ex) => ex.type === "titre-poesie");
+  const t = meta?.titre?.trim();
+  return t || null;
+}
+
 export function getResultatTitre(r: ResultatRow): string {
   if (r.son_id === "manuel") {
     return r.detail_exercices?.[0]?.titre ?? "Test papier";
   }
-  if (r.son_id === "savoir-parler-poesie") return "Je dis ma poésie";
+  if (r.son_id === "savoir-parler-poesie") {
+    const titre = getTitrePoesieLabel(r);
+    return titre ? `Poésie — ${titre}` : "Je dis ma poésie";
+  }
   if (r.son_id === "savoir-parler-famille") return "Présentation de ma famille";
   if (isFluenceResultat(r)) {
     const son = getSonById(r.son_id ?? "");
@@ -69,7 +78,10 @@ export function getResultatLabelComplet(r: ResultatRow): string {
   if (r.son_id === "manuel") {
     return `${getResultatMatiere(r)} — ${getResultatTitre(r)}`;
   }
-  if (r.son_id === "savoir-parler-poesie") return "Parler — Je dis ma poésie";
+  if (r.son_id === "savoir-parler-poesie") {
+    const titre = getTitrePoesieLabel(r);
+    return titre ? `Parler — Poésie : ${titre}` : "Parler — Je dis ma poésie";
+  }
   if (r.son_id === "savoir-parler-famille") return "Parler — Présentation de ma famille";
   return getResultatTitre(r);
 }

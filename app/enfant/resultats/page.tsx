@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { getResultatsByEleve } from "../../data/resultats-storage";
 import { getBulletinsByEleve } from "../../data/bulletin-envoye-storage";
-import { getSonById } from "../../data/sons-data";
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { ResultatRow } from "../../data/resultats-storage";
 import type { BulletinEnvoyeRow } from "../../data/bulletin-envoye-storage";
-import { getManualCategoryLabel } from "../../data/manual-evaluations";
+import { getResultatLabelComplet } from "../../data/resultats-labels";
 import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
@@ -26,14 +25,11 @@ function formatDate(s: string | undefined) {
 }
 
 function getResultTitle(r: ResultatRow): string {
-  if (r.son_id === "manuel") {
-    const testTitle = r.detail_exercices?.[0]?.titre ?? "Test papier";
-    return `${getManualCategoryLabel(r.niveau_id?.replace(/^manuel-/, ""))} — ${testTitle}`;
-  }
-  if (r.son_id === "savoir-parler-poesie") return "Parler — Je dis ma poésie";
-  if (r.son_id === "savoir-parler-famille") return "Parler — Présentation de ma famille";
-  const son = getSonById(r.son_id ?? "");
-  return `${son ? son.grapheme : (r.son_id || "?")} — ${r.niveau_id.replace(/-/g, " ")}`;
+  return getResultatLabelComplet(r);
+}
+
+function detailLignesVisibles(r: ResultatRow) {
+  return (r.detail_exercices ?? []).filter((ex) => ex.type !== "titre-poesie");
 }
 
 export default function EnfantResultatsPage() {
@@ -146,7 +142,8 @@ export default function EnfantResultatsPage() {
         ) : (
           <ul className="mt-8 space-y-3">
             {resultats.map((r) => {
-              const hasDetail = r.detail_exercices && r.detail_exercices.length > 0;
+              const details = detailLignesVisibles(r);
+              const hasDetail = details.length > 0;
               return (
                 <li
                   key={r.id ?? `${r.eleve_id}-${r.son_id}-${r.niveau_id}-${r.created_at}`}
@@ -167,7 +164,7 @@ export default function EnfantResultatsPage() {
                   </div>
                   {hasDetail ? (
                     <ul className="mt-3 space-y-1 border-l-2 border-[#2d4a3e]/25 pl-3 text-sm text-[#2d4a3e]/90">
-                      {r.detail_exercices!.map((ex, i) => (
+                      {details.map((ex, i) => (
                         <li key={i} className="flex justify-between gap-2">
                           <span>{ex.titre}</span>
                           <span className="font-medium tabular-nums text-[#2d4a3e]">

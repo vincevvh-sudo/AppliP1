@@ -192,3 +192,35 @@ export async function deleteResultatsByEleveAndSon(eleveId: string | number, son
     /* ignore */
   }
 }
+
+/** Titre de poésie stocké dans detail_exercices (type titre-poesie). */
+export function getTitrePoesieFromResultat(r: ResultatRow): string | null {
+  const meta = (r.detail_exercices ?? []).find((ex) => ex.type === "titre-poesie");
+  const t = meta?.titre?.trim();
+  return t || null;
+}
+
+/**
+ * Remplace uniquement la cote d’une poésie donnée (même titre),
+ * sans effacer les autres poésies de l’année.
+ */
+export async function deleteResultatsParlerPoesieByTitre(
+  eleveId: string | number,
+  titrePoesie: string
+): Promise<void> {
+  const wanted = titrePoesie.trim().toLowerCase();
+  if (!wanted) return;
+  try {
+    const rows = await getResultatsByEleve(eleveId);
+    const toDelete = rows.filter((r) => {
+      if (r.son_id !== "savoir-parler-poesie" || !r.id) return false;
+      const t = getTitrePoesieFromResultat(r);
+      return t != null && t.trim().toLowerCase() === wanted;
+    });
+    for (const r of toDelete) {
+      if (r.id) await deleteResultat(r.id);
+    }
+  } catch {
+    /* ignore */
+  }
+}

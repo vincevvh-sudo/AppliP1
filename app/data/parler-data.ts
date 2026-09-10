@@ -32,6 +32,9 @@ export const SON_ID_PARLER_FAMILLE = "savoir-parler-famille";
 export const NIVEAU_ID_POESIE = "savoir-parler-poesie";
 export const NIVEAU_ID_FAMILLE = "savoir-parler-famille";
 
+/** Type dans detail_exercices pour le titre de la poésie. */
+export const DETAIL_TYPE_TITRE_POESIE = "titre-poesie";
+
 export const MAX_BRUT_POESIE = CRITERES_POESIE.length * 2;
 export const MAX_BRUT_FAMILLE = CRITERES_FAMILLE.length * 2;
 

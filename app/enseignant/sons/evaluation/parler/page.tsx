@@ -15,11 +15,17 @@ import {
   NIVEAU_ID_FAMILLE,
   MAX_BRUT_POESIE,
   MAX_BRUT_FAMILLE,
+  DETAIL_TYPE_TITRE_POESIE,
   sommePointsBruts,
   scoreSur10DepuisBrut,
 } from "../../../../data/parler-data";
 import { loadParlerDraft, saveParlerDraft, type ParlerGrilleDraft } from "../../../../data/parler-storage";
-import { saveResultat, deleteResultatsByEleveAndSon, type DetailExerciceEval } from "../../../../data/resultats-storage";
+import {
+  saveResultat,
+  deleteResultatsByEleveAndSon,
+  deleteResultatsParlerPoesieByTitre,
+  type DetailExerciceEval,
+} from "../../../../data/resultats-storage";
 import { supabase } from "../../../../../utils/supabase";
 import type { EleveRow } from "../../../../../utils/supabase";
 
@@ -46,6 +52,7 @@ function emptyDraft(n: number): ParlerGrilleDraft {
     enseignantSelections: Array(n).fill(null) as Selection[],
     pointsParCritere: Array(n).fill(null) as (0 | 1 | 2 | null)[],
     commentaires: Array(n).fill(""),
+    titrePoesie: "",
   };
 }
 
@@ -114,6 +121,13 @@ function TableauEvaluation({
     [bulletinEleveId, kind, n]
   );
 
+  const onTitrePoesieChange = useCallback(
+    (value: string) => {
+      persistDraft((prev) => ({ ...prev, titrePoesie: value }));
+    },
+    [persistDraft]
+  );
+
   const onCommentaireChange = useCallback(
     (idx: number, commentaire: string) => {
       persistDraft((prev) => ({
@@ -172,6 +186,13 @@ function TableauEvaluation({
       setSaveMsg("Impossible d'envoyer : élève non trouvé. Rechoisis l'élève dans la liste.");
       return;
     }
+    if (kind === "poesie") {
+      const titre = (current.titrePoesie ?? "").trim();
+      if (!titre) {
+        setSaveMsg("Indique le titre de la poésie (à côté de « Poésie »), puis réessaie.");
+        return;
+      }
+    }
     if (!pointsComplets(current)) {
       setSaveMsg("Clique un smiley pour CHAQUE critère (ligne), puis réessaie.");
       return;
@@ -179,17 +200,33 @@ function TableauEvaluation({
 
     const sum = sommePointsBruts(current.pointsParCritere);
     const score = scoreSur10DepuisBrut(sum, maxBrut);
+    const titrePoesie = (current.titrePoesie ?? "").trim();
 
     setSaving(true);
     setSaveMsg(null);
     try {
-      await deleteResultatsByEleveAndSon(supabaseEleveId, sonId);
-      const details: DetailExerciceEval[] = criteres.map((libelle, i) => ({
-        type: "critere-parler",
-        titre: libelle,
-        points: current.pointsParCritere[i] ?? 0,
-        pointsMax: 2,
-      }));
+      if (kind === "poesie") {
+        await deleteResultatsParlerPoesieByTitre(supabaseEleveId, titrePoesie);
+      } else {
+        await deleteResultatsByEleveAndSon(supabaseEleveId, sonId);
+      }
+      const details: DetailExerciceEval[] = [];
+      if (kind === "poesie" && titrePoesie) {
+        details.push({
+          type: DETAIL_TYPE_TITRE_POESIE,
+          titre: titrePoesie,
+          points: score,
+          pointsMax: 10,
+        });
+      }
+      for (let i = 0; i < criteres.length; i++) {
+        details.push({
+          type: "critere-parler",
+          titre: criteres[i],
+          points: current.pointsParCritere[i] ?? 0,
+          pointsMax: 2,
+        });
+      }
       await saveResultat({
         eleve_id: String(supabaseEleveId),
         son_id: sonId,
@@ -199,9 +236,11 @@ function TableauEvaluation({
         reussi: score >= 5,
         detail_exercices: details,
       });
-      setSaveMsg(
-        `✓ Cote ${score}/10 enregistrée pour « ${titre} ». L'enfant la voit dans Mes résultats.`
-      );
+      const label =
+        kind === "poesie" && titrePoesie
+          ? `Poésie — ${titrePoesie}`
+          : titre;
+      setSaveMsg(`✓ Cote ${score}/10 enregistrée pour « ${label} ». L'enfant la voit dans Mes résultats.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur d'enregistrement";
       setSaveMsg(
@@ -214,12 +253,37 @@ function TableauEvaluation({
 
   return (
     <section className="mt-8 rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">{titre}</h2>
+      {kind === "poesie" ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <h2 className="font-display text-xl font-semibold text-[#2d4a3e] shrink-0">Poésie</h2>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 sm:max-w-md">
+            <span className="text-xs font-medium text-[#2d4a3e]/70">Titre de la poésie</span>
+            <input
+              type="text"
+              value={draft.titrePoesie ?? ""}
+              onChange={(e) => onTitrePoesieChange(e.target.value)}
+              placeholder="Ex. : Le corbeau et le renard"
+              className="w-full rounded-xl border border-[#2d4a3e]/25 bg-white px-3 py-2 text-sm text-[#2d4a3e] placeholder:text-[#2d4a3e]/40 focus:border-[#4a7c5a] focus:outline-none focus:ring-2 focus:ring-[#4a7c5a]/30"
+            />
+          </label>
+        </div>
+      ) : (
+        <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">{titre}</h2>
+      )}
       <p className="mt-2 text-sm text-[#2d4a3e]/75">
-        Pour chaque ligne, clique un smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Quand toutes les lignes sont
-        remplies, clique <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+        {kind === "poesie" ? (
+          <>
+            Indique le titre (il y en aura plusieurs dans l&apos;année), puis pour chaque ligne clique un
+            smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
+            <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+          </>
+        ) : (
+          <>
+            Pour chaque ligne, clique un smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Quand toutes les lignes sont
+            remplies, clique <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+          </>
+        )}
       </p>
-
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#4a7c5a]/25 bg-[#e8f5e9]/50 px-4 py-3">
         <span className="text-sm font-medium text-[#2d4a3e]">
           Total : <strong>{somme}</strong> / {maxBrut} →{" "}
@@ -445,9 +509,10 @@ export default function EnseignantParlerPage() {
                 }`}
               >
                 <p className="font-display text-lg text-[#2d4a3e]">Poésie</p>
-                <p className="mt-1 text-sm text-[#2d4a3e]/75">Je dis ma poésie</p>
-              </button>
-              <button
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                  Je dis ma poésie — tu pourras indiquer le titre (plusieurs dans l&apos;année).
+                </p>
+              </button>              <button
                 type="button"
                 onClick={() => setKind("famille")}
                 className={`rounded-2xl p-5 text-left shadow-lg transition ${

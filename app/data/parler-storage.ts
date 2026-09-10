@@ -14,6 +14,8 @@ export type ParlerGrilleDraft = {
   /** 0, 1 ou 2 par critère (null = non encore saisi) */
   pointsParCritere: (0 | 1 | 2 | null)[];
   commentaires: string[];
+  /** Titre de la poésie (plusieurs possibles dans l’année). */
+  titrePoesie?: string;
 };
 
 function key(prefix: string, bulletinEleveId: string, kind: "poesie" | "famille"): string {
@@ -32,11 +34,14 @@ function parseDraft(raw: string, n: number): ParlerGrilleDraft | null {
     while (pts.length < n) pts.push(null);
     const commentaires = Array.isArray(parsed.commentaires) ? [...parsed.commentaires] : Array(n).fill("");
     while (commentaires.length < n) commentaires.push("");
+    const titrePoesie =
+      typeof parsed.titrePoesie === "string" ? parsed.titrePoesie : "";
     return {
       enfantSelections: enfant.slice(0, n) as FaceSelection[],
       enseignantSelections: ens.slice(0, n) as FaceSelection[],
       pointsParCritere: pts.slice(0, n) as (0 | 1 | 2 | null)[],
       commentaires: commentaires.slice(0, n),
+      titrePoesie,
     };
   } catch {
     return null;
