@@ -79,13 +79,11 @@ function pointsComplets(draft: ParlerGrilleDraft): boolean {
 type GrilleKind = "poesie" | "famille";
 
 function TableauEvaluation({
-  titre,
   criteres,
   kind,
   bulletinEleveId,
   supabaseEleveId,
 }: {
-  titre: string;
   criteres: readonly string[];
   kind: GrilleKind;
   bulletinEleveId: string;
@@ -534,7 +532,6 @@ export default function EnseignantParlerPage() {
         {/* Étape 3 : grille */}
         {bulletinEleve && kind === "poesie" && (
           <TableauEvaluation
-            titre="Poésie — Je dis ma poésie"
             criteres={CRITERES_POESIE}
             kind="poesie"
             bulletinEleveId={bulletinEleve.id}
@@ -543,7 +540,6 @@ export default function EnseignantParlerPage() {
         )}
         {bulletinEleve && kind === "famille" && (
           <TableauEvaluation
-            titre="Présentation de"
             criteres={CRITERES_FAMILLE}
             kind="famille"
             bulletinEleveId={bulletinEleve.id}
