@@ -41,8 +41,13 @@ import {
 } from "../../data/bulletin-envoye-storage";
 import { supabase } from "../../../utils/supabase";
 import type { EleveRow } from "../../../utils/supabase";
-import { getResultatsByEleve } from "../../data/resultats-storage";
+import { getResultatsByEleve, type ResultatRow } from "../../data/resultats-storage";
 import { getDicteeScoresByEleves } from "../../data/dictee-scores-storage";
+import {
+  formatResultatDate,
+  getResultatMatiere,
+  getResultatTitre,
+} from "../../data/resultats-labels";
 import {
   computeSyntheseBulletin,
   BULLETIN_SYNTHESE_CATEGORIES,
@@ -242,7 +247,7 @@ export default function BulletinPage() {
   const [supabaseEleves, setSupabaseEleves] = useState<EleveRow[]>([]);
   const [sendingSection, setSendingSection] = useState<string | null>(null);
   const [printMonthId, setPrintMonthId] = useState<BulletinMonthId | null>(null);
-  type ViewMode = "mois" | "matiere";
+  type ViewMode = "mois" | "matiere" | "controle";
   const [viewMode, setViewMode] = useState<ViewMode>("mois");
   type SelectedPart =
     | { subjectId: string; subjectLabel: string; subpartId: string; subpartLabel: string }
@@ -250,6 +255,7 @@ export default function BulletinPage() {
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null);
   const [syntheseEval, setSyntheseEval] = useState<SyntheseBulletin | null>(null);
   const [loadingSynthese, setLoadingSynthese] = useState(false);
+  const [resultatsEleve, setResultatsEleve] = useState<ResultatRow[]>([]);
 
   const load = useCallback(async () => {
     setEleves(getElevesBulletin());
@@ -285,15 +291,25 @@ export default function BulletinPage() {
     const eleveId = selectedEleve?.supabaseEleveId;
     if (eleveId == null) {
       setSyntheseEval(null);
+      setResultatsEleve([]);
       return;
     }
     setLoadingSynthese(true);
     Promise.all([getResultatsByEleve(eleveId), getDicteeScoresByEleves()])
       .then(([rows, dicteeByEleve]) => {
+        const sorted = [...rows].sort((a, b) => {
+          const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return tb - ta;
+        });
+        setResultatsEleve(sorted);
         const scores = dicteeByEleve[String(eleveId)] as DicteeScoresForBulletin | undefined;
         setSyntheseEval(computeSyntheseBulletin(rows, scores ?? null));
       })
-      .catch(() => setSyntheseEval(null))
+      .catch(() => {
+        setSyntheseEval(null);
+        setResultatsEleve([]);
+      })
       .finally(() => setLoadingSynthese(false));
   }, [selectedEleve?.id, selectedEleve?.supabaseEleveId]);
 
@@ -706,7 +722,7 @@ export default function BulletinPage() {
                       setViewMode("mois");
                       setSelectedPart(null);
                     }}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition sm:px-4 ${
                       viewMode === "mois"
                         ? "bg-[#4a7c5a] text-white"
                         : "text-[#2d4a3e]/80 hover:bg-[#2d4a3e]/10"
@@ -717,13 +733,27 @@ export default function BulletinPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("matiere")}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition sm:px-4 ${
                       viewMode === "matiere"
                         ? "bg-[#4a7c5a] text-white"
                         : "text-[#2d4a3e]/80 hover:bg-[#2d4a3e]/10"
                     }`}
                   >
                     Par matière
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode("controle");
+                      setSelectedPart(null);
+                    }}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition sm:px-4 ${
+                      viewMode === "controle"
+                        ? "bg-[#4a7c5a] text-white"
+                        : "text-[#2d4a3e]/80 hover:bg-[#2d4a3e]/10"
+                    }`}
+                  >
+                    Par contrôle
                   </button>
                 </div>
                 <button
@@ -759,8 +789,8 @@ export default function BulletinPage() {
                 </div>
               </div>
 
-              {/* Page 1 impression : synthèse + commentaire */}
-              {selectedEleve.supabaseEleveId != null && (
+              {/* Page 1 impression : synthèse + commentaire — visible hors vue « contrôle » (les attendus) et en tête */}
+              {selectedEleve.supabaseEleveId != null && viewMode !== "controle" && (
                 <div className="bulletin-page-synthese">
                   <section className="bulletin-synthese mb-4 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
                     <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
@@ -1244,6 +1274,127 @@ export default function BulletinPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Vue par contrôle : tous les tests app + encodés enseignant */}
+              {viewMode === "controle" && (
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="font-display text-xl text-[#2d4a3e]">
+                      Contrôles et évaluations — {selectedEleve.prenom}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                      Résultats de l&apos;application et notes encodées dans{" "}
+                      <Link href="/enseignant/resultats" className="underline">
+                        Résultats
+                      </Link>{" "}
+                      (titre du test + matière).
+                    </p>
+                  </div>
+
+                  {selectedEleve.supabaseEleveId == null ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      Lie cet élève à la classe (Supabase) pour voir ses contrôles.
+                    </p>
+                  ) : loadingSynthese ? (
+                    <p className="text-sm text-[#2d4a3e]/60">Chargement des contrôles…</p>
+                  ) : resultatsEleve.length === 0 ? (
+                    <p className="rounded-xl bg-white/80 px-4 py-6 text-sm text-[#2d4a3e]/70">
+                      Aucun contrôle pour le moment. Encode des notes dans Résultats, ou laisse l&apos;enfant
+                      faire des évaluations dans l&apos;app.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-2xl border border-[#2d4a3e]/10 bg-white/95 shadow">
+                      <table className="w-full min-w-[520px] border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b border-[#2d4a3e]/15 bg-[#f0f7f2]">
+                            <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Date</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Titre</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Matière</th>
+                            <th className="px-4 py-3 text-center font-semibold text-[#2d4a3e]">Note</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Source</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {resultatsEleve.map((r, idx) => {
+                            const key = r.id ?? `${r.son_id}-${r.niveau_id}-${r.created_at}-${idx}`;
+                            const note =
+                              r.points_max != null && r.points_max > 0
+                                ? `${r.points} / ${r.points_max}`
+                                : String(r.points ?? "—");
+                            const source = r.son_id === "manuel" ? "Encodé" : "Application";
+                            return (
+                              <tr
+                                key={key}
+                                className="border-b border-[#2d4a3e]/8 last:border-0 hover:bg-[#a8d5ba]/10"
+                              >
+                                <td className="px-4 py-3 whitespace-nowrap text-[#2d4a3e]/80">
+                                  {formatResultatDate(r.created_at) || "—"}
+                                </td>
+                                <td className="px-4 py-3 font-medium text-[#2d4a3e]">
+                                  {getResultatTitre(r)}
+                                </td>
+                                <td className="px-4 py-3 text-[#2d4a3e]/85">
+                                  {getResultatMatiere(r)}
+                                </td>
+                                <td className="px-4 py-3 text-center font-semibold tabular-nums text-[#2d6b3e]">
+                                  {note}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                      r.son_id === "manuel"
+                                        ? "bg-[#ffd4a3]/70 text-[#2d4a3e]"
+                                        : "bg-[#b8d4e8]/70 text-[#2d4a3e]"
+                                    }`}
+                                  >
+                                    {source}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {syntheseEval && (
+                    <section className="mt-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
+                      <h3 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-base text-[#2d4a3e]">
+                        Synthèse par période (P1 / P2 / P3)
+                      </h3>
+                      <div className="overflow-x-auto px-4 pb-4 pt-2">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b border-[#2d4a3e]/20">
+                              <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">Partie</th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P1</th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P2</th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P3</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {BULLETIN_SYNTHESE_CATEGORIES.map((cat) => (
+                              <tr key={cat.id} className="border-b border-[#2d4a3e]/10">
+                                <td className="py-2 pr-4 text-[#2d4a3e]">{cat.label}</td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(syntheseEval[cat.id].P1, cat.maxPoints)}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(syntheseEval[cat.id].P2, cat.maxPoints)}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
+                                  {formatNoteSurBarème(syntheseEval[cat.id].P3, cat.maxPoints)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
                 </div>
               )}
               </div>
