@@ -396,7 +396,13 @@ export default function BulletinPage() {
     if (!selectedEleve) return;
     setCollapsedSections(new Set());
     const prevTitle = document.title;
-    document.title = `Bulletin — ${selectedEleve.prenom}`;
+    const vueLabel =
+      viewMode === "mois"
+        ? "par mois"
+        : viewMode === "matiere"
+          ? "par matière"
+          : "tests encodés";
+    document.title = `Bulletin — ${selectedEleve.prenom} (${vueLabel})`;
     setTimeout(() => {
       window.print();
       document.title = prevTitle;
@@ -696,12 +702,21 @@ export default function BulletinPage() {
           id="bulletin-print-area"
           className="min-w-0 flex-1 rounded-2xl bg-white/95 p-6 shadow-lg"
           data-print-month={printMonthId ?? ""}
+          data-print-view={viewMode}
         >
           {/* En-tête d'impression compact */}
           <div className="print-only bulletin-print-header">
             <p className="font-display text-base font-semibold text-[#2d4a3e]">M. Vincent</p>
             {selectedEleve ? (
-              <p className="text-sm text-[#2d4a3e]">{selectedEleve.prenom}</p>
+              <p className="text-sm text-[#2d4a3e]">
+                {selectedEleve.prenom}
+                {" — "}
+                {viewMode === "mois"
+                  ? "vue par mois"
+                  : viewMode === "matiere"
+                    ? "vue par matière"
+                    : "tests encodés"}
+              </p>
             ) : null}
           </div>
           {!selectedEleve ? (
@@ -710,12 +725,12 @@ export default function BulletinPage() {
             </div>
           ) : (
             <>
-              {/* Vue Par mois / Par matière + Imprimer */}
+              {/* Vue Par mois / Par matière / Par tests encodés + Imprimer */}
               <div className="no-print mb-4 flex flex-wrap items-center justify-end gap-3">
                 <span className="text-sm font-medium text-[#2d4a3e]/80">
                   Affichage :
                 </span>
-                <div className="flex rounded-xl border border-[#2d4a3e]/20 bg-white/80 p-1">
+                <div className="flex max-w-full flex-wrap rounded-xl border border-[#2d4a3e]/20 bg-white/80 p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -753,16 +768,21 @@ export default function BulletinPage() {
                         : "text-[#2d4a3e]/80 hover:bg-[#2d4a3e]/10"
                     }`}
                   >
-                    Par contrôle
+                    Par tests encodés
                   </button>
                 </div>
                 <button
                   type="button"
                   onClick={handlePrint}
                   className="flex items-center gap-2 rounded-xl bg-[#4a7c5a] px-5 py-2.5 font-semibold text-white shadow transition hover:bg-[#3d6b4d]"
+                  title="Imprime uniquement la vue actuellement sélectionnée"
                 >
                   <span aria-hidden>🖨️</span>
-                  Imprimer / Enregistrer en PDF
+                  {viewMode === "mois"
+                    ? "Imprimer (par mois)"
+                    : viewMode === "matiere"
+                      ? "Imprimer (par matière)"
+                      : "Imprimer (tests encodés)"}
                 </button>
               </div>
 
@@ -1282,14 +1302,15 @@ export default function BulletinPage() {
                 <div className="space-y-4">
                   <div>
                     <h2 className="font-display text-xl text-[#2d4a3e]">
-                      Contrôles et évaluations — {selectedEleve.prenom}
+                      Tests encodés — {selectedEleve.prenom}
                     </h2>
                     <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                      Résultats de l&apos;application et notes encodées dans{" "}
+                      Notes encodées dans{" "}
                       <Link href="/enseignant/resultats" className="underline">
                         Résultats
                       </Link>{" "}
-                      (titre du test + matière).
+                      et évaluations faites dans l&apos;application. L&apos;impression n&apos;inclut que cette
+                      liste (pas les attendus par mois / matière).
                     </p>
                   </div>
 
