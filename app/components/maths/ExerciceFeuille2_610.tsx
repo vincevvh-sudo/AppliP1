@@ -154,13 +154,13 @@ function ExerciceEntourer610({ onComplete, start, end }: { onComplete: () => voi
 const NOMBRE_MOUTONS_610 = 30;
 const TAILLE_GROUPE = 3;
 
-/** 3. Grouper par trois : 30 moutons → 10 paquets. */
-function ExerciceGrouper610({ onComplete, start }: { onComplete: () => void; start: number }) {
+/** 3. Grouper par trois : 30 moutons → 10 paquets (indépendant de la plage 6-10 / 10-15 / 15-20). */
+function ExerciceGrouper610({ onComplete }: { onComplete: () => void }) {
   const [groups, setGroups] = useState<number[][]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [reponse, setReponse] = useState<number | null>(null);
   const [showBravo, setShowBravo] = useState(false);
-  const correct = NOMBRE_MOUTONS_610 / TAILLE_GROUPE;
+  const correct = NOMBRE_MOUTONS_610 / TAILLE_GROUPE; // 10
 
   const inAnyGroup = new Set(groups.flat());
   const groupByMinIndex = new Map<number, number[]>(groups.map((g) => [Math.min(...g), g]));
@@ -182,7 +182,6 @@ function ExerciceGrouper610({ onComplete, start }: { onComplete: () => void; sta
   const handleValider = useCallback(() => {
     if (reponse === correct) { setShowBravo(true); setTimeout(() => onComplete(), 1200); }
   }, [reponse, onComplete]);
-  const d = start - 6;
 
   const items: ReactNode[] = [];
   const rendered = new Set<number>();
@@ -212,7 +211,7 @@ function ExerciceGrouper610({ onComplete, start }: { onComplete: () => void; sta
       <p className="mt-2 text-sm text-[#2d4a3e]/70">Clique sur 3 moutons pour faire un paquet.</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">{items}</div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {[8 + d, 9 + d, 10 + d, 11 + d].map((n) => (
+        {[correct - 2, correct - 1, correct, correct + 1].map((n) => (
           <button key={n} type="button" onClick={() => setReponse(n)} className={btnClass} style={{ backgroundColor: reponse === n ? "#c4a8e8" : undefined }}>{n}</button>
         ))}
       </div>
@@ -245,7 +244,7 @@ function ExerciceGommettes610({ onComplete, start }: { onComplete: () => void; s
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">4. Mets le bon nombre de gommettes dans chaque cercle (7, 10, 8).</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">4. Mets le bon nombre de gommettes dans chaque cercle ({cibles.join(", ")}).</h3>
       <div className="mt-4 flex flex-wrap justify-center gap-6">
         {cibles.map((c, i) => (
           <div key={i} className="flex flex-col items-center gap-2">
@@ -271,7 +270,7 @@ export default function ExerciceFeuille2_610({ start = 6, end = 10 }: FeuilleRan
     <div className="space-y-8">
       <ExerciceChiffres610 onComplete={() => setEtape(1)} start={start} end={end} />
       {etape >= 1 && <ExerciceEntourer610 onComplete={() => setEtape(2)} start={start} end={end} />}
-      {etape >= 2 && <ExerciceGrouper610 onComplete={() => setEtape(3)} start={start} />}
+      {etape >= 2 && <ExerciceGrouper610 onComplete={() => setEtape(3)} />}
       {etape >= 3 && <ExerciceGommettes610 onComplete={() => setEtape(4)} start={start} />}
       {etape >= 4 && (
         <div className="rounded-2xl bg-[#a8d5ba]/40 p-6 text-center">

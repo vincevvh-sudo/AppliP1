@@ -150,9 +150,10 @@ export function MathsOperationsSeriePlay({ serieId, backHref, backLabel = "← R
                   );
                 }
                 const correct = hasVal && val === q.result;
+                const signe = q.op ?? "+";
                 return (
                   <li key={q.id} className={correct ? "text-[#166534]" : "text-[#b91c1c]"}>
-                    {q.a} + {q.b} = <span className="font-semibold">{hasVal ? val : "—"}</span>{" "}
+                    {q.a} {signe} {q.b} = <span className="font-semibold">{hasVal ? val : "—"}</span>{" "}
                     {correct ? "✓" : `✗ (réponse : ${q.result})`}
                   </li>
                 );

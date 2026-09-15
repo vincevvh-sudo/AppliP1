@@ -103,11 +103,12 @@ function ExerciceNombre610({ onComplete, start, end }: { onComplete: () => void;
   );
 }
 
-/** 2. Colorier le nombre de cases (6 à 10). Grille de 10 cases. */
+/** 2. Colorier le nombre de cases. Grille assez grande pour la plage (10, 15 ou 20). */
 function ExerciceColorier610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
   const d = start - 6;
   const config = [8 + d, 7 + d, 10 + d, 6 + d, 9 + d];
-  const [colored, setColored] = useState<boolean[][]>(config.map(() => Array(10).fill(false)));
+  const cells = end;
+  const [colored, setColored] = useState<boolean[][]>(config.map(() => Array(cells).fill(false)));
   const [showBravo, setShowBravo] = useState(false);
 
   const toggle = useCallback((col: number, row: number) => {
@@ -129,7 +130,7 @@ function ExerciceColorier610({ onComplete, start, end }: { onComplete: () => voi
           <div key={col} className="flex flex-col items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2d4a3e]/20 text-xl font-bold text-[#2d4a3e]">{n}</div>
             <div className="grid grid-cols-5 gap-0.5">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((row) => (
+              {Array.from({ length: cells }, (_, row) => (
                 <button key={row} type="button" onClick={() => toggle(col, row)} className="min-h-[36px] min-w-[36px] rounded border-2 border-[#2d4a3e]/30 transition focus:outline-none focus:ring-2 focus:ring-[#c4a8e8]" style={{ backgroundColor: colored[col][row] ? "#c4a8e8" : "#fef9f3" }} />
               ))}
             </div>
@@ -178,11 +179,10 @@ function ExerciceFruits610({ onComplete, start, end }: { onComplete: () => void;
         <p className="mb-3 text-sm font-medium text-[#2d4a3e]/80">Image à compter :</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {fruits.map((f, i) => (
-            <span key={i} className="inline-flex items-center gap-0.5 text-xl" aria-label={`${f.count} ${f.type}`}>
-              {Array.from({ length: Math.min(f.count, 10) }, (_, k) => (
+            <span key={i} className="inline-flex max-w-[220px] flex-wrap items-center gap-0.5 text-xl" aria-label={`${f.count} ${f.type}`}>
+              {Array.from({ length: f.count }, (_, k) => (
                 <span key={k} role="img">{f.emoji}</span>
               ))}
-              {f.count > 10 && <span className="text-sm">+{f.count - 10}</span>}
             </span>
           ))}
         </div>

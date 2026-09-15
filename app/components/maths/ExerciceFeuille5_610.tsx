@@ -304,7 +304,7 @@ function ExerciceOrdreCroissant610({ onComplete, start }: { onComplete: () => vo
   );
 }
 
-/** 4. Compléter la suite de perles de 1 à 10 (puis 11 et 12 déjà écrits). */
+/** 4. Compléter la suite de perles (1–12 en 6-10, décalée pour 10-15 et 15-20). */
 function ExercicePerles610({ onComplete, start, end }: { onComplete: () => void; start: number; end: number }) {
   const total = 12;
   const d = start - 6;
@@ -355,7 +355,7 @@ function ExercicePerles610({ onComplete, start, end }: { onComplete: () => void;
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
       <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">
-        4. Replace les perles au bon endroit pour aller de 1 à 10.
+        4. Replace les perles au bon endroit pour aller de {expected[0]} à {expected[expected.length - 1]}.
       </h3>
       <p className="mt-2 text-sm text-[#2d4a3e]/70">
         Clique sur une perle vide puis choisis le bon nombre. Les perles suivent la suite autour de {start} à {end}.

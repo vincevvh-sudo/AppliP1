@@ -52,7 +52,7 @@ function ExerciceSuite610({ onComplete, start }: { onComplete: () => void; start
 
   return (
     <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
-      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Complète la suite des nombres de {start} à {start + 4}.</h3>
+      <h3 className="font-display text-lg font-semibold text-[#2d4a3e]">1. Complète la suite des nombres jusqu&apos;aux nombres déjà écrits.</h3>
       <p className="mt-2 text-sm text-[#2d4a3e]/70">Clique sur une case vide puis sur un chiffre en bas.</p>
       <div className="mt-4 grid grid-cols-6 gap-1">
         {Array.from({ length: totalCells }, (_, pos) => {
@@ -163,11 +163,10 @@ function ExerciceColorier610({ onComplete, start }: { onComplete: () => void; st
       <div className="mt-4 flex flex-wrap justify-center gap-4">
         {valeurs.map((v, i) => (
           <div key={i} className="flex flex-col items-center gap-2">
-            <div className="flex gap-0.5">
-              {Array.from({ length: Math.min(v, 10) }, (_, k) => (
+            <div className="flex max-w-[220px] flex-wrap justify-center gap-0.5">
+              {Array.from({ length: v }, (_, k) => (
                 <span key={k} className="text-xl">🍭</span>
               ))}
-              {v > 10 && <span className="text-sm">+{v - 10}</span>}
             </div>
             <div className="flex gap-1">
               {options[i].map((n) => (

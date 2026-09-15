@@ -37,14 +37,14 @@ export type QuestionGlaces = {
 /** Rectangle avec boule : position de la boule. */
 export type QuestionRectangle = {
   type: "rectangle";
-  /** 0 = bas gauche (bonne réponse), 1 = haut droite */
+  /** 0 = bas gauche, 1 = haut droite */
   correctIndex: 0 | 1;
 };
 
 /** Cercle : avec ou sans lignes. */
 export type QuestionCercle = {
   type: "cercle";
-  /** 0 = sans ligne, 1 = avec 4 lignes (bonne réponse) */
+  /** 0 = sans ligne, 1 = avec 2 lignes (croix) */
   correctIndex: 0 | 1;
 };
 
@@ -85,7 +85,7 @@ export const ITEMS_SUITE_LOGIQUE: ItemSuiteLogique[] = [
     type: "formes",
     sequence: ["diamond", "oval", "diamond", "oval", "diamond", "oval"],
     options: ["oval", "diamond"],
-    correctIndex: 0,
+    correctIndex: 1,
   },
   {
     type: "formes",
@@ -96,7 +96,7 @@ export const ITEMS_SUITE_LOGIQUE: ItemSuiteLogique[] = [
   {
     type: "glaces",
     sequence: [0, 1, 0, 1, 0],
-    correctIndex: 2,
+    correctIndex: 1,
   },
   {
     type: "glaces",
@@ -106,15 +106,17 @@ export const ITEMS_SUITE_LOGIQUE: ItemSuiteLogique[] = [
   {
     type: "glaces",
     sequence: [1, 0, 1, 0, 1],
-    correctIndex: 1,
-  },
-  {
-    type: "rectangle",
     correctIndex: 0,
   },
   {
-    type: "cercle",
+    type: "rectangle",
+    /** Suite haut-droite / bas-gauche : après 6 éléments, le suivant est haut-droite (index 1). */
     correctIndex: 1,
+  },
+  {
+    type: "cercle",
+    /** Suite 0, 1, 2 lignes qui se répète : le suivant est sans ligne (index 0). */
+    correctIndex: 0,
   },
   {
     type: "smiley",
