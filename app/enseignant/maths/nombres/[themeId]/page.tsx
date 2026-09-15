@@ -11,13 +11,13 @@ import {
   FEUILLES_NOMBRES_10_15,
   FEUILLES_NOMBRES_15_20,
 } from "../../../../data/maths-data";
+import { type MathsThemePartageKey } from "../../../../data/maths-partages";
 import {
-  getMathsThemeEvaluationsEleveIds,
-  getMathsThemeExercicesEleveIds,
-  setMathsThemeEvaluationsEleveIds,
-  setMathsThemeExercicesEleveIds,
-  type MathsThemePartageKey,
-} from "../../../../data/maths-partages";
+  getEleveIdsPourThemeNombresEvaluations,
+  getEleveIdsPourThemeNombresExercices,
+  remplacerPartageThemeNombresEvaluations,
+  remplacerPartageThemeNombresExercices,
+} from "../../../../data/maths-modules-partages-storage";
 import { supabase, type EleveRow } from "../../../../../utils/supabase";
 
 const IconMaths = () => (
@@ -53,14 +53,23 @@ export default function EnseignantMathsNombresThemePage() {
           : null;
 
   useEffect(() => {
-    if (partageThemeId) {
-      const exIds = getMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey);
-      const evIds = getMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey);
+    if (!partageThemeId) return;
+    const key = partageThemeId as MathsThemePartageKey;
+    let cancelled = false;
+    (async () => {
+      const [exIds, evIds] = await Promise.all([
+        getEleveIdsPourThemeNombresExercices(key),
+        getEleveIdsPourThemeNombresEvaluations(key),
+      ]);
+      if (cancelled) return;
       setSelectedExercices(new Set(exIds));
       setSelectedEvaluations(new Set(evIds));
       setPartageExercices(exIds.length > 0);
       setPartageEvaluations(evIds.length > 0);
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [partageThemeId]);
 
   useEffect(() => {
@@ -74,30 +83,32 @@ export default function EnseignantMathsNombresThemePage() {
 
   const handleToggleExercices = () => {
     if (!partageThemeId) return;
+    const key = partageThemeId as MathsThemePartageKey;
     if (selectedExercices.size > 0) {
       setSelectedExercices(new Set());
-      setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, []);
       setPartageExercices(false);
+      void remplacerPartageThemeNombresExercices(key, []);
       return;
     }
     const all = eleves.map((e) => String(e.id));
     setSelectedExercices(new Set(all));
-    setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, all);
     setPartageExercices(all.length > 0);
+    void remplacerPartageThemeNombresExercices(key, all);
   };
 
   const handleToggleEvaluations = () => {
     if (!partageThemeId) return;
+    const key = partageThemeId as MathsThemePartageKey;
     if (selectedEvaluations.size > 0) {
       setSelectedEvaluations(new Set());
-      setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, []);
       setPartageEvaluations(false);
+      void remplacerPartageThemeNombresEvaluations(key, []);
       return;
     }
     const all = eleves.map((e) => String(e.id));
     setSelectedEvaluations(new Set(all));
-    setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, all);
     setPartageEvaluations(all.length > 0);
+    void remplacerPartageThemeNombresEvaluations(key, all);
   };
 
   const toggleEleveExercice = (id: string) => {
@@ -107,8 +118,8 @@ export default function EnseignantMathsNombresThemePage() {
     else next.add(id);
     setSelectedExercices(next);
     const list = Array.from(next);
-    setMathsThemeExercicesEleveIds(partageThemeId as MathsThemePartageKey, list);
     setPartageExercices(list.length > 0);
+    void remplacerPartageThemeNombresExercices(partageThemeId as MathsThemePartageKey, list);
   };
 
   const toggleEleveEvaluation = (id: string) => {
@@ -118,8 +129,8 @@ export default function EnseignantMathsNombresThemePage() {
     else next.add(id);
     setSelectedEvaluations(next);
     const list = Array.from(next);
-    setMathsThemeEvaluationsEleveIds(partageThemeId as MathsThemePartageKey, list);
     setPartageEvaluations(list.length > 0);
+    void remplacerPartageThemeNombresEvaluations(partageThemeId as MathsThemePartageKey, list);
   };
 
   if (!partie || !theme) {
@@ -243,7 +254,10 @@ export default function EnseignantMathsNombresThemePage() {
         {partageThemeId && (
           <div className="mt-10 rounded-2xl border-2 border-[#2d4a3e]/15 bg-white/90 p-6">
             <h2 className="font-display text-lg font-semibold text-[#2d4a3e]">Partager aux enfants</h2>
-            <p className="mt-1 text-sm text-[#2d4a3e]/70">Sélectionne les élèves autorisés pour ce thème.</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">
+              Coche uniquement les élèves pour <strong>ce</strong> thème. Les autres thèmes d’arithmétique restent
+              fermés tant que tu ne les partages pas.
+            </p>
             <div className="mt-4 flex flex-col gap-3">
               <label className="flex items-center gap-3">
                 <input

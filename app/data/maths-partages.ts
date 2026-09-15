@@ -1,6 +1,7 @@
 /**
  * Partage des exercices et évaluations maths aux élèves (localStorage, comme complément au français/Supabase).
- * Thème "nombres-1-5" : partage exercices et/ou évaluations à tous.
+ * Thème "nombres-1-5" : partage exercices et/ou évaluations aux élèves cochés uniquement
+ * (jamais toute l’arithmétique par défaut).
  * Séries "Opérations 1" à "15" : partage indépendant par série (clés "1" … "15").
  * Modules hors nombres : partage principal via Supabase (maths-modules-partages-storage.ts).
  * Sans table Supabase : localStorage avec liste d’élèves par module (exercicesModulesEleves),
@@ -125,11 +126,18 @@ export type MathsPartageState = {
   exercicesModulesEleves: Record<string, string[]>;
 };
 
+export const MATHS_THEMES_NOMBRES: MathsThemePartageKey[] = [
+  "nombres-1-5",
+  "nombres-6-10",
+  "nombres-10-15",
+  "nombres-15-20",
+];
+
 const defaultState: MathsPartageState = {
   "nombres-1-5": { exercices: false, evaluations: false },
   "nombres-6-10": { exercices: false, evaluations: false },
-  "nombres-10-15": { exercices: true, evaluations: false },
-  "nombres-15-20": { exercices: true, evaluations: false },
+  "nombres-10-15": { exercices: false, evaluations: false },
+  "nombres-15-20": { exercices: false, evaluations: false },
   operations: {},
   additions: {},
   additions20: {},
@@ -142,11 +150,11 @@ const defaultState: MathsPartageState = {
   exercicesModulesEleves: {},
 };
 
-/** Comportement historique : opérations 1 et 2 étaient visibles sans mécanisme de partage. */
+/** Aucune série n’est visible tant que l’enseignant ne l’a pas explicitement partagée. */
 function defaultOperationsLegacy(): Record<string, boolean> {
   const o: Record<string, boolean> = {};
   for (const id of OPERATIONS_SERIE_IDS_PARTAGEABLES) {
-    o[id] = id === "1" || id === "2";
+    o[id] = false;
   }
   return o;
 }
@@ -223,7 +231,7 @@ function load(): MathsPartageState {
       parsed.mathsThemesEvaluationsEleves && typeof parsed.mathsThemesEvaluationsEleves === "object"
         ? { ...parsed.mathsThemesEvaluationsEleves }
         : {};
-    return {
+    const merged: MathsPartageState = {
       ...defaultState,
       ...parsed,
       operations,
@@ -237,6 +245,7 @@ function load(): MathsPartageState {
       exercicesModules,
       exercicesModulesEleves,
     };
+    return normalizeThemeShareFlags(merged, true);
   } catch {
     return {
       ...defaultState,
@@ -259,6 +268,37 @@ function save(state: MathsPartageState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
+}
+
+/**
+ * Un thème n’est partagé que s’il y a une liste d’élèves.
+ * Ça annule l’ancien défaut « 10–15 / 15–20 ouverts pour tout le monde ».
+ */
+function normalizeThemeShareFlags(state: MathsPartageState, persist = false): MathsPartageState {
+  let changed = false;
+  for (const id of MATHS_THEMES_NOMBRES) {
+    if (!state[id]) state[id] = { exercices: false, evaluations: false };
+    const exList = state.mathsThemesExercicesEleves?.[id];
+    const evList = state.mathsThemesEvaluationsEleves?.[id];
+    const hasEx = Array.isArray(exList) && exList.length > 0;
+    const hasEv = Array.isArray(evList) && evList.length > 0;
+    if (state[id].exercices !== hasEx) {
+      state[id].exercices = hasEx;
+      changed = true;
+    }
+    if (state[id].evaluations !== hasEv) {
+      state[id].evaluations = hasEv;
+      changed = true;
+    }
+  }
+  if (persist && changed) save(state);
+  return state;
+}
+
+function eleveIdDansListe(list: unknown, eleveId: string | number): boolean {
+  if (!Array.isArray(list)) return false;
+  const eid = String(eleveId).trim().toLowerCase();
+  return list.some((id) => String(id).trim().toLowerCase() === eid);
 }
 
 export function isMathsExercicesShared(themeId: MathsThemePartageKey): boolean {
@@ -323,58 +363,44 @@ export function setMathsThemeEvaluationsEleveIds(themeId: MathsThemePartageKey, 
   save(state);
 }
 
+export function themeUrlIdToPartageKey(themeId: string): MathsThemePartageKey | null {
+  if (themeId === "1-5") return "nombres-1-5";
+  if (themeId === "6-10") return "nombres-6-10";
+  if (themeId === "10-15") return "nombres-10-15";
+  if (themeId === "15-20") return "nombres-15-20";
+  return null;
+}
+
 /** Pour l'enfant : quels thèmes ont les exercices partagés ? */
 export function getMathsThemesExercicesPartages(): string[] {
   const state = load();
-  const ids: string[] = [];
-  if (state["nombres-1-5"]?.exercices) ids.push("nombres-1-5");
-  if (state["nombres-6-10"]?.exercices) ids.push("nombres-6-10");
-  if (state["nombres-10-15"]?.exercices) ids.push("nombres-10-15");
-  if (state["nombres-15-20"]?.exercices) ids.push("nombres-15-20");
-  return ids;
+  return MATHS_THEMES_NOMBRES.filter((id) => {
+    const list = state.mathsThemesExercicesEleves?.[id];
+    return Array.isArray(list) && list.length > 0;
+  });
 }
 
 export function getMathsThemesExercicesPartagesPourEleve(eleveId: string | number): string[] {
-  const eid = String(eleveId);
   const state = load();
-  const ids: string[] = [];
-  const allThemes: MathsThemePartageKey[] = ["nombres-1-5", "nombres-6-10", "nombres-10-15", "nombres-15-20"];
-  for (const id of allThemes) {
-    const list = state.mathsThemesExercicesEleves?.[id];
-    if (Array.isArray(list) && list.length > 0) {
-      if (list.includes(eid)) ids.push(id);
-    } else if (state[id]?.exercices) {
-      ids.push(id);
-    }
-  }
-  return ids;
+  return MATHS_THEMES_NOMBRES.filter((id) =>
+    eleveIdDansListe(state.mathsThemesExercicesEleves?.[id], eleveId)
+  );
 }
 
 /** Pour l'enfant : quels thèmes ont les évaluations partagées ? */
 export function getMathsThemesEvaluationsPartages(): string[] {
   const state = load();
-  const ids: string[] = [];
-  if (state["nombres-1-5"]?.evaluations) ids.push("nombres-1-5");
-  if (state["nombres-6-10"]?.evaluations) ids.push("nombres-6-10");
-  if (state["nombres-10-15"]?.evaluations) ids.push("nombres-10-15");
-  if (state["nombres-15-20"]?.evaluations) ids.push("nombres-15-20");
-  return ids;
+  return MATHS_THEMES_NOMBRES.filter((id) => {
+    const list = state.mathsThemesEvaluationsEleves?.[id];
+    return Array.isArray(list) && list.length > 0;
+  });
 }
 
 export function getMathsThemesEvaluationsPartagesPourEleve(eleveId: string | number): string[] {
-  const eid = String(eleveId);
   const state = load();
-  const ids: string[] = [];
-  const allThemes: MathsThemePartageKey[] = ["nombres-1-5", "nombres-6-10", "nombres-10-15", "nombres-15-20"];
-  for (const id of allThemes) {
-    const list = state.mathsThemesEvaluationsEleves?.[id];
-    if (Array.isArray(list) && list.length > 0) {
-      if (list.includes(eid)) ids.push(id);
-    } else if (state[id]?.evaluations) {
-      ids.push(id);
-    }
-  }
-  return ids;
+  return MATHS_THEMES_NOMBRES.filter((id) =>
+    eleveIdDansListe(state.mathsThemesEvaluationsEleves?.[id], eleveId)
+  );
 }
 
 export function isOperationSerieShared(serieId: string): boolean {

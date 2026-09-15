@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
-import { PARTIES_MATHS, FEUILLES_NOMBRES_1_5 } from "../../../../data/maths-data";
+import { PARTIES_MATHS } from "../../../../data/maths-data";
 import {
-  getMathsThemesExercicesPartagesPourEleve,
-  getMathsThemesEvaluationsPartagesPourEleve,
-} from "../../../../data/maths-partages";
+  getMathsThemesEvaluationsAccessiblesPourEleve,
+  getMathsThemesExercicesAccessiblesPourEleve,
+} from "../../../../data/maths-modules-partages-storage";
+import { themeUrlIdToPartageKey } from "../../../../data/maths-partages";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconMaths = () => (
@@ -30,22 +31,13 @@ export default function EnfantMathsNombresThemePage() {
       setEvaluationsPartagees([]);
       return;
     }
-    setExercicesPartages(getMathsThemesExercicesPartagesPourEleve(s.id));
-    setEvaluationsPartagees(getMathsThemesEvaluationsPartagesPourEleve(s.id));
+    getMathsThemesExercicesAccessiblesPourEleve(s.id).then(setExercicesPartages);
+    getMathsThemesEvaluationsAccessiblesPourEleve(s.id).then(setEvaluationsPartagees);
   }, []);
 
   const partie = PARTIES_MATHS.find((p) => p.id === "nombres");
   const theme = partie?.themes.find((t) => t.id === themeId);
-  const partageId =
-    themeId === "1-5"
-      ? "nombres-1-5"
-      : themeId === "6-10"
-        ? "nombres-6-10"
-        : themeId === "10-15"
-          ? "nombres-10-15"
-          : themeId === "15-20"
-            ? "nombres-15-20"
-            : null;
+  const partageId = themeUrlIdToPartageKey(themeId);
   const exercicesOk = !!partageId && exercicesPartages.includes(partageId);
   const evaluationsOk = !!partageId && evaluationsPartagees.includes(partageId);
 

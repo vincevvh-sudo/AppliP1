@@ -8,12 +8,8 @@ import { getNiveauxEvalPartagesPourEleve, getSharedSonsForEleve } from "./sons-p
 import { getDicteesPartagesPourEleve } from "./dictee-partages";
 import { getDicteesMotsPartagesPourEleve } from "./dictee-mots-partages";
 import { getJoursRendezVousPartagesPourEleve } from "./rendez-vous-partages";
-import { getModulesAccessiblesPourEleve } from "./maths-modules-partages-storage";
-import {
-  getMathsThemesEvaluationsPartagesPourEleve,
-  getMathsThemesExercicesPartagesPourEleve,
-  getOperationsSeriesPartages,
-} from "./maths-partages";
+import { getModulesAccessiblesPourEleve, getMathsThemesEvaluationsAccessiblesPourEleve, getMathsThemesExercicesAccessiblesPourEleve } from "./maths-modules-partages-storage";
+import { getOperationsSeriesPartages } from "./maths-partages";
 import { getBulletinsByEleve } from "./bulletin-envoye-storage";
 import { getResultatsByEleve } from "./resultats-storage";
 import {
@@ -72,7 +68,7 @@ export async function computeEvaluationsSnapshot(eleveId: string | number): Prom
   const [pairs, dicteesMots, mathsThemes, modules] = await Promise.all([
     getNiveauxEvalPartagesPourEleve(eleveId),
     getDicteesMotsPartagesPourEleve(eleveId as number),
-    Promise.resolve(getMathsThemesEvaluationsPartagesPourEleve(eleveId)),
+    getMathsThemesEvaluationsAccessiblesPourEleve(eleveId),
     getModulesAccessiblesPourEleve(eleveId),
   ]);
   const ops = getOperationsSeriesPartages();
@@ -135,9 +131,9 @@ export async function computeFrancaisSnapshot(eleveId: string | number): Promise
 export async function computeMathsSnapshot(eleveId: string | number): Promise<string> {
   const [modules, exercicesThemes] = await Promise.all([
     getModulesAccessiblesPourEleve(eleveId),
-    Promise.resolve(getMathsThemesExercicesPartagesPourEleve(eleveId)),
+    getMathsThemesExercicesAccessiblesPourEleve(eleveId),
   ]);
-  const evals = getMathsThemesEvaluationsPartagesPourEleve(eleveId);
+  const evals = await getMathsThemesEvaluationsAccessiblesPourEleve(eleveId);
   const ops = getOperationsSeriesPartages();
   return fingerprint([
     ...modules.map((id) => `m:${id}`),

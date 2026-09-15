@@ -17,8 +17,8 @@ import {
 } from "../../data/ecouter-lire-eval-partage";
 import { getDicteesMotsPartagesPourEleve } from "../../data/dictee-mots-partages";
 import { NOM_DICTEE_MOTS } from "../../data/dictee-mots-data";
-import { getMathsThemesEvaluationsPartagesPourEleve, getOperationsSeriesPartages } from "../../data/maths-partages";
-import { getModulesAccessiblesPourEleve } from "../../data/maths-modules-partages-storage";
+import { getMathsThemesEvaluationsAccessiblesPourEleve, getModulesAccessiblesPourEleve } from "../../data/maths-modules-partages-storage";
+import { getOperationsSeriesPartages } from "../../data/maths-partages";
 import { MATHS_EXERCICES_MODULES, type MathsExerciceModuleId } from "../../data/maths-exercices-modules";
 import { getSonById, getNiveauById } from "../../data/sons-data";
 import { PARTIES_MATHS } from "../../data/maths-data";
@@ -78,7 +78,7 @@ export default function EnfantEvaluationsPage() {
     Promise.all([
       getNiveauxEvalPartagesPourEleve(s.id),
       getDicteesMotsPartagesPourEleve(s.id as number),
-      Promise.resolve(getMathsThemesEvaluationsPartagesPourEleve(s.id)),
+      getMathsThemesEvaluationsAccessiblesPourEleve(s.id),
       getModulesAccessiblesPourEleve(s.id),
     ]).then(([pairs, dicteesMotsNums, mathsIds, modulesIds]) => {
       const francais: EvalFrancais[] = [];

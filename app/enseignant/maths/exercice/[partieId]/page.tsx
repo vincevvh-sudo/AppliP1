@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PartageMathsModuleForm } from "../../../../components/PartageMathsModuleForm";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
+import { synchroniserPartagesNombresLocauxVersSupabase } from "../../../../data/maths-modules-partages-storage";
 
 const IconMaths = () => (
   <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,6 +20,12 @@ export default function EnseignantMathsExercicePartiePage() {
   const partieId = params?.partieId as string;
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
   const modules = partie ? getExerciceModulesForPartie(partie.id) : [];
+  const isNombres = partieId === "nombres";
+
+  useEffect(() => {
+    if (!isNombres) return;
+    void synchroniserPartagesNombresLocauxVersSupabase();
+  }, [isNombres]);
 
   if (!partie) {
     return (
@@ -32,8 +40,6 @@ export default function EnseignantMathsExercicePartiePage() {
       </main>
     );
   }
-
-  const isNombres = partieId === "nombres";
 
   return (
     <main className="relative min-h-[100dvh] overflow-x-hidden text-[#2d4a3e]">

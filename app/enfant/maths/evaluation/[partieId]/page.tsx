@@ -5,11 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
-import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
-import {
-  getMathsThemesEvaluationsPartagesPourEleve,
-  getOperationsSeriesPartages,
-} from "../../../../data/maths-partages";
+import { getModulesAccessiblesPourEleve, getMathsThemesEvaluationsAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
+import { getOperationsSeriesPartages } from "../../../../data/maths-partages";
 import { getOperationsSerie, type OperationSerieId } from "../../../../data/maths-operations";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
 
@@ -35,7 +32,7 @@ export default function EnfantMathsEvaluationPartiePage() {
       setModulesExercicesPartages([]);
       return;
     }
-    setEvaluationsPartagees(getMathsThemesEvaluationsPartagesPourEleve(s.id));
+    getMathsThemesEvaluationsAccessiblesPourEleve(s.id).then(setEvaluationsPartagees);
     setOperationsPartagees(getOperationsSeriesPartages());
     getModulesAccessiblesPourEleve(s.id).then(setModulesExercicesPartages);
   }, []);
@@ -110,19 +107,14 @@ export default function EnfantMathsEvaluationPartiePage() {
           )
         ) : partieId === "nombres" ? (
           <>
+            {operationsPartagees.length > 0 && (
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Opérations</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 10 calculs par série. Écris la réponse, puis passe au calcul suivant. Ton enseignant partage les séries
                 depuis son espace (Arithmétique → Opérations).
               </p>
-              {operationsPartagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série d&apos;opérations partagée pour le moment. Demande à ton maître ou ta maîtresse d&apos;activer
-                  les séries dans l&apos;espace enseignant.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {operationsPartagees.map((sid) => {
                     const { titre } = getOperationsSerie(sid as OperationSerieId);
                     return (
@@ -135,19 +127,14 @@ export default function EnfantMathsEvaluationPartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
 
-
+            {themesToShow.length > 0 && (
             <section className="mt-6 rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Nombres</h2>
-              {themesToShow.length === 0 ? (
-                <p className="mt-2 text-sm text-[#2d4a3e]/70">
-                  Aucune évaluation sur les nombres partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {themesToShow.map((theme) => (
                     <Link
                       key={theme.id}
@@ -158,9 +145,15 @@ export default function EnfantMathsEvaluationPartiePage() {
                       <p className="mt-1 text-xs text-[#2d4a3e]/70">Évaluation</p>
                     </Link>
                   ))}
-                </div>
-              )}
+              </div>
             </section>
+            )}
+
+            {operationsPartagees.length === 0 && themesToShow.length === 0 && (
+              <p className="mt-6 text-sm text-[#2d4a3e]/70">
+                Aucune évaluation partagée pour le moment. Demande à ton maître ou ta maîtresse.
+              </p>
+            )}
           </>
         ) : partieId === "solide-figure" ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">

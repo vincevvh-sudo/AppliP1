@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../../../components/MiyazakiDecor";
 import {
   FEUILLES_NOMBRES_1_5,
@@ -9,6 +10,11 @@ import {
   FEUILLES_NOMBRES_10_15,
   FEUILLES_NOMBRES_15_20,
 } from "../../../../../../data/maths-data";
+import {
+  getMathsThemesExercicesAccessiblesPourEleve,
+} from "../../../../../../data/maths-modules-partages-storage";
+import { themeUrlIdToPartageKey } from "../../../../../../data/maths-partages";
+import { getEnfantSession } from "../../../../../../../utils/enfant-session";
 import ExerciceFeuille1 from "../../../../../../components/maths/ExerciceFeuille1";
 import ExerciceFeuille2 from "../../../../../../components/maths/ExerciceFeuille2";
 import ExerciceFeuille3 from "../../../../../../components/maths/ExerciceFeuille3";
@@ -23,8 +29,10 @@ const FEUILLES_INTERACTIVES = ["feuille-1", "feuille-2", "feuille-3", "feuille-4
 
 export default function EnfantMathsNombresFeuillePage() {
   const params = useParams();
+  const router = useRouter();
   const themeId = params?.themeId as string;
   const feuilleId = params?.feuilleId as string;
+  const [allowed, setAllowed] = useState<boolean | null>(null);
   const is610Like = themeId === "6-10" || themeId === "10-15" || themeId === "15-20";
   const feuilles =
     themeId === "6-10"
@@ -38,6 +46,39 @@ export default function EnfantMathsNombresFeuillePage() {
   const rangeEnd = themeId === "10-15" ? 15 : themeId === "15-20" ? 20 : 10;
   const feuille = feuilles.find((f) => f.id === feuilleId);
   const isInteractif = FEUILLES_INTERACTIVES.includes(feuilleId as (typeof FEUILLES_INTERACTIVES)[number]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const s = getEnfantSession();
+      const key = themeUrlIdToPartageKey(themeId);
+      const ok =
+        !!s &&
+        !!key &&
+        (await getMathsThemesExercicesAccessiblesPourEleve(s.id)).includes(key);
+      if (cancelled) return;
+      if (!ok) {
+        router.replace("/enfant/maths/exercice/nombres");
+        setAllowed(false);
+        return;
+      }
+      setAllowed(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [themeId, router]);
+
+  if (allowed !== true) {
+    return (
+      <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
+        <ForetMagiqueBackground />
+        <div className="relative z-10 mx-auto max-w-2xl px-5 py-12 text-center text-white/90">
+          <p>{allowed === null ? "Chargement…" : "Redirection…"}</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!feuille) {
     return (

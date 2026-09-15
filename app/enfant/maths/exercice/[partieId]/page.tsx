@@ -6,11 +6,13 @@ import { useParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
 import { PARTIES_MATHS } from "../../../../data/maths-data";
 import { getExerciceModulesForPartie } from "../../../../data/maths-exercices-modules";
-import { getModulesAccessiblesPourEleve } from "../../../../data/maths-modules-partages-storage";
+import {
+  getMathsThemesExercicesAccessiblesPourEleve,
+  getModulesAccessiblesPourEleve,
+} from "../../../../data/maths-modules-partages-storage";
 import {
   getAdditions20SeriesPartages,
   getAdditionsSeriesPartages,
-  getMathsThemesExercicesPartagesPourEleve,
   getSoustractionsSeriesPartages,
   getSoustractions20SeriesPartages,
   getAdditionsSoustractions20SeriesPartages,
@@ -42,6 +44,7 @@ export default function EnfantMathsExercicePartiePage() {
   const [additionsSoustractions20Partagees, setAdditionsSoustractions20Partagees] = useState<string[]>([]);
   const [modulesPartages, setModulesPartages] = useState<string[]>([]);
   const [modulesLoading, setModulesLoading] = useState(true);
+  const [nombresLoading, setNombresLoading] = useState(true);
   const partie = PARTIES_MATHS.find((p) => p.id === partieId);
   const modulesDef = partie ? getExerciceModulesForPartie(partie.id) : [];
 
@@ -56,14 +59,18 @@ export default function EnfantMathsExercicePartiePage() {
       setAdditionsSoustractions20Partagees([]);
       setModulesPartages([]);
       setModulesLoading(false);
+      setNombresLoading(false);
       return;
     }
-    setExercicesPartages(getMathsThemesExercicesPartagesPourEleve(s.id));
     setAdditionsPartagees(getAdditionsSeriesPartages());
     setAdditions20Partagees(getAdditions20SeriesPartages());
     setSoustractionsPartagees(getSoustractionsSeriesPartages());
     setSoustractions20Partagees(getSoustractions20SeriesPartages());
     setAdditionsSoustractions20Partagees(getAdditionsSoustractions20SeriesPartages());
+    getMathsThemesExercicesAccessiblesPourEleve(s.id).then((ids) => {
+      setExercicesPartages(ids);
+      setNombresLoading(false);
+    });
     getModulesAccessiblesPourEleve(s.id).then((ids) => {
       setModulesPartages(ids);
       setModulesLoading(false);
@@ -87,6 +94,12 @@ export default function EnfantMathsExercicePartiePage() {
       : partie?.themes ?? [];
 
   const modulesVisibles = modulesDef.filter((m) => modulesPartages.includes(m.id));
+  const hasAnySerieArithmetique =
+    additionsPartagees.length > 0 ||
+    additions20Partagees.length > 0 ||
+    soustractionsPartagees.length > 0 ||
+    soustractions20Partagees.length > 0 ||
+    additionsSoustractions20Partagees.length > 0;
 
   if (!partie) {
     return (
@@ -102,7 +115,7 @@ export default function EnfantMathsExercicePartiePage() {
     );
   }
 
-  const emptyNombres = isNombres && themesToShow.length === 0;
+  const emptyNombres = isNombres && themesToShow.length === 0 && !hasAnySerieArithmetique;
   const emptyModules = !isNombres && modulesDef.length > 0 && modulesVisibles.length === 0;
   const empty = isNombres ? emptyNombres : modulesDef.length === 0 ? true : emptyModules;
 
@@ -131,7 +144,7 @@ export default function EnfantMathsExercicePartiePage() {
             : "Exercices partagés par ton maître ou ta maîtresse depuis son espace."}
         </p>
 
-        {!isNombres && modulesLoading ? (
+        {(isNombres ? nombresLoading : modulesLoading) ? (
           <p className="mt-6 text-[#2d4a3e]/70">Chargement…</p>
         ) : empty ? (
           <p className="mt-6 text-[#2d4a3e]/70">
@@ -141,6 +154,7 @@ export default function EnfantMathsExercicePartiePage() {
           </p>
         ) : isNombres ? (
           <div className="mt-6 space-y-6">
+            {themesToShow.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2">
               {themesToShow.map((theme) => (
                 <Link
@@ -153,18 +167,15 @@ export default function EnfantMathsExercicePartiePage() {
                 </Link>
               ))}
             </div>
+            )}
 
+            {additionsPartagees.length > 0 && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Additions jusque 10</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 10 séries de 10 additions, avec une réponse toujours jusqu&apos;à 10.
               </p>
-              {additionsPartagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série d&apos;additions partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {additionsPartagees.map((sid) => {
                     const { titre } = getAdditionsSerie(sid as AdditionSerieId);
                     return (
@@ -177,21 +188,17 @@ export default function EnfantMathsExercicePartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
 
+            {additions20Partagees.length > 0 && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Additions jusque 20</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 10 séries de 10 additions DU + U ou U + DU, avec des réponses entre 10 et 20.
               </p>
-              {additions20Partagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série d&apos;additions jusque 20 partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {additions20Partagees.map((sid) => {
                     const { titre } = getAdditions20Serie(sid as Addition20SerieId);
                     return (
@@ -204,21 +211,17 @@ export default function EnfantMathsExercicePartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
 
+            {soustractionsPartagees.length > 0 && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 10</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 5 séries de 10 soustractions, avec un départ à 10 ou un nombre plus petit que 10.
               </p>
-              {soustractionsPartagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série de soustractions partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {soustractionsPartagees.map((sid) => {
                     const { titre } = getSoustractionSerie(sid as SoustractionSerieId);
                     return (
@@ -231,21 +234,17 @@ export default function EnfantMathsExercicePartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
 
+            {soustractions20Partagees.length > 0 && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Soustraction jusque 20</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 5 séries de 10 soustractions, avec un départ entre 10 et 20 et des réponses entre 10 et 20.
               </p>
-              {soustractions20Partagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série de soustractions jusque 20 partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {soustractions20Partagees.map((sid) => {
                     const { titre } = getSoustraction20Serie(sid as Soustraction20SerieId);
                     return (
@@ -258,21 +257,17 @@ export default function EnfantMathsExercicePartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
 
+            {additionsSoustractions20Partagees.length > 0 && (
             <section className="rounded-2xl bg-white/95 p-6 shadow-lg">
               <h2 className="font-display text-lg text-[#2d4a3e]">Additions et soustractions jusque 20</h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/70">
                 10 séries de 10 calculs mélangés (additions comme dans la partie additions jusque 20 et soustractions 10–20).
               </p>
-              {additionsSoustractions20Partagees.length === 0 ? (
-                <p className="mt-4 text-sm text-[#2d4a3e]/70">
-                  Aucune série d&apos;additions/soustractions partagée pour le moment. Demande à ton maître ou ta maîtresse.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {additionsSoustractions20Partagees.map((sid) => {
                     const { titre } = getAdditionsSoustractions20Serie(sid as AdditionSoustraction20SerieId);
                     return (
@@ -285,9 +280,9 @@ export default function EnfantMathsExercicePartiePage() {
                       </Link>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </section>
+            )}
           </div>
         ) : (
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
