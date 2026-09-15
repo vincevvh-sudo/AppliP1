@@ -24,6 +24,24 @@ export type Message = {
   created_at?: string;
 };
 
+/** Évite de remplacer la liste (et de relancer le scroll) si le polling n’a rien changé. */
+export function sameMessageList(a: Message[], b: Message[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (
+      x.id !== y.id ||
+      x.content !== y.content ||
+      x.attachment_url !== y.attachment_url ||
+      x.reply_to_message_id !== y.reply_to_message_id
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export type Poll = {
   id: number;
   message_id: number;

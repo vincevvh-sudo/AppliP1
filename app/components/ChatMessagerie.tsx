@@ -166,7 +166,9 @@ export function ChatMessagerie({
   const [canRecord, setCanRecord] = useState(false);
   const [usingRecorder, setUsingRecorder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const lastMessageIdRef = useRef<number | undefined>(undefined);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -178,8 +180,29 @@ export function ChatMessagerie({
   const isEnseignant = authorType === "enseignant";
   const showMic = isEnseignant && (canSpeech || canRecord);
 
+  const scrollListToBottom = () => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  };
+
+  const updateStickToBottom = () => {
+    const el = listRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
+  };
+
+  // Ne descend en bas que s’il y a un vrai nouveau message, et seulement
+  // si l’utilisateur lisait déjà la fin (sinon la lecture est interrompue).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const lastId = messages.at(-1)?.id;
+    const changed = lastId !== lastMessageIdRef.current;
+    const firstPaint = lastMessageIdRef.current === undefined && lastId !== undefined;
+    lastMessageIdRef.current = lastId;
+    if (!changed) return;
+    if (firstPaint || stickToBottomRef.current) {
+      scrollListToBottom();
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -444,6 +467,7 @@ export function ChatMessagerie({
     if (!txt || sending || listening || transcribing) return;
     setSending(true);
     setDictateError(null);
+    stickToBottomRef.current = true;
     try {
       await onSend(txt, replyTo?.id ?? null);
       setInput("");
@@ -496,6 +520,7 @@ export function ChatMessagerie({
     }
     setUploading(true);
     e.target.value = "";
+    stickToBottomRef.current = true;
     try {
       await onSendFile(file, replyTo?.id ?? null);
       setReplyTo(null);
@@ -591,6 +616,8 @@ export function ChatMessagerie({
       </div>
 
       <div
+        ref={listRef}
+        onScroll={updateStickToBottom}
         className={`flex-1 overflow-y-auto rounded-xl border border-[#2d4a3e]/15 bg-white/80 p-4 space-y-3 mb-4 ${
           compactMobile
             ? "min-h-[40vh] max-h-[min(70vh,calc(100dvh-14rem))] sm:min-h-[200px] sm:max-h-[50vh]"
@@ -703,7 +730,14 @@ export function ChatMessagerie({
                     <div className="mt-2">
                       {m.attachment_type?.startsWith("image/") ? (
                         <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="block">
-                          <img src={m.attachment_url} alt="Pièce jointe" className="max-w-full max-h-48 rounded-lg" />
+                          <img
+                            src={m.attachment_url}
+                            alt="Pièce jointe"
+                            className="max-w-full max-h-48 rounded-lg"
+                            onLoad={() => {
+                              if (stickToBottomRef.current) scrollListToBottom();
+                            }}
+                          />
                         </a>
                       ) : (
                         <a
@@ -764,7 +798,7 @@ export function ChatMessagerie({
             );
           })
         )}
-        <div ref={bottomRef} />
+        <div />
       </div>
 
       {replyTo && (

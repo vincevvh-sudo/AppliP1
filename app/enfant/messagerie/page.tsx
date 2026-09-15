@@ -17,6 +17,7 @@ import {
   countUnreadMessages,
   markConversationAsRead,
   votePoll,
+  sameMessageList,
 } from "../../data/messagerie-storage";
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { Message, PollWithDetails } from "../../data/messagerie-storage";
@@ -108,7 +109,7 @@ function EnfantMessageriePageInner() {
     setLoading(true);
     const load = () =>
       getMessages(conversationId).then((msgs) => {
-        setMessages(msgs);
+        setMessages((prev) => (sameMessageList(prev, msgs) ? prev : msgs));
         void getPollsByMessageIds(msgs.map((m) => m.id)).then(setPollsByMessageId);
         setLoading(false);
       });
@@ -207,7 +208,7 @@ function EnfantMessageriePageInner() {
   const handleRefresh = useCallback(async () => {
     if (conversationId) {
       const msgs = await getMessages(conversationId);
-      setMessages(msgs);
+      setMessages((prev) => (sameMessageList(prev, msgs) ? prev : msgs));
       const polls = await getPollsByMessageIds(msgs.map((m) => m.id));
       setPollsByMessageId(polls);
     }
