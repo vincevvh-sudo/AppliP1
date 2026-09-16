@@ -29,7 +29,10 @@ export function isFluenceResultat(r: ResultatRow): boolean {
 
 export function getTitrePoesieLabel(r: ResultatRow): string | null {
   const meta = (r.detail_exercices ?? []).find(
-    (ex) => ex.type === "titre-poesie" || ex.type === "titre-presentation"
+    (ex) =>
+      ex.type === "titre-poesie" ||
+      ex.type === "titre-presentation" ||
+      ex.type === "titre-doudou"
   );
   const t = meta?.titre?.trim();
   return t || null;
@@ -42,6 +45,9 @@ export function getResultatTitre(r: ResultatRow): string {
   if (r.son_id === "savoir-parler-poesie") {
     const titre = getTitrePoesieLabel(r);
     return titre ? `Poésie — ${titre}` : "Je dis ma poésie";
+  }
+  if (r.son_id === "savoir-parler-doudou") {
+    return "Présentation de mon doudou";
   }
   if (r.son_id === "savoir-parler-famille") {
     const titre = getTitrePoesieLabel(r);
@@ -68,7 +74,11 @@ export function getResultatMatiere(r: ResultatRow): string {
     const cat = r.niveau_id?.replace(/^manuel-/, "");
     return getManualCategoryLabel(cat);
   }
-  if (r.son_id === "savoir-parler-poesie" || r.son_id === "savoir-parler-famille") {
+  if (
+    r.son_id === "savoir-parler-poesie" ||
+    r.son_id === "savoir-parler-famille" ||
+    r.son_id === "savoir-parler-doudou"
+  ) {
     return "Français : parler";
   }
   if (isFluenceResultat(r) || (r.son_id && getSonById(r.son_id))) {
@@ -86,6 +96,9 @@ export function getResultatLabelComplet(r: ResultatRow): string {
   if (r.son_id === "savoir-parler-poesie") {
     const titre = getTitrePoesieLabel(r);
     return titre ? `Parler — Poésie : ${titre}` : "Parler — Je dis ma poésie";
+  }
+  if (r.son_id === "savoir-parler-doudou") {
+    return "Parler — Présentation de mon doudou";
   }
   if (r.son_id === "savoir-parler-famille") {
     const titre = getTitrePoesieLabel(r);

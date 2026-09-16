@@ -127,9 +127,21 @@ function getCategorieFromResultIdentifiers(row: ResultatRow): BulletinCategorieI
   // Maths : centimètre ou mètre (grandeur)
   if (sonId === "maths-centimetre-metre" || niveauId === "maths-centimetre-metre") return "maths-grandeur";
 
-  // Français : Parler (grilles poésie / famille ; son_id historique savoir-parler-*)
-  if (sonId === "savoir-parler-poesie" || sonId === "savoir-parler-famille") return "francais-parler";
-  if (niveauId === "savoir-parler-poesie" || niveauId === "savoir-parler-famille") return "francais-parler";
+  // Français : Parler (grilles poésie / présentation / doudou ; son_id historique savoir-parler-*)
+  if (
+    sonId === "savoir-parler-poesie" ||
+    sonId === "savoir-parler-famille" ||
+    sonId === "savoir-parler-doudou"
+  ) {
+    return "francais-parler";
+  }
+  if (
+    niveauId === "savoir-parler-poesie" ||
+    niveauId === "savoir-parler-famille" ||
+    niveauId === "savoir-parler-doudou"
+  ) {
+    return "francais-parler";
+  }
 
   return null;
 }

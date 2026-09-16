@@ -196,7 +196,10 @@ export async function deleteResultatsByEleveAndSon(eleveId: string | number, son
 /** Titre (poésie ou présentation) stocké dans detail_exercices. */
 export function getTitreParlerFromResultat(r: ResultatRow): string | null {
   const meta = (r.detail_exercices ?? []).find(
-    (ex) => ex.type === "titre-poesie" || ex.type === "titre-presentation"
+    (ex) =>
+      ex.type === "titre-poesie" ||
+      ex.type === "titre-presentation" ||
+      ex.type === "titre-doudou"
   );
   const t = meta?.titre?.trim();
   return t || null;

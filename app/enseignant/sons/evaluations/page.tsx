@@ -94,7 +94,7 @@ export default function EnseignantSonsEvaluationsPage() {
           >
             <p className="font-display text-lg text-[#2d4a3e]">Parler</p>
             <p className="mt-1 text-sm text-[#2d4a3e]/70">
-              Grilles d&apos;évaluation poésie et présentation (avec titre / sujet).
+              Grilles d&apos;évaluation poésie, présentation et présentation de mon doudou.
             </p>
           </Link>
           <Link

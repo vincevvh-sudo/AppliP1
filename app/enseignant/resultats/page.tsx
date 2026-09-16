@@ -77,7 +77,11 @@ function getResultLabel(r: ResultatRow): string {
     const cat = r.niveau_id?.replace(/^manuel-/, "");
     return `${getManualCategoryLabel(cat)} — ${titre}`;
   }
-  if (r.son_id === "savoir-parler-poesie" || r.son_id === "savoir-parler-famille") {
+  if (
+    r.son_id === "savoir-parler-poesie" ||
+    r.son_id === "savoir-parler-famille" ||
+    r.son_id === "savoir-parler-doudou"
+  ) {
     return getResultatLabelComplet(r);
   }
   if (isFluenceResultat(r)) return getFluenceLabel(r);
@@ -243,7 +247,10 @@ function ResultatSingleCard({
 }) {
   const eleve = elevesById[String(r.eleve_id)];
   const details = (r.detail_exercices ?? []).filter(
-    (ex) => ex.type !== "titre-poesie" && ex.type !== "titre-presentation"
+    (ex) =>
+      ex.type !== "titre-poesie" &&
+      ex.type !== "titre-presentation" &&
+      ex.type !== "titre-doudou"
   );
   const hasDetail = details.length > 0;
   return (

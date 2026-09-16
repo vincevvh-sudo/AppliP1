@@ -2,6 +2,8 @@
  * Brouillon local des grilles « Parler » (par élève bulletin).
  */
 
+import type { ParlerKind } from "./parler-data";
+
 const PREFIX = "parler-grille";
 /** Ancien préfixe — lecture de secours pour ne pas perdre les brouillons. */
 const LEGACY_PREFIX = "savoir-parler-grille";
@@ -20,7 +22,7 @@ export type ParlerGrilleDraft = {
   titrePoesie?: string;
 };
 
-function key(prefix: string, bulletinEleveId: string, kind: "poesie" | "famille"): string {
+function key(prefix: string, bulletinEleveId: string, kind: ParlerKind): string {
   return `${prefix}:${kind}:${bulletinEleveId}`;
 }
 
@@ -56,7 +58,7 @@ function parseDraft(raw: string, n: number): ParlerGrilleDraft | null {
 
 export function loadParlerDraft(
   bulletinEleveId: string,
-  kind: "poesie" | "famille",
+  kind: ParlerKind,
   n: number
 ): ParlerGrilleDraft | null {
   if (typeof window === "undefined") return null;
@@ -74,7 +76,7 @@ export function loadParlerDraft(
   }
 }
 
-export function saveParlerDraft(bulletinEleveId: string, kind: "poesie" | "famille", draft: ParlerGrilleDraft): void {
+export function saveParlerDraft(bulletinEleveId: string, kind: ParlerKind, draft: ParlerGrilleDraft): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(key(PREFIX, bulletinEleveId, kind), JSON.stringify(draft));

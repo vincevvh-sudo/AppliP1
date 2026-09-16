@@ -9,16 +9,14 @@ import { getOrCreateEleveBulletinFromClasse } from "../../../../data/bulletin-st
 import {
   CRITERES_POESIE,
   CRITERES_FAMILLE,
-  SON_ID_PARLER_POESIE,
-  SON_ID_PARLER_FAMILLE,
-  NIVEAU_ID_POESIE,
-  NIVEAU_ID_FAMILLE,
-  MAX_BRUT_POESIE,
-  MAX_BRUT_FAMILLE,
-  DETAIL_TYPE_TITRE_POESIE,
-  DETAIL_TYPE_TITRE_PRESENTATION,
+  CRITERES_DOUDOU,
+  getParlerSonId,
+  getParlerNiveauId,
+  getParlerMaxBrut,
+  getParlerDetailTitreType,
   sommePointsBruts,
   scoreSur10DepuisBrut,
+  type ParlerKind,
 } from "../../../../data/parler-data";
 import { loadParlerDraft, saveParlerDraft, type ParlerGrilleDraft } from "../../../../data/parler-storage";
 import {
@@ -31,6 +29,7 @@ import type { EleveRow } from "../../../../../utils/supabase";
 
 const FACES = ["😊", "😐", "😠"] as const;
 const INDEX_TO_NIVEAU: NiveauAcquisition[] = ["acquis", "en_cours", "non_acquis"];
+const TITRE_DOUDOU_FIXE = "mon doudou";
 
 type Selection = number | null;
 
@@ -46,13 +45,13 @@ function pointsToFace(pts: 0 | 1 | 2): number {
   return 2;
 }
 
-function emptyDraft(n: number): ParlerGrilleDraft {
+function emptyDraft(n: number, kind?: ParlerKind): ParlerGrilleDraft {
   return {
     enfantSelections: Array(n).fill(null) as Selection[],
     enseignantSelections: Array(n).fill(null) as Selection[],
     pointsParCritere: Array(n).fill(null) as (0 | 1 | 2 | null)[],
     commentaires: Array(n).fill(""),
-    titreEvaluation: "",
+    titreEvaluation: kind === "doudou" ? TITRE_DOUDOU_FIXE : "",
   };
 }
 
@@ -76,7 +75,7 @@ function pointsComplets(draft: ParlerGrilleDraft): boolean {
   return draft.pointsParCritere.every((p) => p === 0 || p === 1 || p === 2);
 }
 
-type GrilleKind = "poesie" | "famille";
+type GrilleKind = ParlerKind;
 
 function TableauEvaluation({
   criteres,
@@ -90,11 +89,11 @@ function TableauEvaluation({
   supabaseEleveId: string | null | undefined;
 }) {
   const n = criteres.length;
-  const maxBrut = kind === "poesie" ? MAX_BRUT_POESIE : MAX_BRUT_FAMILLE;
-  const sonId = kind === "poesie" ? SON_ID_PARLER_POESIE : SON_ID_PARLER_FAMILLE;
-  const niveauId = kind === "poesie" ? NIVEAU_ID_POESIE : NIVEAU_ID_FAMILLE;
+  const maxBrut = getParlerMaxBrut(kind);
+  const sonId = getParlerSonId(kind);
+  const niveauId = getParlerNiveauId(kind);
 
-  const [draft, setDraft] = useState<ParlerGrilleDraft>(() => emptyDraft(n));
+  const [draft, setDraft] = useState<ParlerGrilleDraft>(() => emptyDraft(n, kind));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const draftRef = useRef(draft);
@@ -102,7 +101,10 @@ function TableauEvaluation({
 
   useEffect(() => {
     const loaded = loadParlerDraft(bulletinEleveId, kind, n);
-    const synced = syncPointsFromFaces(loaded ?? emptyDraft(n), n);
+    const synced = syncPointsFromFaces(loaded ?? emptyDraft(n, kind), n);
+    if (kind === "doudou" && !(synced.titreEvaluation ?? "").trim()) {
+      synced.titreEvaluation = TITRE_DOUDOU_FIXE;
+    }
     setDraft(synced);
     saveParlerDraft(bulletinEleveId, kind, synced);
     setSaveMsg(null);
@@ -184,7 +186,10 @@ function TableauEvaluation({
       setSaveMsg("Impossible d'envoyer : élève non trouvé. Rechoisis l'élève dans la liste.");
       return;
     }
-    const titreEval = (current.titreEvaluation ?? current.titrePoesie ?? "").trim();
+    const titreEval =
+      kind === "doudou"
+        ? TITRE_DOUDOU_FIXE
+        : (current.titreEvaluation ?? current.titrePoesie ?? "").trim();
     if (!titreEval) {
       setSaveMsg(
         kind === "poesie"
@@ -207,7 +212,7 @@ function TableauEvaluation({
       await deleteResultatsParlerByTitre(supabaseEleveId, sonId, titreEval);
       const details: DetailExerciceEval[] = [
         {
-          type: kind === "poesie" ? DETAIL_TYPE_TITRE_POESIE : DETAIL_TYPE_TITRE_PRESENTATION,
+          type: getParlerDetailTitreType(kind),
           titre: titreEval,
           points: score,
           pointsMax: 10,
@@ -231,7 +236,11 @@ function TableauEvaluation({
         detail_exercices: details,
       });
       const label =
-        kind === "poesie" ? `Poésie — ${titreEval}` : `Présentation de ${titreEval}`;
+        kind === "poesie"
+          ? `Poésie — ${titreEval}`
+          : kind === "doudou"
+            ? "Présentation de mon doudou"
+            : `Présentation de ${titreEval}`;
       setSaveMsg(`✓ Cote ${score}/10 enregistrée pour « ${label} ». L'enfant la voit dans Mes résultats.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur d'enregistrement";
@@ -261,6 +270,10 @@ function TableauEvaluation({
             />
           </label>
         </div>
+      ) : kind === "doudou" ? (
+        <h2 className="font-display text-xl font-semibold text-[#2d4a3e]">
+          Présentation de mon doudou
+        </h2>
       ) : (
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <h2 className="font-display text-xl font-semibold text-[#2d4a3e] shrink-0">
@@ -279,9 +292,18 @@ function TableauEvaluation({
         </div>
       )}
       <p className="mt-2 text-sm text-[#2d4a3e]/75">
-        Indique le titre (plusieurs possibles dans l&apos;année), puis pour chaque ligne clique un smiley
-        : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
-        <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+        {kind === "doudou" ? (
+          <>
+            Pour chaque ligne, clique un smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
+            <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+          </>
+        ) : (
+          <>
+            Indique le titre (plusieurs possibles dans l&apos;année), puis pour chaque ligne clique un
+            smiley : 😊 = 2/2, 😐 = 1/2, 😠 = 0/2. Ensuite{" "}
+            <strong>Enregistrer et envoyer à l&apos;enfant</strong>.
+          </>
+        )}
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#4a7c5a]/25 bg-[#e8f5e9]/50 px-4 py-3">
         <span className="text-sm font-medium text-[#2d4a3e]">
@@ -434,8 +456,8 @@ export default function EnseignantParlerPage() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 py-12">
         <h1 className="font-display text-2xl text-[#2d4a3e]">Parler</h1>
         <p className="mt-2 text-sm text-[#2d4a3e]/80">
-          1) Choisis un élève → 2) Choisis l&apos;évaluation (poésie ou présentation) → 3) Remplis la grille et
-          enregistre la cote pour l&apos;enfant.
+          1) Choisis un élève → 2) Choisis l&apos;évaluation (poésie, présentation ou doudou) → 3)
+          Remplis la grille et enregistre la cote pour l&apos;enfant.
         </p>
 
         {/* Étape 1 : liste des élèves */}
@@ -497,7 +519,7 @@ export default function EnseignantParlerPage() {
                 Changer d&apos;élève
               </button>
             </div>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <button
                 type="button"
                 onClick={() => setKind("poesie")}
@@ -511,7 +533,8 @@ export default function EnseignantParlerPage() {
                 <p className="mt-1 text-sm text-[#2d4a3e]/75">
                   Je dis ma poésie — tu pourras indiquer le titre (plusieurs dans l&apos;année).
                 </p>
-              </button>              <button
+              </button>
+              <button
                 type="button"
                 onClick={() => setKind("famille")}
                 className={`rounded-2xl p-5 text-left shadow-lg transition ${
@@ -523,6 +546,20 @@ export default function EnseignantParlerPage() {
                 <p className="font-display text-lg text-[#2d4a3e]">Présentation</p>
                 <p className="mt-1 text-sm text-[#2d4a3e]/75">
                   Présentation de… — tu pourras indiquer le sujet (plusieurs dans l&apos;année).
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setKind("doudou")}
+                className={`rounded-2xl p-5 text-left shadow-lg transition ${
+                  kind === "doudou"
+                    ? "bg-[#a8d5ba]/90 ring-2 ring-[#4a7c5a]"
+                    : "bg-white/95 hover:bg-[#a8d5ba]/30"
+                }`}
+              >
+                <p className="font-display text-lg text-[#2d4a3e]">Présentation de mon doudou</p>
+                <p className="mt-1 text-sm text-[#2d4a3e]/75">
+                  Grille à 8 critères (smileys, points et commentaires).
                 </p>
               </button>
             </div>
@@ -542,6 +579,14 @@ export default function EnseignantParlerPage() {
           <TableauEvaluation
             criteres={CRITERES_FAMILLE}
             kind="famille"
+            bulletinEleveId={bulletinEleve.id}
+            supabaseEleveId={String(selectedEleve!.id)}
+          />
+        )}
+        {bulletinEleve && kind === "doudou" && (
+          <TableauEvaluation
+            criteres={CRITERES_DOUDOU}
+            kind="doudou"
             bulletinEleveId={bulletinEleve.id}
             supabaseEleveId={String(selectedEleve!.id)}
           />
