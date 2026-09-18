@@ -166,12 +166,93 @@ export async function getResultatsAll(): Promise<ResultatRow[]> {
   return mergeWithLegacy(main, legacy);
 }
 
-/** Supprime un résultat (pour permettre à l'élève de refaire l'évaluation). */
-export async function deleteResultat(id: string): Promise<boolean> {
+function idsResultatEtEleveConfondus(row: Pick<ResultatRow, "id" | "eleve_id">): boolean {
+  const id = row.id != null ? String(row.id) : "";
+  const eleveId = String(row.eleve_id ?? "");
+  return !id || !eleveId || id === eleveId;
+}
+
+/** Deux lignes représentent le même test (pas « tous les tests de l’élève »). */
+export function resultatEstLeMeme(a: ResultatRow, b: ResultatRow): boolean {
+  if (!idsResultatEtEleveConfondus(a) && !idsResultatEtEleveConfondus(b)) {
+    return String(a.id) === String(b.id);
+  }
+  return (
+    String(a.eleve_id) === String(b.eleve_id) &&
+    a.son_id === b.son_id &&
+    a.niveau_id === b.niveau_id &&
+    (a.created_at ?? "") === (b.created_at ?? "") &&
+    a.points === b.points &&
+    a.points_max === b.points_max
+  );
+}
+
+export function cleSuppressionResultat(r: ResultatRow): string {
+  if (!idsResultatEtEleveConfondus(r)) return String(r.id);
+  return `${r.eleve_id}|${r.son_id}|${r.niveau_id}|${r.created_at ?? ""}|${r.points}|${r.points_max}`;
+}
+
+/**
+ * Supprime un seul résultat. Ne supprime jamais tous les tests d’un élève.
+ * On vérifie qu’une seule ligne correspond, puis on l’efface par son id unique.
+ */
+export async function deleteResultatRow(row: ResultatRow): Promise<boolean> {
+  const eleveId = String(row.eleve_id ?? "");
+  if (!eleveId) return false;
+
   try {
-    const { error } = await supabase.from("exercice_resultats").delete().eq("id", id);
+    let check = supabase.from("exercice_resultats").select("id").eq("eleve_id", eleveId);
+
+    if (!idsResultatEtEleveConfondus(row)) {
+      check = check.eq("id", String(row.id));
+    } else {
+      if (!row.son_id || !row.niveau_id) return false;
+      check = check.eq("son_id", row.son_id).eq("niveau_id", row.niveau_id);
+      if (row.created_at) check = check.eq("created_at", row.created_at);
+    }
+
+    const { data: found, error: findError } = await check;
+    if (findError) throw findError;
+    if (!found || found.length !== 1 || !found[0]?.id) return false;
+
+    const targetId = String(found[0].id);
+    if (targetId === eleveId) return false;
+
+    const { data: deleted, error } = await supabase
+      .from("exercice_resultats")
+      .delete()
+      .eq("id", targetId)
+      .eq("eleve_id", eleveId)
+      .select("id");
     if (error) throw error;
-    return true;
+    return Array.isArray(deleted) && deleted.length === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** Supprime un résultat par id unique (jamais l’id de l’élève). */
+export async function deleteResultat(id: string): Promise<boolean> {
+  const trimmed = String(id ?? "").trim();
+  if (!trimmed) return false;
+  try {
+    const { data: found, error: findError } = await supabase
+      .from("exercice_resultats")
+      .select("id, eleve_id")
+      .eq("id", trimmed);
+    if (findError) throw findError;
+    if (!found || found.length !== 1) return false;
+    const row = found[0] as { id: string; eleve_id: string };
+    if (String(row.id) === String(row.eleve_id)) return false;
+
+    const { data: deleted, error } = await supabase
+      .from("exercice_resultats")
+      .delete()
+      .eq("id", trimmed)
+      .eq("eleve_id", String(row.eleve_id))
+      .select("id");
+    if (error) throw error;
+    return Array.isArray(deleted) && deleted.length === 1;
   } catch {
     return false;
   }

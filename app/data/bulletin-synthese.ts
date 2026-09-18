@@ -1,6 +1,7 @@
 /**
  * Synthèse des points d'évaluations pour le bulletin.
- * Agrège les résultats exercice_resultats par catégorie bulletin et par période (P1, P2, P3).
+ * Uniquement les notes encodées par l’enseignant (tests papier, grilles Parler,
+ * dictées Éval 5). Jamais les exercices faits à la maison.
  * P1 = août, sept, oct — P2 = nov, déc, jan, fév — P3 = mars, avr, mai, juin.
  */
 
@@ -9,6 +10,23 @@ import { getCategorieForEvalExercice } from "./bulletin-exercice-categories";
 import type { ManualEvalCategoryId } from "./manual-evaluations";
 
 const EVAL_EXO_NIVEAU_REGEX = /-eval-\d+-\d+$/;
+
+const PARLER_IDS = new Set([
+  "savoir-parler-poesie",
+  "savoir-parler-famille",
+  "savoir-parler-doudou",
+]);
+
+/** Notes saisies par l’enseignant — pas les exercices / évaluations faits par l’enfant. */
+export function isTeacherEncodedResultat(r: ResultatRow): boolean {
+  if (r.son_id === "manuel" || (r.niveau_id ?? "").startsWith("manuel-")) return true;
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "manuel-note")) return true;
+  const sonId = (r.son_id ?? "").toLowerCase();
+  const niveauId = (r.niveau_id ?? "").toLowerCase();
+  if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return true;
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "critere-parler")) return true;
+  return false;
+}
 
 export type BulletinCategorieId =
   | "francais-lire"
@@ -199,7 +217,7 @@ export function computeSyntheseBulletin(
   dicteeScores?: DicteeScoresForBulletin | null
 ): SyntheseBulletin {
   const synthese = emptySynthese();
-  for (const r of resultats) {
+  for (const r of resultats.filter(isTeacherEncodedResultat)) {
     const period = getPeriodFromDate(r.created_at);
     const niveauType = r.niveau_id?.split("-")?.[1] ?? ""; // e.g. "eval" from "m-eval-1"
     const manualCat = getManualCategorieFromNiveauId(r.niveau_id);

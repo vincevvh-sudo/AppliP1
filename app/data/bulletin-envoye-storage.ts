@@ -5,6 +5,14 @@
 
 import { supabase } from "../../utils/supabase";
 import type { NiveauAcquisition } from "./bulletin-storage";
+import { getResultatsByEleve } from "./resultats-storage";
+import { getDicteeScoresByEleves } from "./dictee-scores-storage";
+import {
+  BULLETIN_SYNTHESE_CATEGORIES,
+  computeSyntheseBulletin,
+  isTeacherEncodedResultat,
+  type SyntheseBulletin,
+} from "./bulletin-synthese";
 
 export type BulletinEnvoyeLigne = {
   libelle: string;
@@ -98,4 +106,77 @@ export async function getBulletinEnvoyeById(
     .single();
   if (error || !data) return null;
   return data as BulletinEnvoyeRow;
+}
+
+export async function getAllBulletinsEnvoyes(): Promise<BulletinEnvoyeRow[]> {
+  const { data, error } = await supabase.from("bulletins_envoyes").select("*");
+  if (error || !data) return [];
+  return data as BulletinEnvoyeRow[];
+}
+
+export function syntheseToEnvoyeRows(synthese: SyntheseBulletin): BulletinEnvoyeSyntheseRow[] {
+  return BULLETIN_SYNTHESE_CATEGORIES.map((cat) => ({
+    label: cat.label,
+    maxPoints: cat.maxPoints,
+    P1: synthese[cat.id].P1,
+    P2: synthese[cat.id].P2,
+    P3: synthese[cat.id].P3,
+  }));
+}
+
+/** Synthèse calculée seulement à partir des notes encodées par l’enseignant. */
+export async function chargerSyntheseEncodéePourEleve(
+  eleveId: string
+): Promise<SyntheseBulletin> {
+  const [rows, dicteeByEleve] = await Promise.all([
+    getResultatsByEleve(eleveId),
+    getDicteeScoresByEleves(),
+  ]);
+  return computeSyntheseBulletin(
+    rows.filter(isTeacherEncodedResultat),
+    dicteeByEleve[String(eleveId)] ?? null
+  );
+}
+
+/**
+ * Réécrit la synthèse des bulletins déjà envoyés : on garde les attendus / commentaires,
+ * on remplace les points par ceux encodés seulement (pas les exercices à la maison).
+ */
+export async function nettoyerSynthesesBulletinsEnvoyes(): Promise<{ ok: number; fail: number }> {
+  const [bulletins, dicteeByEleve] = await Promise.all([
+    getAllBulletinsEnvoyes(),
+    getDicteeScoresByEleves(),
+  ]);
+  const cache = new Map<string, BulletinEnvoyeSyntheseRow[]>();
+  let ok = 0;
+  let fail = 0;
+
+  for (const row of bulletins) {
+    const eleveId = String(row.eleve_id);
+    if (!cache.has(eleveId)) {
+      const rows = await getResultatsByEleve(eleveId);
+      const synthese = computeSyntheseBulletin(
+        rows.filter(isTeacherEncodedResultat),
+        dicteeByEleve[eleveId] ?? null
+      );
+      cache.set(eleveId, syntheseToEnvoyeRows(synthese));
+    }
+
+    let data: Record<string, unknown> = {};
+    try {
+      data =
+        typeof row.data === "string"
+          ? (JSON.parse(row.data) as Record<string, unknown>)
+          : { ...((row.data as Record<string, unknown> | null) ?? {}) };
+    } catch {
+      data = {};
+    }
+    data.synthese = cache.get(eleveId);
+
+    const { error } = await supabase.from("bulletins_envoyes").update({ data }).eq("id", row.id);
+    if (error) fail += 1;
+    else ok += 1;
+  }
+
+  return { ok, fail };
 }

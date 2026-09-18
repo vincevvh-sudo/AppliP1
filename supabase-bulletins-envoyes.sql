@@ -17,10 +17,14 @@ ALTER TABLE bulletins_envoyes ENABLE ROW LEVEL SECURITY;
 -- Supprimer les politiques si elles existent (pour pouvoir réexécuter ce script)
 DROP POLICY IF EXISTS "Allow anon insert bulletins_envoyes" ON bulletins_envoyes;
 DROP POLICY IF EXISTS "Allow anon select bulletins_envoyes" ON bulletins_envoyes;
+DROP POLICY IF EXISTS "Allow anon update bulletins_envoyes" ON bulletins_envoyes;
 
--- Autoriser insert et select pour le client anon (app web)
+-- Autoriser insert, select et update pour le client anon (app web)
 CREATE POLICY "Allow anon insert bulletins_envoyes" ON bulletins_envoyes
   FOR INSERT TO anon WITH CHECK (true);
 
 CREATE POLICY "Allow anon select bulletins_envoyes" ON bulletins_envoyes
   FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Allow anon update bulletins_envoyes" ON bulletins_envoyes
+  FOR UPDATE TO anon USING (true) WITH CHECK (true);

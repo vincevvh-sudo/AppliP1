@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ForetMagiqueBackground } from "../../../../components/MiyazakiDecor";
-import { getBulletinEnvoyeById } from "../../../../data/bulletin-envoye-storage";
+import { getBulletinEnvoyeById, chargerSyntheseEncodéePourEleve, syntheseToEnvoyeRows } from "../../../../data/bulletin-envoye-storage";
 import type {
   BulletinEnvoyeRow,
   BulletinEnvoyeSyntheseRow,
@@ -31,6 +31,7 @@ export default function EnfantBulletinViewPage() {
   const router = useRouter();
   const id = params?.id ? Number(params.id) : NaN;
   const [bulletin, setBulletin] = useState<BulletinEnvoyeRow | null>(null);
+  const [syntheseLive, setSyntheseLive] = useState<BulletinEnvoyeSyntheseRow[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,9 +45,15 @@ export default function EnfantBulletinViewPage() {
       return;
     }
     getBulletinEnvoyeById(id)
-      .then((row) => {
+      .then(async (row) => {
         if (row && String(row.eleve_id) === String(session.id)) {
           setBulletin(row);
+          try {
+            const synthese = await chargerSyntheseEncodéePourEleve(String(row.eleve_id));
+            setSyntheseLive(syntheseToEnvoyeRows(synthese));
+          } catch {
+            setSyntheseLive(null);
+          }
         } else {
           setBulletin(null);
         }
@@ -116,9 +123,10 @@ export default function EnfantBulletinViewPage() {
     Array.isArray(data.comportement) ? data.comportement : []
   ) as BulletinEnvoyeLigne[];
   const attendus = (Array.isArray(data.attendus) ? data.attendus : []) as BulletinEnvoyeLigne[];
-  const synthese = (
+  const syntheseSnapshot = (
     Array.isArray(data.synthese) ? data.synthese : []
   ) as BulletinEnvoyeSyntheseRow[];
+  const synthese = syntheseLive ?? syntheseSnapshot;
   const sectionTitle =
     (data.sectionTitle as string) ?? bulletin.section_title ?? "Bulletin";
   const commentaireMois = (data.commentaireMois as string) ?? "";

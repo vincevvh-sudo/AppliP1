@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
-import { getResultatsAll, deleteResultat, saveResultat } from "../../data/resultats-storage";
+import { getResultatsAll, deleteResultat, deleteResultatRow, cleSuppressionResultat, resultatEstLeMeme, saveResultat } from "../../data/resultats-storage";
 import { supabase } from "../../../utils/supabase";
 import type { EleveRow } from "../../../utils/supabase";
 import type { ResultatRow } from "../../data/resultats-storage";
@@ -215,10 +215,10 @@ function FluenceEvolutionCard({
                       <button
                         type="button"
                         onClick={() => onDelete(r)}
-                        disabled={deletingId === r.id}
+                        disabled={deletingId === cleSuppressionResultat(r)}
                         className="rounded-lg border border-[#c45c4a]/40 bg-white px-2 py-1 text-xs text-[#c45c4a] transition hover:bg-[#c45c4a]/10 disabled:opacity-50"
                       >
-                        {deletingId === r.id ? "…" : "Effacer"}
+                        {deletingId === cleSuppressionResultat(r) ? "…" : "Effacer"}
                       </button>
                     )}
                   </td>
@@ -294,10 +294,10 @@ function ResultatSingleCard({
           <button
             type="button"
             onClick={() => onDelete(r)}
-            disabled={deletingId === r.id}
+            disabled={deletingId === cleSuppressionResultat(r)}
             className="rounded-lg border border-[#c45c4a]/50 bg-white px-3 py-1.5 text-sm text-[#c45c4a] transition hover:bg-[#c45c4a]/10 disabled:opacity-50"
           >
-            {deletingId === r.id ? "Suppression…" : "Effacer définitivement"}
+            {deletingId === cleSuppressionResultat(r) ? "Suppression…" : "Effacer ce test"}
           </button>
         </div>
       )}
@@ -386,15 +386,22 @@ function EnseignantResultatsContent() {
 
   const handleSupprimer = async (r: ResultatRow) => {
     if (r.id == null) return;
+    const label = getResultLabel(r);
+    const date = formatDate(r.created_at);
+    const confirme = window.confirm(
+      `Effacer uniquement ce test ?\n\n${label}${date ? `\n${date}` : ""}\n\nLes autres résultats de l’élève seront conservés.`
+    );
+    if (!confirme) return;
     setDeleteError(null);
-    setDeletingId(r.id);
-    const ok = await deleteResultat(r.id);
+    const key = cleSuppressionResultat(r);
+    setDeletingId(key);
+    const ok = await deleteResultatRow(r);
     setDeletingId(null);
     if (ok) {
-      setResultats((prev) => prev.filter((x) => x.id !== r.id));
+      setResultats((prev) => prev.filter((x) => !resultatEstLeMeme(x, r)));
     } else {
       setDeleteError(
-        "Impossible de supprimer. Exécutez le fichier supabase-exercice-resultats-allow-delete.sql dans le SQL Editor de Supabase (Dashboard > SQL Editor)."
+        "Impossible de supprimer uniquement ce test. Réessaie, ou exécute supabase-exercice-resultats-allow-delete.sql dans Supabase si la suppression est bloquée."
       );
     }
   };
@@ -635,7 +642,7 @@ function EnseignantResultatsContent() {
                     {getGroupTitle(sonId)}
                   </h2>
                   <p className="mt-1 text-sm text-[#2d4a3e]/70">
-                    {rows.length} résultat{rows.length > 1 ? "s" : ""} — tu peux effacer définitivement un résultat après l&apos;avoir vu.
+                    {rows.length} résultat{rows.length > 1 ? "s" : ""} — « Effacer ce test » n&apos;enlève que cette ligne.
                   </p>
                   <ul className="mt-4 space-y-2">
                     {buildDisplayBlocks(rows).map((block) =>
