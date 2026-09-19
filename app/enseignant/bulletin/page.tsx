@@ -300,9 +300,9 @@ export default function BulletinPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("bulletin-synthese-parler-only") === "1") return;
+    if (sessionStorage.getItem("bulletin-synthese-parler-only-v2") === "1") return;
     void nettoyerSyntheses().then(() => {
-      sessionStorage.setItem("bulletin-synthese-parler-only", "1");
+      sessionStorage.setItem("bulletin-synthese-parler-only-v2", "1");
     });
   }, [nettoyerSyntheses]);
 
@@ -868,9 +868,8 @@ export default function BulletinPage() {
                       Synthèse des évaluations
                     </h2>
                     <p className="no-print px-4 pt-2 text-xs text-[#2d4a3e]/70">
-                      Uniquement Savoir-parler pour l&apos;instant (poésie et présentation).
-                      La phono et les exercices sur l&apos;ordinateur n&apos;apparaissent pas. Tu pourras
-                      encoder d&apos;autres tests plus tard.
+                      Seulement la poésie et la présentation (Savoir-parler). Aucun point
+                      de lecture, de phono ou d&apos;exercice à la maison.
                     </p>
                     {loadingSynthese ? (
                       <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>

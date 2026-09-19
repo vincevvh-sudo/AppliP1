@@ -204,8 +204,8 @@ function addDicteeScoresToSynthese(
 }
 
 /** Construit la synthèse bulletin pour un élève.
- * Pour l’instant : seulement Savoir-parler (poésie / présentation).
- * Les dictées encodées seront ajoutées plus tard, quand tu les saisiras. */
+ * Pour l’instant : seulement Savoir-parler (poésie / présentation),
+ * toujours en Français parler — jamais en lecture / phono / autre matière. */
 export function computeSyntheseBulletin(
   resultats: ResultatRow[],
   _dicteeScores?: DicteeScoresForBulletin | null
@@ -213,23 +213,10 @@ export function computeSyntheseBulletin(
   const synthese = emptySynthese();
   for (const r of resultats.filter(isTeacherEncodedResultat)) {
     const period = getPeriodFromDate(r.created_at);
-    const idCat = getCategorieFromResultIdentifiers(r);
-
-    if (r.detail_exercices && r.detail_exercices.length > 0) {
-      for (const ex of r.detail_exercices) {
-        if ((ex.type ?? "").startsWith("titre-")) continue;
-        const cat = idCat ?? (ex.type === "critere-parler" ? "francais-parler" : null);
-        if (!cat) continue;
-        const points = ex.points ?? 0;
-        const pointsMax = Math.max(1, ex.pointsMax ?? 0);
-        synthese[cat][period].points += points;
-        synthese[cat][period].pointsMax += pointsMax;
-      }
-    } else {
-      const cat = idCat ?? "francais-parler";
-      synthese[cat][period].points += r.points ?? 0;
-      synthese[cat][period].pointsMax += Math.max(1, r.points_max ?? 0);
-    }
+    const points = r.points ?? 0;
+    const pointsMax = Math.max(1, r.points_max ?? 10);
+    synthese["francais-parler"][period].points += points;
+    synthese["francais-parler"][period].pointsMax += pointsMax;
   }
   return synthese;
 }
