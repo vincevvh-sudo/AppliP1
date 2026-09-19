@@ -1,15 +1,13 @@
 /**
  * Synthèse des points d'évaluations pour le bulletin.
- * Uniquement les notes encodées par l’enseignant (tests papier, grilles Parler,
- * dictées Éval 5). Jamais les exercices faits à la maison.
+ * Pour l’instant : uniquement les grilles Savoir-parler encodées par l’enseignant
+ * (poésie et présentation). Pas de phono, pas de tests papier, pas de dictées,
+ * pas d’exercices faits à la maison.
  * P1 = août, sept, oct — P2 = nov, déc, jan, fév — P3 = mars, avr, mai, juin.
  */
 
 import type { ResultatRow } from "./resultats-storage";
-import { getCategorieForEvalExercice } from "./bulletin-exercice-categories";
 import type { ManualEvalCategoryId } from "./manual-evaluations";
-
-const EVAL_EXO_NIVEAU_REGEX = /-eval-\d+-\d+$/;
 
 const PARLER_IDS = new Set([
   "savoir-parler-poesie",
@@ -17,15 +15,11 @@ const PARLER_IDS = new Set([
   "savoir-parler-doudou",
 ]);
 
-/** Notes saisies par l’enseignant — pas les exercices / évaluations faits par l’enfant. */
+/** Uniquement poésie et présentation Savoir-parler. Jamais la phono ni les tests papier. */
 export function isTeacherEncodedResultat(r: ResultatRow): boolean {
-  if (r.son_id === "manuel" || (r.niveau_id ?? "").startsWith("manuel-")) return true;
-  if ((r.detail_exercices ?? []).some((ex) => ex.type === "manuel-note")) return true;
   const sonId = (r.son_id ?? "").toLowerCase();
   const niveauId = (r.niveau_id ?? "").toLowerCase();
-  if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return true;
-  if ((r.detail_exercices ?? []).some((ex) => ex.type === "critere-parler")) return true;
-  return false;
+  return PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId);
 }
 
 export type BulletinCategorieId =
@@ -209,28 +203,22 @@ function addDicteeScoresToSynthese(
   }
 }
 
-/** Construit la synthèse bulletin pour un élève à partir de ses résultats.
- * Les scores des dictées (Évaluation 5) sont optionnellement répartis en Français écrire :
- * - P1 : dictées 1 et 2 (sur 10) ; P2 : dictées 3, 4, 5 (sur 15) ; P3 : dictées 6 à 10 (sur 25). */
+/** Construit la synthèse bulletin pour un élève.
+ * Pour l’instant : seulement Savoir-parler (poésie / présentation).
+ * Les dictées encodées seront ajoutées plus tard, quand tu les saisiras. */
 export function computeSyntheseBulletin(
   resultats: ResultatRow[],
-  dicteeScores?: DicteeScoresForBulletin | null
+  _dicteeScores?: DicteeScoresForBulletin | null
 ): SyntheseBulletin {
   const synthese = emptySynthese();
   for (const r of resultats.filter(isTeacherEncodedResultat)) {
     const period = getPeriodFromDate(r.created_at);
-    const niveauType = r.niveau_id?.split("-")?.[1] ?? ""; // e.g. "eval" from "m-eval-1"
-    const manualCat = getManualCategorieFromNiveauId(r.niveau_id);
     const idCat = getCategorieFromResultIdentifiers(r);
 
     if (r.detail_exercices && r.detail_exercices.length > 0) {
-      const isEvalExoNiveau = r.niveau_id != null && EVAL_EXO_NIVEAU_REGEX.test(r.niveau_id);
       for (const ex of r.detail_exercices) {
-        const cat =
-          manualCat ??
-          idCat ??
-          (isEvalExoNiveau && r.niveau_id ? getCategorieForEvalExercice(r.niveau_id) : null) ??
-          getCategorieFromExerciseType(ex.type, undefined);
+        if ((ex.type ?? "").startsWith("titre-")) continue;
+        const cat = idCat ?? (ex.type === "critere-parler" ? "francais-parler" : null);
         if (!cat) continue;
         const points = ex.points ?? 0;
         const pointsMax = Math.max(1, ex.pointsMax ?? 0);
@@ -238,14 +226,10 @@ export function computeSyntheseBulletin(
         synthese[cat][period].pointsMax += pointsMax;
       }
     } else {
-      const cat = manualCat ?? idCat ?? getCategorieFromExerciseType("", niveauType);
-      if (!cat) continue;
+      const cat = idCat ?? "francais-parler";
       synthese[cat][period].points += r.points ?? 0;
       synthese[cat][period].pointsMax += Math.max(1, r.points_max ?? 0);
     }
-  }
-  if (dicteeScores && typeof dicteeScores === "object") {
-    addDicteeScoresToSynthese(synthese, dicteeScores);
   }
   return synthese;
 }

@@ -268,7 +268,7 @@ export default function BulletinPage() {
       const { ok, fail } = await nettoyerSynthesesBulletinsEnvoyes();
       if (ok > 0 && fail === 0) {
         setNettoyageMsg(
-          "Les synthèses des bulletins déjà envoyés ne gardent plus que tes notes encodées. Les smileys et commentaires n’ont pas bougé."
+          "Les synthèses ne gardent plus que Savoir-parler (poésie et présentation). Les smileys et commentaires n’ont pas bougé."
         );
       } else if (ok > 0) {
         setNettoyageMsg(
@@ -300,9 +300,9 @@ export default function BulletinPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("bulletin-synthese-nettoyee") === "1") return;
+    if (sessionStorage.getItem("bulletin-synthese-parler-only") === "1") return;
     void nettoyerSyntheses().then(() => {
-      sessionStorage.setItem("bulletin-synthese-nettoyee", "1");
+      sessionStorage.setItem("bulletin-synthese-parler-only", "1");
     });
   }, [nettoyerSyntheses]);
 
@@ -640,7 +640,7 @@ export default function BulletinPage() {
               disabled={nettoyageEnCours}
               className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20 disabled:opacity-50"
             >
-              {nettoyageEnCours ? "Nettoyage…" : "Garder seulement les notes encodées"}
+              {nettoyageEnCours ? "Nettoyage…" : "Garder seulement Savoir-parler"}
             </button>
             <button
               type="button"
@@ -868,8 +868,9 @@ export default function BulletinPage() {
                       Synthèse des évaluations
                     </h2>
                     <p className="no-print px-4 pt-2 text-xs text-[#2d4a3e]/70">
-                      Uniquement les notes que tu as encodées (tests papier, Parler, dictées). Les
-                      exercices faits à la maison n&apos;apparaissent pas ici.
+                      Uniquement Savoir-parler pour l&apos;instant (poésie et présentation).
+                      La phono et les exercices sur l&apos;ordinateur n&apos;apparaissent pas. Tu pourras
+                      encoder d&apos;autres tests plus tard.
                     </p>
                     {loadingSynthese ? (
                       <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
@@ -1360,12 +1361,8 @@ export default function BulletinPage() {
                       Tests encodés — {selectedEleve.prenom}
                     </h2>
                     <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                      Uniquement les notes que tu as encodées dans{" "}
-                      <Link href="/enseignant/resultats" className="underline">
-                        Résultats
-                      </Link>{" "}
-                      et les grilles Parler. Les exercices faits à la maison n&apos;apparaissent pas.
-                      L&apos;impression n&apos;inclut que cette liste (pas les attendus par mois / matière).
+                      Uniquement les grilles Savoir-parler (poésie et présentation). La phono et
+                      les exercices faits à l&apos;ordinateur n&apos;apparaissent pas.
                     </p>
                   </div>
 
@@ -1377,7 +1374,7 @@ export default function BulletinPage() {
                     <p className="text-sm text-[#2d4a3e]/60">Chargement des contrôles…</p>
                   ) : resultatsEleve.length === 0 ? (
                     <p className="rounded-xl bg-white/80 px-4 py-6 text-sm text-[#2d4a3e]/70">
-                      Aucun test encodé pour le moment. Encode des notes dans Résultats.
+                      Aucune grille Savoir-parler encodée pour le moment.
                     </p>
                   ) : (
                     <div className="overflow-x-auto rounded-2xl border border-[#2d4a3e]/10 bg-white/95 shadow">
@@ -1398,10 +1395,7 @@ export default function BulletinPage() {
                               r.points_max != null && r.points_max > 0
                                 ? `${r.points} / ${r.points_max}`
                                 : String(r.points ?? "—");
-                            const source =
-                              r.son_id === "manuel" || (r.niveau_id ?? "").startsWith("manuel-")
-                                ? "Test papier"
-                                : "Parler";
+                            const source = "Savoir-parler";
                             return (
                               <tr
                                 key={key}
@@ -1421,11 +1415,7 @@ export default function BulletinPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <span
-                                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                      r.son_id === "manuel"
-                                        ? "bg-[#ffd4a3]/70 text-[#2d4a3e]"
-                                        : "bg-[#b8d4e8]/70 text-[#2d4a3e]"
-                                    }`}
+                                    className="rounded-full bg-[#b8d4e8]/70 px-2.5 py-0.5 text-xs font-medium text-[#2d4a3e]"
                                   >
                                     {source}
                                   </span>
