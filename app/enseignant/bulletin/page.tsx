@@ -43,7 +43,6 @@ import {
 import { supabase } from "../../../utils/supabase";
 import type { EleveRow } from "../../../utils/supabase";
 import { getResultatsByEleve, type ResultatRow } from "../../data/resultats-storage";
-import { getDicteeScoresByEleves } from "../../data/dictee-scores-storage";
 import {
   formatResultatDate,
   getResultatMatiere,
@@ -55,7 +54,6 @@ import {
   BULLETIN_SYNTHESE_CATEGORIES,
   formatNoteSurBarème,
   type SyntheseBulletin,
-  type DicteeScoresForBulletin,
 } from "../../data/bulletin-synthese";
 
 const IconLeaf = () => (
@@ -334,8 +332,8 @@ export default function BulletinPage() {
       return;
     }
     setLoadingSynthese(true);
-    Promise.all([getResultatsByEleve(eleveId), getDicteeScoresByEleves()])
-      .then(([rows, dicteeByEleve]) => {
+    getResultatsByEleve(eleveId)
+      .then((rows) => {
         const encoded = rows.filter(isTeacherEncodedResultat);
         const sorted = [...encoded].sort((a, b) => {
           const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -343,8 +341,7 @@ export default function BulletinPage() {
           return tb - ta;
         });
         setResultatsEleve(sorted);
-        const scores = dicteeByEleve[String(eleveId)] as DicteeScoresForBulletin | undefined;
-        setSyntheseEval(computeSyntheseBulletin(encoded, scores ?? null));
+        setSyntheseEval(computeSyntheseBulletin(encoded));
       })
       .catch(() => {
         setSyntheseEval(null);

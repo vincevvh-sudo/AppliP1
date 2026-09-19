@@ -6,7 +6,6 @@
 import { supabase } from "../../utils/supabase";
 import type { NiveauAcquisition } from "./bulletin-storage";
 import { getResultatsByEleve } from "./resultats-storage";
-import { getDicteeScoresByEleves } from "./dictee-scores-storage";
 import {
   BULLETIN_SYNTHESE_CATEGORIES,
   computeSyntheseBulletin,
@@ -128,14 +127,8 @@ export function syntheseToEnvoyeRows(synthese: SyntheseBulletin): BulletinEnvoye
 export async function chargerSyntheseEncodéePourEleve(
   eleveId: string
 ): Promise<SyntheseBulletin> {
-  const [rows, dicteeByEleve] = await Promise.all([
-    getResultatsByEleve(eleveId),
-    getDicteeScoresByEleves(),
-  ]);
-  return computeSyntheseBulletin(
-    rows.filter(isTeacherEncodedResultat),
-    dicteeByEleve[String(eleveId)] ?? null
-  );
+  const rows = await getResultatsByEleve(eleveId);
+  return computeSyntheseBulletin(rows.filter(isTeacherEncodedResultat));
 }
 
 /**
@@ -143,10 +136,7 @@ export async function chargerSyntheseEncodéePourEleve(
  * on remplace les points par ceux encodés seulement (pas les exercices à la maison).
  */
 export async function nettoyerSynthesesBulletinsEnvoyes(): Promise<{ ok: number; fail: number }> {
-  const [bulletins, dicteeByEleve] = await Promise.all([
-    getAllBulletinsEnvoyes(),
-    getDicteeScoresByEleves(),
-  ]);
+  const bulletins = await getAllBulletinsEnvoyes();
   const cache = new Map<string, BulletinEnvoyeSyntheseRow[]>();
   let ok = 0;
   let fail = 0;
@@ -155,10 +145,7 @@ export async function nettoyerSynthesesBulletinsEnvoyes(): Promise<{ ok: number;
     const eleveId = String(row.eleve_id);
     if (!cache.has(eleveId)) {
       const rows = await getResultatsByEleve(eleveId);
-      const synthese = computeSyntheseBulletin(
-        rows.filter(isTeacherEncodedResultat),
-        dicteeByEleve[eleveId] ?? null
-      );
+      const synthese = computeSyntheseBulletin(rows.filter(isTeacherEncodedResultat));
       cache.set(eleveId, syntheseToEnvoyeRows(synthese));
     }
 

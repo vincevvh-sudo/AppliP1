@@ -73,16 +73,10 @@ function emptySynthese(): SyntheseBulletin {
   return out;
 }
 
-/** Scores dictées (dictee_1..dictee_N). Conservé pour l’appel existant ; non utilisé pour l’instant. */
-export type DicteeScoresForBulletin = Record<string, number | null>;
-
 /** Construit la synthèse bulletin pour un élève.
  * Pour l’instant : seulement Savoir-parler (poésie / présentation),
  * toujours en Français parler — jamais en lecture / phono / autre matière. */
-export function computeSyntheseBulletin(
-  resultats: ResultatRow[],
-  _dicteeScores?: DicteeScoresForBulletin | null
-): SyntheseBulletin {
+export function computeSyntheseBulletin(resultats: ResultatRow[]): SyntheseBulletin {
   const synthese = emptySynthese();
   for (const r of resultats.filter(isTeacherEncodedResultat)) {
     const period = getPeriodFromDate(r.created_at);
