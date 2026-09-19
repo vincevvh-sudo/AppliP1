@@ -7,7 +7,6 @@
  */
 
 import type { ResultatRow } from "./resultats-storage";
-import type { ManualEvalCategoryId } from "./manual-evaluations";
 
 const PARLER_IDS = new Set([
   "savoir-parler-poesie",
@@ -62,107 +61,9 @@ export function getPeriodFromDate(createdAt: string | undefined): PeriodId {
   return "P1"; // juillet = P1 par défaut
 }
 
-/** Type d'exercice (eval-data / JeuxSons) -> catégorie bulletin (sons = français uniquement pour l'instant) */
-function getCategorieFromExerciseType(
-  type: string,
-  niveauType?: string
-): BulletinCategorieId | null {
-  const t = (type ?? "").toLowerCase();
-  // Détaillé (évaluations avec detail_exercices)
-  if (t === "image-deux-mots" || t === "entoure-son" || t === "entoure-lettre" || t === "entoure-lettre-dans-mot" || t === "entoure-syllabe" || t === "phrases-vrai-faux" || t === "fluence-chrono" || t === "fluence-maison") return "francais-lire";
-  if (t === "ecris-syllabe" || t === "relie-ecritures") return "francais-ecrire";
-  if (t === "euros-monnaie" || t === "jours-semaine" || t === "instruments-mesure" || t === "centimetre-metre") return "maths-grandeur";
-  if (t === "repere-son") return "francais-ecouter";
-  if (t === "article-le-la") return "francais-parler";
-  // Niveau entier (sans détail) : type de niveau
-  const n = (niveauType ?? "").toLowerCase();
-  if (n === "phono" || n === "phono-image") return "francais-lire";
-  if (n === "relie") return "francais-ecrire";
-  if (n === "article") return "francais-parler";
-  if (n === "phrases-vrai-faux") return "francais-lire";
-  if (n === "ecrire-syllabe") return "francais-ecrire";
-  if (n === "eval") return null; // on utilise le détail
-  return null;
-}
-
-function getManualCategorieFromNiveauId(niveauId: string | undefined): BulletinCategorieId | null {
-  if (!niveauId) return null;
-  if (!niveauId.startsWith("manuel-")) return null;
-  const category = niveauId.replace(/^manuel-/, "") as ManualEvalCategoryId;
-  return (
-    [
-      "francais-lire",
-      "francais-ecrire",
-      "francais-ecouter",
-      "francais-parler",
-      "maths-arithmetique",
-      "maths-grandeur",
-      "maths-espace-geo",
-      "maths-traitement-donnees",
-      "eveil",
-    ] as const
-  ).includes(category)
-    ? category
-    : null;
-}
-
-function getCategorieFromResultIdentifiers(row: ResultatRow): BulletinCategorieId | null {
-  const sonId = (row.son_id ?? "").toLowerCase();
-  const niveauId = (row.niveau_id ?? "").toLowerCase();
-
-  // Fluence maison (Forêt → Exercices → Fluence)
-  if (niveauId.endsWith("-fluence")) return "francais-lire";
-
-  // Lectures globales (syllabes / mots / janvier)
-  if (sonId === "lecture" || niveauId.startsWith("lecture-")) return "francais-lire";
-
-  // Dictées (syllabes et mots)
-  if (sonId === "dictee" || sonId === "dictee-mots" || niveauId.startsWith("dictee-")) {
-    return "francais-ecrire";
-  }
-
-  // Maths : solides
-  if (sonId === "maths-solides" || niveauId === "maths-solides") return "maths-espace-geo";
-
-  // Maths : quadrilateres (carré / rectangle / triangle / disque)
-  if (sonId === "maths-quadrilateres" || niveauId === "maths-quadrilateres") return "maths-espace-geo";
-
-  // Maths : compter les euros (grandeur)
-  if (sonId === "maths-euros-monnaie" || niveauId === "maths-euros-monnaie") return "maths-grandeur";
-
-  // Maths : jours de la semaine (grandeur)
-  if (sonId === "maths-jours-semaine" || niveauId === "maths-jours-semaine") return "maths-grandeur";
-
-  // Maths : instruments de mesure (grandeur)
-  if (sonId === "maths-instruments-mesure" || niveauId === "maths-instruments-mesure") return "maths-grandeur";
-
-  // Maths : centimètre ou mètre (grandeur)
-  if (sonId === "maths-centimetre-metre" || niveauId === "maths-centimetre-metre") return "maths-grandeur";
-
-  // Français : Parler (grilles poésie / présentation / doudou ; son_id historique savoir-parler-*)
-  if (
-    sonId === "savoir-parler-poesie" ||
-    sonId === "savoir-parler-famille" ||
-    sonId === "savoir-parler-doudou"
-  ) {
-    return "francais-parler";
-  }
-  if (
-    niveauId === "savoir-parler-poesie" ||
-    niveauId === "savoir-parler-famille" ||
-    niveauId === "savoir-parler-doudou"
-  ) {
-    return "francais-parler";
-  }
-
-  return null;
-}
-
 export type SynthesePeriod = { points: number; pointsMax: number };
 export type SyntheseCategorie = Record<PeriodId, SynthesePeriod>;
 export type SyntheseBulletin = Record<BulletinCategorieId, SyntheseCategorie>;
-
-const PERIODS: PeriodId[] = ["P1", "P2", "P3"];
 
 function emptySynthese(): SyntheseBulletin {
   const out = {} as SyntheseBulletin;
@@ -172,36 +73,8 @@ function emptySynthese(): SyntheseBulletin {
   return out;
 }
 
-/** Répartition des dictées de syllabes (Évaluation 5) par période bulletin — Français écrire. */
-const DICTEES_PAR_PERIODE = {
-  P1: [1, 2] as const,       // Dictées 1 et 2 → Période 1
-  P2: [3, 4, 5] as const,     // Dictées 3, 4, 5 → Période 2
-  P3: [6, 7, 8, 9, 10] as const, // Dictées 6 à 10 → Période 3 (emplacements prévus)
-};
-
-const POINTS_MAX_PAR_DICTEE = 5;
-
-/** Scores dictées (dictee_1..dictee_N). Utilisé pour répartir par période dans français écrire. */
+/** Scores dictées (dictee_1..dictee_N). Conservé pour l’appel existant ; non utilisé pour l’instant. */
 export type DicteeScoresForBulletin = Record<string, number | null>;
-
-function addDicteeScoresToSynthese(
-  synthese: SyntheseBulletin,
-  scores: DicteeScoresForBulletin
-): void {
-  for (const period of ["P1", "P2", "P3"] as const) {
-    const indices = DICTEES_PAR_PERIODE[period];
-    let points = 0;
-    for (const i of indices) {
-      const v = scores[`dictee_${i}`];
-      points += v != null ? v : 0;
-    }
-    const pointsMax = indices.length * POINTS_MAX_PAR_DICTEE;
-    if (pointsMax > 0) {
-      synthese["francais-ecrire"][period].points += points;
-      synthese["francais-ecrire"][period].pointsMax += pointsMax;
-    }
-  }
-}
 
 /** Construit la synthèse bulletin pour un élève.
  * Pour l’instant : seulement Savoir-parler (poésie / présentation),
