@@ -48,6 +48,11 @@ const IconPresence = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
   </svg>
 );
+const IconSemaine = () => (
+  <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+  </svg>
+);
 
 const CARDS: {
   href: string;
@@ -63,6 +68,7 @@ const CARDS: {
   { href: "/enseignant/sons", icon: IconBook, title: "Français", desc: "Partager les sons et exercices aux enfants", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
   { href: "/enseignant/maths", icon: IconMaths, title: "Mathématiques", desc: "Exercices et progressions en mathématiques", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },
   { href: "/rendez-vous", icon: IconCalendar, title: "Agenda & Rendez-vous", desc: "Créneaux parents + semainier (leçons, devoirs, à savoir)", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
+  { href: "/enseignant/semaine", icon: IconSemaine, title: "Semaine", desc: "Horaire de la classe (lundi à vendredi, cases par heure)", color: "bg-[#c8e0d4]/80", hoverColor: "hover:bg-[#c8e0d4]" },
   { href: "/enseignant/resultats", icon: IconTrophy, title: "Résultats", desc: "Voir les résultats des enfants", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/messagerie", icon: IconMessage, title: "Messagerie", desc: "Échanger avec les élèves", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
   {
