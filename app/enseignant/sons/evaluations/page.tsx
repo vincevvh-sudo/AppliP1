@@ -98,6 +98,16 @@ export default function EnseignantSonsEvaluationsPage() {
             </p>
           </Link>
           <Link
+            href="/enseignant/sons/evaluation/calligraphie"
+            className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20 sm:col-span-2"
+          >
+            <p className="font-display text-lg text-[#2d4a3e]">Évaluation de calligraphie</p>
+            <p className="mt-1 text-sm text-[#2d4a3e]/70">
+              Grille à smileys (période 1). Visible dans Mes résultats, pas dans les points du
+              bulletin.
+            </p>
+          </Link>
+          <Link
             href="/enseignant/sons/evaluation/ecriture"
             className="rounded-2xl bg-white/95 p-5 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#a8d5ba]/20 sm:col-span-2"
           >

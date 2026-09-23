@@ -9,7 +9,7 @@ import { getBulletinsByEleve } from "../../data/bulletin-envoye-storage";
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { ResultatRow } from "../../data/resultats-storage";
 import type { BulletinEnvoyeRow } from "../../data/bulletin-envoye-storage";
-import { getResultatLabelComplet } from "../../data/resultats-labels";
+import { formatPointsResultat, getResultatLabelComplet } from "../../data/resultats-labels";
 import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
@@ -33,7 +33,8 @@ function detailLignesVisibles(r: ResultatRow) {
     (ex) =>
       ex.type !== "titre-poesie" &&
       ex.type !== "titre-presentation" &&
-      ex.type !== "titre-doudou"
+      ex.type !== "titre-doudou" &&
+      ex.type !== "titre-calligraphie"
   );
 }
 
@@ -164,7 +165,7 @@ export default function EnfantResultatsPage() {
                       </span>
                     </div>
                     <span className={`text-xl font-bold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-                      {r.points} / {r.points_max}
+                      {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
                     </span>
                   </div>
                   {hasDetail ? (
@@ -173,7 +174,7 @@ export default function EnfantResultatsPage() {
                         <li key={i} className="flex justify-between gap-2">
                           <span>{ex.titre}</span>
                           <span className="font-medium tabular-nums text-[#2d4a3e]">
-                            {ex.points} / {ex.pointsMax}
+                            {formatPointsResultat(ex.points)} / {formatPointsResultat(ex.pointsMax)}
                           </span>
                         </li>
                       ))}

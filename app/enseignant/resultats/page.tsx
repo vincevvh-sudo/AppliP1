@@ -15,7 +15,7 @@ import {
   isFluenceNiveauId,
   sonIdFromFluenceNiveauId,
 } from "../../data/fluence-partage";
-import { getResultatLabelComplet } from "../../data/resultats-labels";
+import { formatPointsResultat, getResultatLabelComplet } from "../../data/resultats-labels";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,8 @@ function getResultLabel(r: ResultatRow): string {
   if (
     r.son_id === "savoir-parler-poesie" ||
     r.son_id === "savoir-parler-famille" ||
-    r.son_id === "savoir-parler-doudou"
+    r.son_id === "savoir-parler-doudou" ||
+    r.son_id === "eval-calligraphie"
   ) {
     return getResultatLabelComplet(r);
   }
@@ -93,6 +94,7 @@ function getResultLabel(r: ResultatRow): string {
 
 function getGroupTitle(sonId: string): string {
   if (sonId === "manuel") return "Tests papier (encodés enseignant)";
+  if (sonId === "eval-calligraphie") return "Évaluation de calligraphie";
   if (MATHS_RESULT_LABELS[sonId]) return MATHS_RESULT_LABELS[sonId];
   const son = getSonById(sonId);
   return `Lettre ${son ? son.grapheme : sonId}`;
@@ -250,7 +252,8 @@ function ResultatSingleCard({
     (ex) =>
       ex.type !== "titre-poesie" &&
       ex.type !== "titre-presentation" &&
-      ex.type !== "titre-doudou"
+      ex.type !== "titre-doudou" &&
+      ex.type !== "titre-calligraphie"
   );
   const hasDetail = details.length > 0;
   return (
@@ -266,7 +269,7 @@ function ResultatSingleCard({
         ) : null}
         <span className="text-[#2d4a3e]/80">{getResultLabel(r)}</span>
         <span className={`font-semibold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-          {r.points} / {r.points_max}
+          {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
         </span>
         <span className="text-xs text-[#2d4a3e]/60">{formatDate(r.created_at)}</span>
       </div>
@@ -276,7 +279,7 @@ function ResultatSingleCard({
             <li key={i} className="flex justify-between gap-2">
               <span>{ex.titre}</span>
               <span className="font-medium tabular-nums text-[#2d4a3e]">
-                {ex.points} / {ex.pointsMax}
+                {formatPointsResultat(ex.points)} / {formatPointsResultat(ex.pointsMax)}
                 {ex.duree_secondes != null && (
                   <span className="ml-1 text-[#2d4a3e]/70">(en {ex.duree_secondes} s)</span>
                 )}

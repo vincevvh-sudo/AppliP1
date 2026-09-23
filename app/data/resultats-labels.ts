@@ -32,7 +32,8 @@ export function getTitrePoesieLabel(r: ResultatRow): string | null {
     (ex) =>
       ex.type === "titre-poesie" ||
       ex.type === "titre-presentation" ||
-      ex.type === "titre-doudou"
+      ex.type === "titre-doudou" ||
+      ex.type === "titre-calligraphie"
   );
   const t = meta?.titre?.trim();
   return t || null;
@@ -52,6 +53,10 @@ export function getResultatTitre(r: ResultatRow): string {
   if (r.son_id === "savoir-parler-famille") {
     const titre = getTitrePoesieLabel(r);
     return titre ? `Présentation de ${titre}` : "Présentation";
+  }
+  if (r.son_id === "eval-calligraphie") {
+    const titre = getTitrePoesieLabel(r);
+    return titre ? `Calligraphie — ${titre}` : "Évaluation de calligraphie";
   }
   if (isFluenceResultat(r)) {
     const son = getSonById(r.son_id ?? "");
@@ -104,7 +109,18 @@ export function getResultatLabelComplet(r: ResultatRow): string {
     const titre = getTitrePoesieLabel(r);
     return titre ? `Parler — Présentation de ${titre}` : "Parler — Présentation";
   }
+  if (r.son_id === "eval-calligraphie") {
+    const titre = getTitrePoesieLabel(r);
+    return titre ? `Calligraphie — ${titre}` : "Évaluation de calligraphie";
+  }
   return getResultatTitre(r);
+}
+
+export function formatPointsResultat(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  if (Math.abs(n - 0.5) < 0.001) return "½";
+  if (Math.abs(n % 1 - 0.5) < 0.001) return `${Math.floor(n)}½`;
+  return String(n).replace(".", ",");
 }
 
 export function formatResultatDate(s: string | undefined): string {

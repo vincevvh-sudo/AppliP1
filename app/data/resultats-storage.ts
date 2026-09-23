@@ -280,7 +280,8 @@ export function getTitreParlerFromResultat(r: ResultatRow): string | null {
     (ex) =>
       ex.type === "titre-poesie" ||
       ex.type === "titre-presentation" ||
-      ex.type === "titre-doudou"
+      ex.type === "titre-doudou" ||
+      ex.type === "titre-calligraphie"
   );
   const t = meta?.titre?.trim();
   return t || null;
