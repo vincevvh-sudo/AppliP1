@@ -74,6 +74,8 @@ export default function EnseignantSemainePage() {
   const [entendu, setEntendu] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [corrigeant, setCorrigeant] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const weekStartRef = useRef(weekStart);
   weekStartRef.current = weekStart;
@@ -83,7 +85,7 @@ export default function EnseignantSemainePage() {
     setEditing(null);
   }, [weekStart]);
 
-  const applyDictee = useCallback((transcript: string) => {
+  const applyDictee = useCallback(async (transcript: string) => {
     const heard = transcript.trim();
     if (!heard) return;
     setEntendu(heard);
@@ -93,17 +95,24 @@ export default function EnseignantSemainePage() {
       setMessage(null);
       return;
     }
-    let next = loadHoraireSemaine(weekStartRef.current);
+    const week = weekStartRef.current;
+    let next = loadHoraireSemaine(week);
+    for (const item of parsed.ok) {
+      next = setHoraireCase(week, item.jour, item.creneau, item.texte);
+    }
+    setData(next);
+    setCorrigeant(true);
+    setMessage("Correction de l’orthographe…");
+    setErreur(parsed.erreurs[0] ?? null);
     const recap: string[] = [];
     for (const item of parsed.ok) {
-      next = setHoraireCase(weekStartRef.current, item.jour, item.creneau, item.texte);
-      recap.push(
-        `${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${item.texte}`
-      );
+      const texte = await corrigerTexteHoraire(item.texte);
+      next = setHoraireCase(week, item.jour, item.creneau, texte);
+      recap.push(`${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${texte}`);
     }
     setData(next);
     setMessage(recap.join(" · "));
-    setErreur(parsed.erreurs[0] ?? null);
+    setCorrigeant(false);
   }, []);
 
   useEffect(() => {
@@ -168,12 +177,18 @@ export default function EnseignantSemainePage() {
     setDraft(data[jour][creneau] ?? "");
   };
 
-  const confirmEdit = () => {
-    if (!editing) return;
-    const next = setHoraireCase(weekStart, editing.jour, editing.creneau, draft);
-    setData(next);
-    setEditing(null);
-    setDraft("");
+  const confirmEdit = async () => {
+    if (!editing || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      const texte = await corrigerTexteHoraire(draft);
+      const next = setHoraireCase(weekStart, editing.jour, editing.creneau, texte);
+      setData(next);
+      setEditing(null);
+      setDraft("");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   return (
@@ -250,14 +265,18 @@ export default function EnseignantSemainePage() {
           </button>
           <p className="text-sm text-[#2d4a3e]/75">
             {canSpeech
-              ? "Dis le jour, l’heure, puis l’activité."
-              : "Le micro n’est pas disponible ici : clique une case pour écrire."}
+              ? "Dis le jour, l’heure, puis l’activité. Gemini corrige seulement les accents et l’orthographe, sans changer tes mots."
+              : "Le micro n’est pas disponible ici : clique une case pour écrire. Gemini corrige seulement les accents et l’orthographe."}
           </p>
         </div>
         {entendu && (
           <p className="mt-2 text-xs text-[#2d4a3e]/60">J’ai entendu : « {entendu} »</p>
         )}
-        {message && <p className="mt-2 text-sm font-medium text-[#2d6b4a]">{message}</p>}
+        {message && (
+          <p className={`mt-2 text-sm font-medium ${corrigeant ? "text-[#2d4a3e]/70" : "text-[#2d6b4a]"}`}>
+            {message}
+          </p>
+        )}
         {erreur && <p className="mt-2 text-sm text-[#b45309]">{erreur}</p>}
 
         <div className="mt-6 overflow-x-auto">
@@ -324,10 +343,11 @@ export default function EnseignantSemainePage() {
               </button>
               <button
                 type="button"
-                onClick={confirmEdit}
-                className="rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3d6b4d]"
+                onClick={() => void confirmEdit()}
+                disabled={savingEdit}
+                className="rounded-xl bg-[#4a7c5a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3d6b4d] disabled:opacity-60"
               >
-                Enregistrer
+                {savingEdit ? "Correction…" : "Enregistrer"}
               </button>
             </div>
           </div>
@@ -335,6 +355,24 @@ export default function EnseignantSemainePage() {
       )}
     </main>
   );
+}
+
+async function corrigerTexteHoraire(texte: string): Promise<string> {
+  const source = texte.replace(/\s+/g, " ").trim();
+  if (!source) return "";
+  try {
+    const res = await fetch("/api/semaine/corriger-orthographe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: source }),
+    });
+    if (!res.ok) return source;
+    const data = (await res.json()) as { text?: string };
+    const out = typeof data.text === "string" ? data.text.trim() : "";
+    return out || source;
+  } catch {
+    return source;
+  }
 }
 
 function emptySafe(weekStart: string): HoraireSemaineData {

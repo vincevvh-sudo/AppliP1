@@ -98,6 +98,54 @@ type GenerateResult =
   | { ok: true; text: string }
   | { ok: false; error: string; status: number };
 
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function motsNormes(s: string): string[] {
+  return stripAccents(s)
+    .replace(/[^a-z0-9'\s-]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const row = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = row[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + cost);
+      prev = tmp;
+    }
+  }
+  return row[n];
+}
+
+/** Garde le texte d’origine si Gemini a reformulé (seuls accents / fautes légères passent). */
+export function accepterCorrectionOrthographe(source: string, propose: string): string {
+  const src = source.replace(/\s+/g, " ").trim();
+  const out = propose.replace(/\s+/g, " ").trim();
+  if (!out) return src;
+  if (out === src) return src;
+  const a = motsNormes(src);
+  const b = motsNormes(out);
+  if (a.length === 0 || a.length !== b.length) return src;
+  const ok = a.every((w, i) => {
+    const d = levenshtein(w, b[i]);
+    const max = Math.max(1, Math.floor(Math.max(w.length, b[i].length) * 0.35));
+    return d <= max;
+  });
+  return ok ? out : src;
+}
+
 export async function generateBulletinComment(
   prompt: string,
   options?: { style?: "attendu" | "mois" }
@@ -207,6 +255,102 @@ IMPORTANT : ta réponse précédente était incomplète (« ${text} »). Réécr
     status: 502,
     error: lastError || "Aucun modèle Gemini disponible. Vérifiez la clé sur aistudio.google.com/app/apikey",
   };
+}
+
+/**
+ * Corrige uniquement accents / orthographe. Ne reformule jamais.
+ * Si Gemini est indisponible, renvoie le texte d’origine (ok: true).
+ */
+export async function corrigerOrthographeSeule(texte: string): Promise<GenerateResult> {
+  const source = texte.replace(/\s+/g, " ").trim();
+  if (!source) return { ok: true, text: "" };
+
+  const prompt = `Tu corriges UNIQUEMENT l'orthographe et les accents d'un intitulé d'horaire scolaire (très court).
+
+Texte :
+« ${source} »
+
+Règles strictes :
+- Ne change aucun mot, ni l'ordre, ni le sens.
+- N'ajoute aucun mot. N'enlève aucun mot.
+- Ne reformule pas. Ne complète pas. Ne mets pas de majuscule en plus.
+- Corrige seulement les accents (à, où, é, è…) et les fautes d'orthographe évidentes.
+- Exemples : « tracer a la latte » → « tracer à la latte » ; « ou un lieu » → « où un lieu ».
+- Si le texte est déjà correct, recopie-le exactement.
+- Réponds uniquement par le texte corrigé, sans guillemets, sans explication.`;
+
+  const result = await generateGeminiPlain(prompt, { temperature: 0.05, maxOutputTokens: 256 });
+  if (!result.ok) return { ok: true, text: source };
+  const cleaned = result.text.replace(/^["«»']+|["«»']+$/g, "").trim();
+  if (!cleaned) return { ok: true, text: source };
+  return { ok: true, text: accepterCorrectionOrthographe(source, cleaned) };
+}
+
+async function generateGeminiPlain(
+  prompt: string,
+  options: { temperature: number; maxOutputTokens: number }
+): Promise<GenerateResult> {
+  const apiKey = getGeminiApiKeyFromEnv();
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: 503,
+      error: "GEMINI_API_KEY non configurée.",
+    };
+  }
+  const key = apiKey.replace(/^["']|["']$/g, "").trim();
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      maxOutputTokens: options.maxOutputTokens,
+      temperature: options.temperature,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  });
+  const bodyLegacy = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      maxOutputTokens: options.maxOutputTokens,
+      temperature: options.temperature,
+    },
+  });
+
+  let lastError = "";
+  for (const model of GEMINI_MODELS) {
+    for (const payload of [body, bodyLegacy]) {
+      try {
+        const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          lastError = getGeminiErrorMessage(res.status, errText);
+          if (
+            payload === body &&
+            (res.status === 400 || errText.toLowerCase().includes("thinking"))
+          ) {
+            continue;
+          }
+          if (res.status === 404 || errText.includes("not found") || errText.includes("Invalid model")) {
+            break;
+          }
+          return { ok: false, status: 502, error: lastError };
+        }
+        const data = (await res.json()) as Parameters<typeof extractText>[0];
+        const text = extractText(data).text.trim();
+        if (!text) {
+          lastError = "Réponse vide de Gemini.";
+          continue;
+        }
+        return { ok: true, text };
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : "Erreur réseau";
+      }
+    }
+  }
+  return { ok: false, status: 502, error: lastError || "Aucun modèle Gemini disponible." };
 }
 
 export function niveauLabelFr(niveau: string | undefined): string {
