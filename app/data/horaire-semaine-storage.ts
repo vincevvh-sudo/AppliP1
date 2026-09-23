@@ -68,3 +68,22 @@ export function setHoraireCase(
   saveHoraireSemaine(weekStart, next);
   return next;
 }
+
+/** Remplit la même case sur plusieurs semaines (une seule écriture localStorage). */
+export function setHoraireCaseSurSemaines(
+  weekStarts: string[],
+  jour: HoraireJour,
+  creneau: HoraireCreneau,
+  texte: string
+): void {
+  if (weekStarts.length === 0) return;
+  const store = readStore();
+  for (const week of weekStarts) {
+    const data = normalizeWeek(store[week]);
+    store[week] = {
+      ...data,
+      [jour]: { ...data[jour], [creneau]: texte },
+    };
+  }
+  writeStore(store);
+}

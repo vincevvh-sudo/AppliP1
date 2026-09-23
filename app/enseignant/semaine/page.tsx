@@ -14,12 +14,22 @@ import {
   type HoraireJour,
   type HoraireSemaineData,
 } from "../../data/horaire-semaine";
-import { loadHoraireSemaine, setHoraireCase } from "../../data/horaire-semaine-storage";
+import {
+  loadHoraireSemaine,
+  setHoraireCase,
+  setHoraireCaseSurSemaines,
+} from "../../data/horaire-semaine-storage";
 import {
   addWeeksToWeekStart,
   formatWeekRangeLabel,
   getWeekStartMonday,
 } from "../../data/semainier-storage";
+import {
+  formatFinAnneeLabel,
+  isSemaineVacances,
+  semainesScolairesJusquaFinAnnee,
+  vacancesPourSemaine,
+} from "../../data/vacances-fwb";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -96,21 +106,37 @@ export default function EnseignantSemainePage() {
       return;
     }
     const week = weekStartRef.current;
-    let next = loadHoraireSemaine(week);
-    for (const item of parsed.ok) {
-      next = setHoraireCase(week, item.jour, item.creneau, item.texte);
+    const onlyThisWeek = parsed.ok.every((item) => !item.recurrent);
+    if (onlyThisWeek && isSemaineVacances(week)) {
+      setErreur("Cette semaine est en vacances. Dis plutôt « tous les jeudis 9h20 … » pour remplir jusqu’au 2 juillet.");
+      setMessage(null);
+      return;
     }
-    setData(next);
     setCorrigeant(true);
     setMessage("Correction de l’orthographe…");
     setErreur(parsed.erreurs[0] ?? null);
     const recap: string[] = [];
+    const finLabel = formatFinAnneeLabel(week);
     for (const item of parsed.ok) {
       const texte = await corrigerTexteHoraire(item.texte);
-      next = setHoraireCase(week, item.jour, item.creneau, texte);
-      recap.push(`${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${texte}`);
+      if (item.recurrent) {
+        const weeks = semainesScolairesJusquaFinAnnee(week, item.jour);
+        setHoraireCaseSurSemaines(weeks, item.jour, item.creneau, texte);
+        if (weeks.length === 0) {
+          recap.push(
+            `${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} : aucun jour de cours jusqu’au ${finLabel}.`
+          );
+        } else {
+          recap.push(
+            `${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${texte} (tous les ${JOUR_LABELS[item.jour].toLowerCase()}s jusqu’au ${finLabel}, sauf vacances — ${weeks.length} semaines)`
+          );
+        }
+      } else {
+        setHoraireCase(week, item.jour, item.creneau, texte);
+        recap.push(`${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${texte}`);
+      }
     }
-    setData(next);
+    setData(loadHoraireSemaine(week));
     setMessage(recap.join(" · "));
     setCorrigeant(false);
   }, []);
@@ -191,6 +217,8 @@ export default function EnseignantSemainePage() {
     }
   };
 
+  const vacances = vacancesPourSemaine(weekStart);
+
   return (
     <main className="relative min-h-screen overflow-hidden text-[#2d4a3e]">
       <ForetMagiqueBackground />
@@ -220,7 +248,7 @@ export default function EnseignantSemainePage() {
             <h1 className="font-display text-2xl text-[#2d4a3e] sm:text-3xl">Semaine</h1>
             <p className="mt-1 text-sm text-[#2d4a3e]/80">
               Clique une case pour écrire, ou appuie sur le micro : « mardi 9h20 chrono »,
-              « mercredi 10h40 science ».
+              « tous les jeudis 9h20 piscine » (jusqu’au 2 juillet, sauf vacances).
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -249,6 +277,11 @@ export default function EnseignantSemainePage() {
         </div>
 
         <p className="mt-3 text-sm font-semibold text-[#4a7c5a]">{formatWeekRangeLabel(weekStart)}</p>
+        {vacances && (
+          <p className="mt-1 text-sm text-[#2d4a3e]/70">
+            Vacances {vacances.label} — Fédération Wallonie-Bruxelles
+          </p>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-[#2d4a3e]/10 bg-white/95 p-4 shadow">
           <button
@@ -265,8 +298,8 @@ export default function EnseignantSemainePage() {
           </button>
           <p className="text-sm text-[#2d4a3e]/75">
             {canSpeech
-              ? "Dis le jour, l’heure, puis l’activité. Gemini corrige seulement les accents et l’orthographe, sans changer tes mots."
-              : "Le micro n’est pas disponible ici : clique une case pour écrire. Gemini corrige seulement les accents et l’orthographe."}
+              ? "Dis le jour, l’heure, puis l’activité. « Tous les jeudis… » remplit jusqu’au 2 juillet. Gemini corrige seulement les accents."
+              : "Le micro n’est pas disponible ici : clique une case pour écrire."}
           </p>
         </div>
         {entendu && (
@@ -279,41 +312,49 @@ export default function EnseignantSemainePage() {
         )}
         {erreur && <p className="mt-2 text-sm text-[#b45309]">{erreur}</p>}
 
-        <div className="mt-6 overflow-x-auto">
-          <div className="grid min-w-[860px] grid-cols-5 gap-2">
-            {HORAIRE_JOURS.map((jour) => (
-              <div key={jour} className="rounded-xl border border-[#2d4a3e]/15 bg-[#fef9f3]/90 p-2">
-                <h2 className="mb-2 text-center font-display text-sm font-semibold text-[#2d4a3e]">
-                  {formatJourColonne(weekStart, jour)}
-                </h2>
-                <div className="space-y-2">
-                  {CRENEAUX_PAR_JOUR[jour].map((creneau) => {
-                    const value = data[jour][creneau] ?? "";
-                    return (
-                      <button
-                        key={creneau}
-                        type="button"
-                        onClick={() => openEdit(jour, creneau)}
-                        className="block w-full rounded-lg border border-[#2d4a3e]/15 bg-white px-2 py-2 text-left transition hover:border-[#4a7c5a]/50 hover:bg-[#a8d5ba]/15"
-                      >
-                        <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2d4a3e]/55">
-                          {CRENEAU_LABEL[creneau]}
-                        </span>
-                        <span
-                          className={`mt-0.5 block min-h-[1.25rem] whitespace-pre-wrap text-xs leading-snug ${
-                            value.trim() ? "text-[#2d4a3e]" : "text-[#2d4a3e]/40"
-                          }`}
-                        >
-                          {value.trim() || "Cliquer ou dicter…"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+        {vacances ? (
+          <div className="mt-6 flex min-h-[340px] items-center justify-center rounded-3xl border border-[#2d4a3e]/10 bg-[#fef9f3]/90 shadow">
+            <p className="font-display text-5xl tracking-[0.2em] text-[#4a7c5a] sm:text-7xl md:text-8xl">
+              VACANCES
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="mt-6 overflow-x-auto">
+            <div className="grid min-w-[860px] grid-cols-5 gap-2">
+              {HORAIRE_JOURS.map((jour) => (
+                <div key={jour} className="rounded-xl border border-[#2d4a3e]/15 bg-[#fef9f3]/90 p-2">
+                  <h2 className="mb-2 text-center font-display text-sm font-semibold text-[#2d4a3e]">
+                    {formatJourColonne(weekStart, jour)}
+                  </h2>
+                  <div className="space-y-2">
+                    {CRENEAUX_PAR_JOUR[jour].map((creneau) => {
+                      const value = data[jour][creneau] ?? "";
+                      return (
+                        <button
+                          key={creneau}
+                          type="button"
+                          onClick={() => openEdit(jour, creneau)}
+                          className="block w-full rounded-lg border border-[#2d4a3e]/15 bg-white px-2 py-2 text-left transition hover:border-[#4a7c5a]/50 hover:bg-[#a8d5ba]/15"
+                        >
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2d4a3e]/55">
+                            {CRENEAU_LABEL[creneau]}
+                          </span>
+                          <span
+                            className={`mt-0.5 block min-h-[1.25rem] whitespace-pre-wrap text-xs leading-snug ${
+                              value.trim() ? "text-[#2d4a3e]" : "text-[#2d4a3e]/40"
+                            }`}
+                          >
+                            {value.trim() || "Cliquer ou dicter…"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {editing && (

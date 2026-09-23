@@ -112,6 +112,8 @@ export type DicteeHoraire = {
   jour: HoraireJour;
   creneau: HoraireCreneau;
   texte: string;
+  /** « tous les jeudis… » → chaque semaine jusqu’au 2 juillet (sauf vacances). */
+  recurrent: boolean;
 };
 
 export function parseHoraireDictee(raw: string): {
@@ -119,18 +121,23 @@ export function parseHoraireDictee(raw: string): {
   erreurs: string[];
 } {
   const text = applyTimeTokens(normalizeDictee(raw));
-  const jours = [...text.matchAll(/\b(lundi|mardi|mercredi|jeudi|vendredi)\b/g)];
+  const jours = [...text.matchAll(/\b(lundis?|mardis?|mercredis?|jeudis?|vendredis?)\b/g)];
   const ok: DicteeHoraire[] = [];
   const erreurs: string[] = [];
 
   if (jours.length === 0) {
-    erreurs.push("Dis le jour, puis l’heure, puis l’activité. Ex. : « mardi 9h20 chrono ».");
+    erreurs.push(
+      "Dis le jour, puis l’heure, puis l’activité. Ex. : « mardi 9h20 chrono » ou « tous les jeudis 9h20 piscine »."
+    );
     return { ok, erreurs };
   }
 
   for (let i = 0; i < jours.length; i++) {
-    const jour = jours[i][1] as HoraireJour;
-    const start = (jours[i].index ?? 0) + jours[i][0].length;
+    const jour = jours[i][1].replace(/s$/, "") as HoraireJour;
+    const idx = jours[i].index ?? 0;
+    const before = text.slice(Math.max(0, idx - 20), idx);
+    const recurrent = /\b(tous les|toutes les|chaque)\s*$/.test(before);
+    const start = idx + jours[i][0].length;
     const end = i + 1 < jours.length ? (jours[i + 1].index ?? text.length) : text.length;
     const chunk = text.slice(start, end).trim();
     const timeMatch = chunk.match(/\b(08:30|09:20|10:40|11:30|13:40|14:30)\b/);
@@ -150,7 +157,7 @@ export function parseHoraireDictee(raw: string): {
       );
       continue;
     }
-    ok.push({ jour, creneau, texte });
+    ok.push({ jour, creneau, texte, recurrent });
   }
   return { ok, erreurs };
 }
