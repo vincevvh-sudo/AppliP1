@@ -1,8 +1,8 @@
 /**
  * Synthèse des points d'évaluations pour le bulletin.
- * Pour l’instant : uniquement les grilles Savoir-parler encodées par l’enseignant
- * (poésie et présentation). Pas de phono, pas de tests papier, pas de dictées,
- * pas d’exercices faits à la maison.
+ * Uniquement les notes encodées par l’enseignant (grilles Savoir-parler,
+ * tests papier, futures évaluations). Pas d’exercices faits à la maison,
+ * pas de calligraphie.
  * P1 = août, sept, oct — P2 = nov, déc, jan, fév — P3 = mars, avr, mai, juin.
  */
 
@@ -14,12 +14,7 @@ const PARLER_IDS = new Set([
   "savoir-parler-doudou",
 ]);
 
-/** Uniquement poésie et présentation Savoir-parler. Jamais la phono ni les tests papier. */
-export function isTeacherEncodedResultat(r: ResultatRow): boolean {
-  const sonId = (r.son_id ?? "").toLowerCase();
-  const niveauId = (r.niveau_id ?? "").toLowerCase();
-  return PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId);
-}
+const HORS_BULLETIN = new Set(["eval-calligraphie"]);
 
 export type BulletinCategorieId =
   | "francais-lire"
@@ -50,6 +45,44 @@ export const BULLETIN_SYNTHESE_CATEGORIES: {
   { id: "eveil", label: "Éveil", maxPoints: 20 },
 ];
 
+const CATEGORIE_IDS = new Set<string>(BULLETIN_SYNTHESE_CATEGORIES.map((c) => c.id));
+
+/** Notes saisies par l’enseignant — jamais les exercices faits à la maison. */
+export function isTeacherEncodedResultat(r: ResultatRow): boolean {
+  const sonId = (r.son_id ?? "").toLowerCase();
+  const niveauId = (r.niveau_id ?? "").toLowerCase();
+  if (HORS_BULLETIN.has(sonId) || HORS_BULLETIN.has(niveauId)) return false;
+  if (sonId === "manuel" || niveauId.startsWith("manuel-")) return true;
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "manuel-note")) return true;
+  if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return true;
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "critere-parler")) return true;
+  if (sonId.startsWith("eval-") || niveauId.startsWith("eval-")) return true;
+  return false;
+}
+
+export function getResultatSourceLabel(r: ResultatRow): string {
+  const sonId = (r.son_id ?? "").toLowerCase();
+  const niveauId = (r.niveau_id ?? "").toLowerCase();
+  if (sonId === "manuel" || niveauId.startsWith("manuel-")) return "Test encodé";
+  if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return "Savoir-parler";
+  return "Encodé";
+}
+
+function categoriePourResultat(r: ResultatRow): BulletinCategorieId | null {
+  const sonId = (r.son_id ?? "").toLowerCase();
+  const niveauId = (r.niveau_id ?? "").toLowerCase();
+  if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return "francais-parler";
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "critere-parler")) return "francais-parler";
+  if (sonId === "manuel" || niveauId.startsWith("manuel-")) {
+    const cat = niveauId.replace(/^manuel-/, "");
+    if (CATEGORIE_IDS.has(cat)) return cat as BulletinCategorieId;
+  }
+  for (const id of CATEGORIE_IDS) {
+    if (niveauId === id || niveauId.endsWith(`-${id}`)) return id as BulletinCategorieId;
+  }
+  return null;
+}
+
 /** Mois (1–12) -> P1, P2 ou P3. Année scolaire : P1 = 8,9,10 ; P2 = 11,12,1,2 ; P3 = 3,4,5,6 */
 export function getPeriodFromDate(createdAt: string | undefined): PeriodId {
   if (!createdAt) return "P1";
@@ -73,17 +106,17 @@ function emptySynthese(): SyntheseBulletin {
   return out;
 }
 
-/** Construit la synthèse bulletin pour un élève.
- * Pour l’instant : seulement Savoir-parler (poésie / présentation),
- * toujours en Français parler — jamais en lecture / phono / autre matière. */
+/** Construit la synthèse bulletin : seulement tes notes encodées, dans la bonne matière. */
 export function computeSyntheseBulletin(resultats: ResultatRow[]): SyntheseBulletin {
   const synthese = emptySynthese();
   for (const r of resultats.filter(isTeacherEncodedResultat)) {
+    const cat = categoriePourResultat(r);
+    if (!cat) continue;
     const period = getPeriodFromDate(r.created_at);
     const points = r.points ?? 0;
     const pointsMax = Math.max(1, r.points_max ?? 10);
-    synthese["francais-parler"][period].points += points;
-    synthese["francais-parler"][period].pointsMax += pointsMax;
+    synthese[cat][period].points += points;
+    synthese[cat][period].pointsMax += pointsMax;
   }
   return synthese;
 }

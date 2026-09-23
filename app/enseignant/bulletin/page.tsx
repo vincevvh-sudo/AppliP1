@@ -36,7 +36,6 @@ import {
 } from "../../data/programmation-par-mois";
 import {
   saveBulletinEnvoye,
-  nettoyerSynthesesBulletinsEnvoyes,
   type BulletinEnvoyeData,
   type BulletinEnvoyeLigne,
 } from "../../data/bulletin-envoye-storage";
@@ -51,6 +50,7 @@ import {
 import {
   computeSyntheseBulletin,
   isTeacherEncodedResultat,
+  getResultatSourceLabel,
   BULLETIN_SYNTHESE_CATEGORIES,
   formatNoteSurBarème,
   type SyntheseBulletin,
@@ -256,35 +256,6 @@ export default function BulletinPage() {
   const [syntheseEval, setSyntheseEval] = useState<SyntheseBulletin | null>(null);
   const [loadingSynthese, setLoadingSynthese] = useState(false);
   const [resultatsEleve, setResultatsEleve] = useState<ResultatRow[]>([]);
-  const [nettoyageMsg, setNettoyageMsg] = useState<string | null>(null);
-  const [nettoyageEnCours, setNettoyageEnCours] = useState(false);
-
-  const nettoyerSyntheses = useCallback(async () => {
-    setNettoyageEnCours(true);
-    setNettoyageMsg(null);
-    try {
-      const { ok, fail } = await nettoyerSynthesesBulletinsEnvoyes();
-      if (ok > 0 && fail === 0) {
-        setNettoyageMsg(
-          "Les synthèses ne gardent plus que Savoir-parler (poésie et présentation). Les smileys et commentaires n’ont pas bougé."
-        );
-      } else if (ok > 0) {
-        setNettoyageMsg(
-          `Synthèses nettoyées pour ${ok} bulletin(s). ${fail} n’ont pas pu être mis à jour (exécute supabase-bulletins-envoyes-allow-update.sql dans Supabase).`
-        );
-      } else if (fail > 0) {
-        setNettoyageMsg(
-          "Les bulletins ouverts ici n’affichent déjà que tes notes encodées. Pour corriger aussi les bulletins déjà envoyés aux enfants, exécute supabase-bulletins-envoyes-allow-update.sql dans Supabase, puis reclique."
-        );
-      } else {
-        setNettoyageMsg("Aucun bulletin envoyé à nettoyer. La synthèse n’affiche déjà que tes notes encodées.");
-      }
-    } catch {
-      setNettoyageMsg("Impossible de nettoyer les bulletins envoyés pour le moment.");
-    } finally {
-      setNettoyageEnCours(false);
-    }
-  }, []);
 
   const load = useCallback(async () => {
     setEleves(getElevesBulletin());
@@ -295,14 +266,6 @@ export default function BulletinPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("bulletin-synthese-parler-only-v2") === "1") return;
-    void nettoyerSyntheses().then(() => {
-      sessionStorage.setItem("bulletin-synthese-parler-only-v2", "1");
-    });
-  }, [nettoyerSyntheses]);
 
   // Réinitialiser le filtre d'impression après la fin de l'impression
   useEffect(() => {
@@ -633,14 +596,6 @@ export default function BulletinPage() {
             )}
             <button
               type="button"
-              onClick={() => void nettoyerSyntheses()}
-              disabled={nettoyageEnCours}
-              className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20 disabled:opacity-50"
-            >
-              {nettoyageEnCours ? "Nettoyage…" : "Garder seulement Savoir-parler"}
-            </button>
-            <button
-              type="button"
               onClick={() => setEditAttendus(!editAttendus)}
               className="rounded-full bg-[#2d4a3e]/10 px-4 py-2 text-sm font-medium text-[#2d4a3e] transition hover:bg-[#2d4a3e]/20"
             >
@@ -654,9 +609,6 @@ export default function BulletinPage() {
             </Link>
           </div>
         </div>
-        {nettoyageMsg && (
-          <p className="mx-auto max-w-6xl px-5 pb-3 text-sm text-[#2d4a3e]/80">{nettoyageMsg}</p>
-        )}
       </header>
 
       <div className="bulletin-layout relative z-10 mx-auto flex max-w-6xl flex-col gap-6 p-5 lg:flex-row lg:gap-8">
@@ -865,8 +817,8 @@ export default function BulletinPage() {
                       Synthèse des évaluations
                     </h2>
                     <p className="no-print px-4 pt-2 text-xs text-[#2d4a3e]/70">
-                      Seulement la poésie et la présentation (Savoir-parler). Aucun point
-                      de lecture, de phono ou d&apos;exercice à la maison.
+                      Uniquement les points que tu encodes. Les exercices faits à la maison
+                      n&apos;apparaissent pas.
                     </p>
                     {loadingSynthese ? (
                       <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
@@ -1357,8 +1309,8 @@ export default function BulletinPage() {
                       Tests encodés — {selectedEleve.prenom}
                     </h2>
                     <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                      Uniquement les grilles Savoir-parler (poésie et présentation). La phono et
-                      les exercices faits à l&apos;ordinateur n&apos;apparaissent pas.
+                      Uniquement les points que tu encodes. Les exercices faits à la maison
+                      n&apos;apparaissent pas.
                     </p>
                   </div>
 
@@ -1370,7 +1322,7 @@ export default function BulletinPage() {
                     <p className="text-sm text-[#2d4a3e]/60">Chargement des contrôles…</p>
                   ) : resultatsEleve.length === 0 ? (
                     <p className="rounded-xl bg-white/80 px-4 py-6 text-sm text-[#2d4a3e]/70">
-                      Aucune grille Savoir-parler encodée pour le moment.
+                      Aucun contrôle encodé pour le moment.
                     </p>
                   ) : (
                     <div className="overflow-x-auto rounded-2xl border border-[#2d4a3e]/10 bg-white/95 shadow">
@@ -1391,7 +1343,7 @@ export default function BulletinPage() {
                               r.points_max != null && r.points_max > 0
                                 ? `${r.points} / ${r.points_max}`
                                 : String(r.points ?? "—");
-                            const source = "Savoir-parler";
+                            const source = getResultatSourceLabel(r);
                             return (
                               <tr
                                 key={key}
