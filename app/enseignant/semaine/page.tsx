@@ -15,7 +15,9 @@ import {
   type HoraireSemaineData,
 } from "../../data/horaire-semaine";
 import {
+  getHoraireSemaine,
   loadHoraireSemaine,
+  pushLocalHoraireToCloud,
   setHoraireCase,
   setHoraireCaseSurSemaines,
 } from "../../data/horaire-semaine-storage";
@@ -91,8 +93,18 @@ export default function EnseignantSemainePage() {
   weekStartRef.current = weekStart;
 
   useEffect(() => {
-    setData(loadHoraireSemaine(weekStart));
-    setEditing(null);
+    let cancelled = false;
+    (async () => {
+      await pushLocalHoraireToCloud();
+      const next = await getHoraireSemaine(weekStart);
+      if (!cancelled) {
+        setData(next);
+        setEditing(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [weekStart]);
 
   const applyDictee = useCallback(async (transcript: string) => {
@@ -121,7 +133,7 @@ export default function EnseignantSemainePage() {
       const texte = await corrigerTexteHoraire(item.texte);
       if (item.recurrent) {
         const weeks = semainesScolairesJusquaFinAnnee(week, item.jour);
-        setHoraireCaseSurSemaines(weeks, item.jour, item.creneau, texte);
+        await setHoraireCaseSurSemaines(weeks, item.jour, item.creneau, texte);
         if (weeks.length === 0) {
           recap.push(
             `${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} : aucun jour de cours jusqu’au ${finLabel}.`
@@ -132,11 +144,11 @@ export default function EnseignantSemainePage() {
           );
         }
       } else {
-        setHoraireCase(week, item.jour, item.creneau, texte);
+        await setHoraireCase(week, item.jour, item.creneau, texte);
         recap.push(`${JOUR_LABELS[item.jour]} ${CRENEAU_LABEL[item.creneau]} → ${texte}`);
       }
     }
-    setData(loadHoraireSemaine(week));
+    setData(await getHoraireSemaine(week));
     setMessage(recap.join(" · "));
     setCorrigeant(false);
   }, []);
@@ -208,7 +220,7 @@ export default function EnseignantSemainePage() {
     setSavingEdit(true);
     try {
       const texte = await corrigerTexteHoraire(draft);
-      const next = setHoraireCase(weekStart, editing.jour, editing.creneau, texte);
+      const next = await setHoraireCase(weekStart, editing.jour, editing.creneau, texte);
       setData(next);
       setEditing(null);
       setDraft("");
@@ -249,6 +261,7 @@ export default function EnseignantSemainePage() {
             <p className="mt-1 text-sm text-[#2d4a3e]/80">
               Clique une case pour écrire, ou appuie sur le micro : « mardi 9h20 chrono »,
               « tous les jeudis 9h20 piscine » (jusqu’au 2 juillet, sauf vacances).
+              L’horaire est partagé : ordinateur et téléphone voient la même chose.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

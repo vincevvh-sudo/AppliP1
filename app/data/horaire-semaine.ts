@@ -36,6 +36,13 @@ export const CRENEAU_LABEL: Record<HoraireCreneau, string> = {
 
 export type HoraireSemaineData = Record<HoraireJour, Partial<Record<HoraireCreneau, string>>>;
 
+export function horaireHasContent(data: HoraireSemaineData | undefined): boolean {
+  if (!data) return false;
+  return HORAIRE_JOURS.some((jour) =>
+    Object.values(data[jour] ?? {}).some((v) => (v ?? "").trim().length > 0)
+  );
+}
+
 export function emptyHoraireSemaine(): HoraireSemaineData {
   return {
     lundi: {},
