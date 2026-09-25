@@ -17,6 +17,7 @@ import {
   removeAttendu,
   moveAttendu,
   getBulletinEleve,
+  fillEnseignantAcquisSiVide,
   setEvaluation,
   setCommentaire,
   getSectionComment,
@@ -152,7 +153,7 @@ function SectionTable({
               {section.attendus.map((attendu) => {
                 const evalLine = bulletin?.sections[section.id]?.[attendu.id];
                 const enfant = evalLine?.enfant ?? null;
-                const enseignant = evalLine?.enseignant ?? null;
+                const enseignant = evalLine?.enseignant ?? "acquis";
                 const commentaire = evalLine?.commentaire ?? "";
                 return (
                   <tr
@@ -267,6 +268,13 @@ export default function BulletinPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    if (fillEnseignantAcquisSiVide(selectedId)) {
+      setRefresh((r) => r + 1);
+    }
+  }, [selectedId, sections]);
 
   // Réinitialiser le filtre d'impression après la fin de l'impression
   useEffect(() => {
@@ -475,7 +483,7 @@ export default function BulletinPage() {
             return {
               libelle: a.libelle,
               enfant: line?.enfant ?? null,
-              enseignant: line?.enseignant ?? null,
+              enseignant: line?.enseignant ?? "acquis",
               commentaire: line?.commentaire ?? "",
             };
           })
@@ -486,7 +494,7 @@ export default function BulletinPage() {
           const line = bulletin?.sections[section.id]?.[a.id];
           attendus.push({
             libelle: `${section.titre} — ${a.libelle}`,
-            enseignant: line?.enseignant ?? null,
+            enseignant: line?.enseignant ?? "acquis",
             commentaire: line?.commentaire ?? "",
           });
         }

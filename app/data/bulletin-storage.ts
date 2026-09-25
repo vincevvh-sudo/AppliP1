@@ -272,6 +272,33 @@ export function getBulletinEleve(eleveId: string): BulletinEleve {
   return all[eleveId];
 }
 
+/** Tous les smileys enseignant vides deviennent un sourire (acquis). Les visages déjà choisis restent. */
+export function fillEnseignantAcquisSiVide(eleveId: string): boolean {
+  const bulletins = getBulletins();
+  let b = bulletins[eleveId];
+  if (!b) {
+    b = { eleveId, sections: {} };
+    bulletins[eleveId] = b;
+  }
+  let changed = false;
+  for (const section of getSections()) {
+    if (!b.sections[section.id]) b.sections[section.id] = {};
+    for (const attendu of section.attendus) {
+      let line = b.sections[section.id][attendu.id];
+      if (!line) {
+        line = { attenduId: attendu.id, enfant: null, enseignant: "acquis", commentaire: "" };
+        b.sections[section.id][attendu.id] = line;
+        changed = true;
+      } else if (line.enseignant == null) {
+        line.enseignant = "acquis";
+        changed = true;
+      }
+    }
+  }
+  if (changed) saveJson(STORAGE_KEYS.BULLETINS, bulletins);
+  return changed;
+}
+
 export function setEvaluation(
   eleveId: string,
   sectionId: string,
@@ -288,7 +315,7 @@ export function setEvaluation(
   if (!b.sections[sectionId]) b.sections[sectionId] = {};
   let line = b.sections[sectionId][attenduId];
   if (!line) {
-    line = { attenduId, enfant: null, enseignant: null, commentaire: "" };
+    line = { attenduId, enfant: null, enseignant: "acquis", commentaire: "" };
     b.sections[sectionId][attenduId] = line;
   }
   line[role] = niveau;
@@ -310,7 +337,7 @@ export function setCommentaire(
   if (!b.sections[sectionId]) b.sections[sectionId] = {};
   let line = b.sections[sectionId][attenduId];
   if (!line) {
-    line = { attenduId, enfant: null, enseignant: null, commentaire: "" };
+    line = { attenduId, enfant: null, enseignant: "acquis", commentaire: "" };
     b.sections[sectionId][attenduId] = line;
   }
   line.commentaire = commentaire;
