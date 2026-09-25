@@ -46,6 +46,7 @@ import {
   formatResultatDate,
   getResultatMatiere,
   getResultatTitre,
+  isAbsenceResultat,
 } from "../../data/resultats-labels";
 import {
   computeSyntheseBulletin,
@@ -1339,8 +1340,9 @@ export default function BulletinPage() {
                         <tbody>
                           {resultatsEleve.map((r, idx) => {
                             const key = r.id ?? `${r.son_id}-${r.niveau_id}-${r.created_at}-${idx}`;
-                            const note =
-                              r.points_max != null && r.points_max > 0
+                            const note = isAbsenceResultat(r)
+                              ? "Absent"
+                              : r.points_max != null && r.points_max > 0
                                 ? `${r.points} / ${r.points_max}`
                                 : String(r.points ?? "—");
                             const source = getResultatSourceLabel(r);

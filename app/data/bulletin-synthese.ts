@@ -7,6 +7,7 @@
  */
 
 import type { ResultatRow } from "./resultats-storage";
+import { isAbsenceResultat } from "./resultats-labels";
 
 const PARLER_IDS = new Set([
   "savoir-parler-poesie",
@@ -53,7 +54,7 @@ export function isTeacherEncodedResultat(r: ResultatRow): boolean {
   const niveauId = (r.niveau_id ?? "").toLowerCase();
   if (HORS_BULLETIN.has(sonId) || HORS_BULLETIN.has(niveauId)) return false;
   if (sonId === "manuel" || niveauId.startsWith("manuel-")) return true;
-  if ((r.detail_exercices ?? []).some((ex) => ex.type === "manuel-note")) return true;
+  if ((r.detail_exercices ?? []).some((ex) => ex.type === "manuel-note" || ex.type === "manuel-absent")) return true;
   if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return true;
   if ((r.detail_exercices ?? []).some((ex) => ex.type === "critere-parler")) return true;
   if (sonId.startsWith("eval-") || niveauId.startsWith("eval-")) return true;
@@ -63,6 +64,7 @@ export function isTeacherEncodedResultat(r: ResultatRow): boolean {
 export function getResultatSourceLabel(r: ResultatRow): string {
   const sonId = (r.son_id ?? "").toLowerCase();
   const niveauId = (r.niveau_id ?? "").toLowerCase();
+  if (isAbsenceResultat(r)) return "Absent";
   if (sonId === "manuel" || niveauId.startsWith("manuel-")) return "Test encodé";
   if (PARLER_IDS.has(sonId) || PARLER_IDS.has(niveauId)) return "Savoir-parler";
   return "Encodé";
@@ -110,6 +112,7 @@ function emptySynthese(): SyntheseBulletin {
 export function computeSyntheseBulletin(resultats: ResultatRow[]): SyntheseBulletin {
   const synthese = emptySynthese();
   for (const r of resultats.filter(isTeacherEncodedResultat)) {
+    if (isAbsenceResultat(r)) continue;
     const cat = categoriePourResultat(r);
     if (!cat) continue;
     const period = getPeriodFromDate(r.created_at);

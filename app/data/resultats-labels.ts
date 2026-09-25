@@ -20,6 +20,13 @@ const MATHS_RESULT_LABELS: Record<string, string> = {
   "maths-quadrilateres": "Maths — Quadrilatères",
 };
 
+/** Test encodé où l’enfant était absent / n’a pas passé l’épreuve. Hors moyenne. */
+export function isAbsenceResultat(r: ResultatRow): boolean {
+  return (r.detail_exercices ?? []).some(
+    (ex) => ex.type === "manuel-absent" || ex.type === "absent"
+  );
+}
+
 export function isFluenceResultat(r: ResultatRow): boolean {
   if (isFluenceNiveauId(r.niveau_id ?? "")) return true;
   return (r.detail_exercices ?? []).some(

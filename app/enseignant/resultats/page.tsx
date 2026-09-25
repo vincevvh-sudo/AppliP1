@@ -15,7 +15,7 @@ import {
   isFluenceNiveauId,
   sonIdFromFluenceNiveauId,
 } from "../../data/fluence-partage";
-import { formatPointsResultat, getResultatLabelComplet } from "../../data/resultats-labels";
+import { formatPointsResultat, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -253,7 +253,9 @@ function ResultatSingleCard({
       ex.type !== "titre-poesie" &&
       ex.type !== "titre-presentation" &&
       ex.type !== "titre-doudou" &&
-      ex.type !== "titre-calligraphie"
+      ex.type !== "titre-calligraphie" &&
+      ex.type !== "manuel-absent" &&
+      ex.type !== "absent"
   );
   const hasDetail = details.length > 0;
   return (
@@ -268,9 +270,15 @@ function ResultatSingleCard({
           </span>
         ) : null}
         <span className="text-[#2d4a3e]/80">{getResultLabel(r)}</span>
-        <span className={`font-semibold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-          {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
-        </span>
+        {isAbsenceResultat(r) ? (
+          <span className="rounded-full bg-[#e8d4a8]/80 px-2.5 py-0.5 text-sm font-semibold text-[#2d4a3e]">
+            Absent
+          </span>
+        ) : (
+          <span className={`font-semibold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
+            {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
+          </span>
+        )}
         <span className="text-xs text-[#2d4a3e]/60">{formatDate(r.created_at)}</span>
       </div>
       {hasDetail ? (
@@ -321,6 +329,7 @@ function EnseignantResultatsContent() {
   const [manualTitle, setManualTitle] = useState("");
   const [manualCategory, setManualCategory] = useState<ManualEvalCategoryId>("francais-lire");
   const [manualScores, setManualScores] = useState<Record<string, string>>({});
+  const [manualAbsents, setManualAbsents] = useState<Record<string, boolean>>({});
   const [savingManual, setSavingManual] = useState(false);
   const [manualMessage, setManualMessage] = useState<string | null>(null);
 
@@ -415,35 +424,35 @@ function EnseignantResultatsContent() {
       setManualMessage("Indique le titre du test.");
       return;
     }
-    const entries = Object.entries(manualScores)
+    const absents = Object.entries(manualAbsents)
+      .filter(([, absent]) => absent)
+      .map(([eleveId]) => eleveId);
+    const parsed = Object.entries(manualScores)
       .map(([eleveId, raw]) => ({ eleveId, value: raw.trim() }))
-      .filter((x) => x.value !== "");
-    if (entries.length === 0) {
-      setManualMessage("Ajoute au moins une note.");
-      return;
-    }
-    const parsed = entries
+      .filter((x) => x.value !== "" && !manualAbsents[x.eleveId])
       .map(({ eleveId, value }) => ({ eleveId, score: Number(value.replace(",", ".")) }))
       .filter((x) => Number.isFinite(x.score) && x.score >= 0 && x.score <= 10);
-    if (parsed.length === 0) {
-      setManualMessage("Aucune note valide. Utilise des notes entre 0 et 10.");
+    if (parsed.length === 0 && absents.length === 0) {
+      setManualMessage("Ajoute au moins une note, ou marque un enfant absent.");
       return;
     }
+
+    const findExisting = (eleveId: string) =>
+      resultats.find(
+        (r) =>
+          r.son_id === "manuel" &&
+          r.niveau_id === `manuel-${manualCategory}` &&
+          String(r.eleve_id) === String(eleveId) &&
+          r.detail_exercices &&
+          r.detail_exercices[0]?.titre === title
+      );
 
     setSavingManual(true);
     setManualMessage(null);
     try {
       for (const row of parsed) {
         const normalized = Math.round(row.score * 10) / 10;
-        // Supprimer une éventuelle note manuelle existante pour ce même test / élève / matière
-        const existing = resultats.find(
-          (r) =>
-            r.son_id === "manuel" &&
-            r.niveau_id === `manuel-${manualCategory}` &&
-            String(r.eleve_id) === String(row.eleveId) &&
-            r.detail_exercices &&
-            r.detail_exercices[0]?.titre === title
-        );
+        const existing = findExisting(row.eleveId);
         if (existing?.id) {
           await deleteResultat(existing.id);
         }
@@ -465,8 +474,34 @@ function EnseignantResultatsContent() {
           ],
         });
       }
-      setManualMessage(`Résultats enregistrés pour ${parsed.length} élève(s).`);
+      for (const eleveId of absents) {
+        const existing = findExisting(eleveId);
+        if (existing?.id) {
+          await deleteResultat(existing.id);
+        }
+        await saveResultat({
+          eleve_id: eleveId,
+          son_id: "manuel",
+          niveau_id: `manuel-${manualCategory}`,
+          points: 0,
+          points_max: 0,
+          reussi: false,
+          detail_exercices: [
+            {
+              type: "manuel-absent",
+              titre: title,
+              points: 0,
+              pointsMax: 0,
+            },
+          ],
+        });
+      }
+      const bits: string[] = [];
+      if (parsed.length > 0) bits.push(`${parsed.length} note(s)`);
+      if (absents.length > 0) bits.push(`${absents.length} absence(s)`);
+      setManualMessage(`Enregistré : ${bits.join(", ")}. Les absences n’entrent pas dans la moyenne.`);
       setManualScores({});
+      setManualAbsents({});
       await fetchData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur d'enregistrement.";
@@ -505,7 +540,9 @@ function EnseignantResultatsContent() {
         <section className="mt-6 rounded-2xl bg-white/95 p-5 shadow-lg">
           <h2 className="font-display text-xl text-[#2d4a3e]">Encoder un test papier (sur 10)</h2>
           <p className="mt-1 text-sm text-[#2d4a3e]/75">
-            Saisis le titre du test, choisis la matière, puis encode les notes. Ces résultats apparaîtront chez l&apos;enfant et dans la synthèse du bulletin.
+            Saisis le titre du test, choisis la matière, puis encode les notes. Un enfant
+            absent : clique <span className="font-semibold">Absent</span> — pas de points,
+            pas dans sa moyenne.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <input
@@ -533,6 +570,7 @@ function EnseignantResultatsContent() {
                 <tr className="border-b border-[#2d4a3e]/10 bg-[#fef9f3]/80">
                   <th className="px-3 py-2 text-left font-medium text-[#2d4a3e]">Élève</th>
                   <th className="px-3 py-2 text-right font-medium text-[#2d4a3e]">Note /10</th>
+                  <th className="px-3 py-2 text-center font-medium text-[#2d4a3e]">Absence</th>
                 </tr>
               </thead>
               <tbody>
@@ -544,10 +582,31 @@ function EnseignantResultatsContent() {
                         type="text"
                         inputMode="decimal"
                         placeholder="/10"
-                        value={manualScores[e.id] ?? ""}
-                        onChange={(ev) => setManualScores((prev) => ({ ...prev, [e.id]: ev.target.value }))}
-                        className="w-24 rounded-md border border-[#2d4a3e]/20 px-2 py-1 text-right text-[#2d4a3e]"
+                        disabled={!!manualAbsents[e.id]}
+                        value={manualAbsents[e.id] ? "" : (manualScores[e.id] ?? "")}
+                        onChange={(ev) => {
+                          const value = ev.target.value;
+                          setManualAbsents((prev) => ({ ...prev, [e.id]: false }));
+                          setManualScores((prev) => ({ ...prev, [e.id]: value }));
+                        }}
+                        className="w-24 rounded-md border border-[#2d4a3e]/20 px-2 py-1 text-right text-[#2d4a3e] disabled:bg-[#f0ebe3] disabled:text-[#2d4a3e]/40"
                       />
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualAbsents((prev) => ({ ...prev, [e.id]: !prev[e.id] }));
+                          setManualScores((prev) => ({ ...prev, [e.id]: "" }));
+                        }}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                          manualAbsents[e.id]
+                            ? "bg-[#c45c4a] text-white"
+                            : "border border-[#2d4a3e]/20 bg-white text-[#2d4a3e] hover:bg-[#2d4a3e]/5"
+                        }`}
+                      >
+                        Absent
+                      </button>
                     </td>
                   </tr>
                 ))}

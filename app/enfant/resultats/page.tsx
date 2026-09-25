@@ -9,7 +9,7 @@ import { getBulletinsByEleve } from "../../data/bulletin-envoye-storage";
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { ResultatRow } from "../../data/resultats-storage";
 import type { BulletinEnvoyeRow } from "../../data/bulletin-envoye-storage";
-import { formatPointsResultat, getResultatLabelComplet } from "../../data/resultats-labels";
+import { formatPointsResultat, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
 import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
@@ -34,7 +34,9 @@ function detailLignesVisibles(r: ResultatRow) {
       ex.type !== "titre-poesie" &&
       ex.type !== "titre-presentation" &&
       ex.type !== "titre-doudou" &&
-      ex.type !== "titre-calligraphie"
+      ex.type !== "titre-calligraphie" &&
+      ex.type !== "manuel-absent" &&
+      ex.type !== "absent"
   );
 }
 
@@ -164,9 +166,15 @@ export default function EnfantResultatsPage() {
                         {formatDate(r.created_at)}
                       </span>
                     </div>
-                    <span className={`text-xl font-bold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-                      {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
-                    </span>
+                    {isAbsenceResultat(r) ? (
+                      <span className="rounded-full bg-[#e8d4a8]/80 px-3 py-1 text-base font-semibold text-[#2d4a3e]">
+                        Absent
+                      </span>
+                    ) : (
+                      <span className={`text-xl font-bold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
+                        {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
+                      </span>
+                    )}
                   </div>
                   {hasDetail ? (
                     <ul className="mt-3 space-y-1 border-l-2 border-[#2d4a3e]/25 pl-3 text-sm text-[#2d4a3e]/90">
