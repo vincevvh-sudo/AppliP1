@@ -175,6 +175,7 @@ export default function RendezVousPage() {
   const planningParJour = useMemo(() => {
     const byJour = new Map<string, Creneau[]>();
     for (const c of planning) {
+      if (c.eleves.length === 0) continue;
       const list = byJour.get(c.jour) ?? [];
       list.push(c);
       byJour.set(c.jour, list);
@@ -189,7 +190,7 @@ export default function RendezVousPage() {
 
   const handlePrintPlanning = () => {
     if (planningParJour.length === 0) {
-      alert("Aucun créneau ouvert pour les prochains jours.");
+      alert("Aucun rendez-vous choisi pour les prochains jours.");
       return;
     }
     const prevTitle = document.title;
@@ -415,7 +416,7 @@ export default function RendezVousPage() {
                 Planning des rendez-vous
               </h2>
               <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                Tous les jours à venir, avec les heures ouvertes et les enfants déjà inscrits.
+                Seulement les rendez-vous déjà choisis, classés par jour.
               </p>
             </div>
             <button
@@ -432,7 +433,7 @@ export default function RendezVousPage() {
             <p className="mt-4 text-sm text-[#2d4a3e]/70">Chargement…</p>
           ) : planningParJour.length === 0 ? (
             <p className="mt-4 text-sm text-[#2d4a3e]/70">
-              Aucun créneau ouvert pour les prochains jours.
+              Aucun rendez-vous choisi pour les prochains jours.
             </p>
           ) : (
             <div className="mt-4 space-y-5">
@@ -451,9 +452,7 @@ export default function RendezVousPage() {
                           {formatHeure(c.start_time)} – {formatHeure(c.end_time)}
                         </span>
                         <span className="text-[#2d4a3e]/90">
-                          {c.eleves.length > 0
-                            ? c.eleves.map((e) => e.prenom).join(", ")
-                            : "Pas encore choisi"}
+                          {c.eleves.map((e) => e.prenom).join(", ")}
                         </span>
                       </li>
                     ))}
@@ -489,9 +488,7 @@ export default function RendezVousPage() {
                         {formatHeure(c.start_time)} – {formatHeure(c.end_time)}
                       </td>
                       <td className="border-b border-gray-300 py-2 align-top">
-                        {c.eleves.length > 0
-                          ? c.eleves.map((e) => e.prenom).join(", ")
-                          : "Pas encore choisi"}
+                        {c.eleves.map((e) => e.prenom).join(", ")}
                       </td>
                     </tr>
                   ))}
