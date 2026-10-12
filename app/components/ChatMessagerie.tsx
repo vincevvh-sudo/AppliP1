@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import type { Message, PollWithDetails } from "../data/messagerie-storage";
 
 const EMOJIS = ["😊", "😂", "🎉", "👍", "❤️", "🌟", "⭐", "😀", "🎈", "📚", "✏️", "🏠", "🌈", "☀️", "🐱", "🐶", "🌸", "🎵", "🤔", "👋"];
@@ -86,6 +86,124 @@ function messagePreview(
   if (m.attachment_type?.startsWith("image/")) return "📷 Photo";
   if (m.attachment_url) return `📎 ${m.attachment_name || "Fichier"}`;
   return "Message";
+}
+
+const INVISIBLE_URL_CHARS = /[\u200B-\u200D\uFEFF\u2060\u00AD]/g;
+const URL_IN_TEXT =
+  /((?:https?:\/\/|www\.)[^\s<>"']+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\/[^\s<>"']+)/gi;
+
+function eventTargetIsLink(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("a") != null;
+}
+
+
+/**
+ * Quand on copie un lien sur une page (pas seulement la barre d’adresse),
+ * le texte brut est parfois le titre. On récupère alors l’adresse réelle.
+ */
+function readPastedMessage(data: DataTransfer): string {
+  const plain = data.getData("text/plain") || data.getData("text") || "";
+  const urls: string[] = [];
+  const uriList = data.getData("text/uri-list");
+  if (uriList) {
+    for (const line of uriList.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#") && /^https?:\/\//i.test(trimmed)) urls.push(trimmed);
+    }
+  }
+  let anchorLabel = "";
+  const html = data.getData("text/html");
+  if (html && typeof DOMParser !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const anchors = [...doc.querySelectorAll("a[href]")];
+    for (const anchor of anchors) {
+      const href = anchor.getAttribute("href")?.trim() ?? "";
+      if (/^https?:\/\//i.test(href)) urls.push(href);
+    }
+    if (anchors.length === 1) anchorLabel = anchors[0].textContent?.trim() ?? "";
+  }
+  const missing = [...new Set(urls)].filter((url) => !plain.includes(url));
+  if (missing.length === 0) return plain;
+  const label = plain.trim();
+  if (!label || (missing.length === 1 && label === anchorLabel)) return missing.join("\n");
+  return `${plain}${plain.endsWith("\n") ? "" : "\n"}${missing.join("\n")}`;
+}
+
+function stripTrailingPunctuation(raw: string): { url: string; trailing: string } {
+  let url = raw;
+  let trailing = "";
+  while (url.length > 0 && /[.,;:!?…»›”’"'\]\u00BB]$/.test(url)) {
+    if (url.endsWith(")") && (url.match(/\(/g) ?? []).length >= (url.match(/\)/g) ?? []).length) break;
+    if (url.endsWith("]") && (url.match(/\[/g) ?? []).length >= (url.match(/\]/g) ?? []).length) break;
+    trailing = url.slice(-1) + trailing;
+    url = url.slice(0, -1);
+  }
+  return { url, trailing };
+}
+
+/** N’accepte que http(s), pour ne pas ouvrir une adresse dangereuse. */
+function toSafeHttpUrl(raw: string): string | null {
+  const cleaned = raw.replace(INVISIBLE_URL_CHARS, "");
+  if (!cleaned) return null;
+  const withProtocol = /^www\./i.test(cleaned)
+    ? `https://${cleaned}`
+    : /^(?:https?:\/\/)/i.test(cleaned)
+      ? cleaned
+      : `https://${cleaned}`;
+  try {
+    const url = new URL(withProtocol);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname.includes(".")) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Découpe un message pour rendre les adresses web cliquables. */
+function linkifyMessage(text: string, linkClassName: string) {
+  const re = new RegExp(URL_IN_TEXT.source, "gi");
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = re.exec(text)) !== null) {
+    const isExplicit = /^(?:https?:\/\/|www\.)/i.test(match[1]);
+    if (!isExplicit && match.index > 0 && /[\w@./]/.test(text[match.index - 1] ?? "")) {
+      re.lastIndex = match.index + 1;
+      continue;
+    }
+
+    if (match.index > last) nodes.push(text.slice(last, match.index));
+
+    const { url: raw, trailing } = stripTrailingPunctuation(match[1].replace(INVISIBLE_URL_CHARS, ""));
+    const href = toSafeHttpUrl(raw);
+    if (href) {
+      nodes.push(
+        <a
+          key={key++}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${linkClassName} relative z-10 inline-block max-w-full cursor-pointer py-1 touch-manipulation`}
+          style={{ WebkitUserSelect: "text", WebkitTouchCallout: "default" }}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          {raw}
+        </a>
+      );
+      if (trailing) nodes.push(trailing);
+    } else {
+      nodes.push(text.slice(match.index, match.index + match[1].length));
+    }
+    last = match.index + match[1].length;
+  }
+
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes.length > 0 ? nodes : text;
 }
 
 function authorLabel(
@@ -641,8 +759,12 @@ export function ChatMessagerie({
                   {auteur} · {formatHeure(m.created_at)}
                 </span>
                 <div
-                  onContextMenu={(e) => openContextMenu(e, m)}
+                  onContextMenu={(e) => {
+                    if (eventTargetIsLink(e.target)) return;
+                    openContextMenu(e, m);
+                  }}
                   onTouchStart={(e) => {
+                    if (eventTargetIsLink(e.target)) return;
                     const touch = e.touches[0];
                     if (!touch) return;
                     clearLongPress();
@@ -657,7 +779,7 @@ export function ChatMessagerie({
                   onTouchEnd={clearLongPress}
                   onTouchMove={clearLongPress}
                   onTouchCancel={clearLongPress}
-                  className={`rounded-2xl px-4 py-2 max-w-[85%] select-none ${
+                  className={`rounded-2xl px-4 py-2 max-w-[85%] ${
                     isMine
                       ? "bg-[#4a7c5a] text-white"
                       : "bg-[#e8b4d4]/60 text-[#2d4a3e]"
@@ -677,7 +799,16 @@ export function ChatMessagerie({
                       <p className="truncate">{messagePreview(replied, pollsByMessageId)}</p>
                     </div>
                   )}
-                  {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+                  {m.content && (
+                    <p className="whitespace-pre-wrap break-words">
+                      {linkifyMessage(
+                        m.content,
+                        `underline underline-offset-2 break-all ${
+                          isMine ? "text-white hover:text-white/80" : "text-[#1d4e89] hover:text-[#163a66]"
+                        }`
+                      )}
+                    </p>
+                  )}
                   {pollsByMessageId[m.id] && (() => {
                     const poll = pollsByMessageId[m.id];
                     const totalVotes = poll.votes.length;
@@ -870,9 +1001,9 @@ export function ChatMessagerie({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onPaste={(e) => {
-                  // Garantit le collage texte brut (WhatsApp, Word, etc.)
-                  const pasted = e.clipboardData?.getData("text/plain") ?? e.clipboardData?.getData("text");
-                  if (pasted == null) return;
+                  // Garantit le collage texte brut (WhatsApp, Word, etc.) et garde l’adresse d’un lien copié.
+                  const pasted = readPastedMessage(e.clipboardData);
+                  if (!pasted) return;
                   e.preventDefault();
                   const el = e.currentTarget;
                   const start = el.selectionStart ?? input.length;
@@ -904,8 +1035,8 @@ export function ChatMessagerie({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onPaste={(e) => {
-                const pasted = e.clipboardData?.getData("text/plain") ?? e.clipboardData?.getData("text");
-                if (pasted == null) return;
+                const pasted = readPastedMessage(e.clipboardData);
+                if (!pasted) return;
                 e.preventDefault();
                 const el = e.currentTarget;
                 const start = el.selectionStart ?? input.length;
