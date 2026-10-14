@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { FaceSelector } from "../../components/bulletin/FaceSelector";
@@ -22,6 +22,8 @@ import {
   setCommentaire,
   getSectionComment,
   setSectionComment,
+  comportementMoisSectionId,
+  bulletinAvecComportementDuMois,
   type EleveBulletin,
   type SectionAttendus,
   type NiveauAcquisition,
@@ -37,6 +39,7 @@ import {
 } from "../../data/programmation-par-mois";
 import {
   saveBulletinEnvoye,
+  syncAttendusOnBulletinsEnvoyes,
   type BulletinEnvoyeData,
   type BulletinEnvoyeLigne,
 } from "../../data/bulletin-envoye-storage";
@@ -249,8 +252,12 @@ export default function BulletinPage() {
   const [supabaseEleves, setSupabaseEleves] = useState<EleveRow[]>([]);
   const [sendingSection, setSendingSection] = useState<string | null>(null);
   const [printMonthId, setPrintMonthId] = useState<BulletinMonthId | null>(null);
+  const [printRequest, setPrintRequest] = useState(0);
+  const pendingPrintTitle = useRef<string | null>(null);
   type ViewMode = "mois" | "matiere" | "controle";
   const [viewMode, setViewMode] = useState<ViewMode>("mois");
+  const [focusedMonthId, setFocusedMonthId] = useState<BulletinMonthId | "all" | null>(null);
+  const [monthJump, setMonthJump] = useState(0);
   type SelectedPart =
     | { subjectId: string; subjectLabel: string; subpartId: string; subpartLabel: string }
     | { subjectId: string; subjectLabel: string; subpartId?: never; subpartLabel?: never };
@@ -258,6 +265,17 @@ export default function BulletinPage() {
   const [syntheseEval, setSyntheseEval] = useState<SyntheseBulletin | null>(null);
   const [loadingSynthese, setLoadingSynthese] = useState(false);
   const [resultatsEleve, setResultatsEleve] = useState<ResultatRow[]>([]);
+
+  const publishAttendus = useCallback(async (nextSections?: SectionAttendus[]) => {
+    const sectionsToPublish = nextSections ?? getSections();
+    setSectionsState(sectionsToPublish);
+    try {
+      await pushLocalBulletinSectionsTemplateToSupabase();
+      await syncAttendusOnBulletinsEnvoyes(sectionsToPublish);
+    } catch (e) {
+      console.error("publishAttendus failed:", e);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setEleves(getElevesBulletin());
@@ -283,6 +301,19 @@ export default function BulletinPage() {
     window.addEventListener("afterprint", handler);
     return () => window.removeEventListener("afterprint", handler);
   }, []);
+
+  useEffect(() => {
+    if (!pendingPrintTitle.current) return;
+    const title = pendingPrintTitle.current;
+    const previous = document.title;
+    document.title = title;
+    const frame = requestAnimationFrame(() => {
+      pendingPrintTitle.current = null;
+      window.print();
+      document.title = previous;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [printRequest]);
 
   useEffect(() => {
     (async () => {
@@ -377,13 +408,7 @@ export default function BulletinPage() {
   const handleSaveAttenduEdit = async () => {
     if (!editingAttendu) return;
     updateAttendu(editingAttendu.sectionId, editingAttendu.attenduId, editingAttendu.libelle);
-    const nextSections = getSections();
-    setSectionsState(nextSections);
-    try {
-      await pushLocalBulletinSectionsTemplateToSupabase();
-    } catch (e) {
-      console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-    }
+    await publishAttendus();
     setEditingAttendu(null);
   };
 
@@ -391,13 +416,7 @@ export default function BulletinPage() {
     const libelle = window.prompt("Libellé du nouvel attendu :");
     if (libelle?.trim()) {
       addAttendu(sectionId, libelle);
-      const nextSections = getSections();
-      setSectionsState(nextSections);
-      try {
-        await pushLocalBulletinSectionsTemplateToSupabase();
-      } catch (e) {
-        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-      }
+      await publishAttendus();
     }
   };
 
@@ -421,6 +440,19 @@ export default function BulletinPage() {
   const handleSetSectionComment = (eleveId: string, sectionId: string, comment: string) => {
     setSectionComment(eleveId, sectionId, comment);
     setRefresh((r) => r + 1);
+  };
+
+  useEffect(() => {
+    if (monthJump === 0 || viewMode !== "mois") return;
+    document.getElementById("bulletin-month-nav")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [monthJump, viewMode]);
+
+  const focusMonth = (monthId: BulletinMonthId | "all") => {
+    setFocusedMonthId(monthId);
+    setMonthJump((n) => n + 1);
   };
 
   const sectionComportement = sections.find((s) => s.id === "comportement");
@@ -477,9 +509,11 @@ export default function BulletinPage() {
       monthLabel: string,
       monthSections: SectionAttendus[]
     ): BulletinEnvoyeData => {
+      const comportementBulletin = bulletinAvecComportementDuMois(bulletin, monthId);
+      const comportementId = comportementMoisSectionId(monthId);
       const comportement: BulletinEnvoyeLigne[] = sectionComportement
         ? sectionComportement.attendus.map((a) => {
-            const line = bulletin?.sections["comportement"]?.[a.id];
+            const line = comportementBulletin?.sections[comportementId]?.[a.id];
             return {
               libelle: a.libelle,
               enfant: line?.enfant ?? null,
@@ -589,12 +623,7 @@ export default function BulletinPage() {
                 type="button"
                 onClick={async () => {
                   if (addProgrammationSectionsIfMissing()) {
-                    setSectionsState(getSections());
-                    try {
-                      await pushLocalBulletinSectionsTemplateToSupabase();
-                    } catch (e) {
-                      console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-                    }
+                    await publishAttendus();
                   }
                   await load();
                 }}
@@ -720,11 +749,13 @@ export default function BulletinPage() {
               <p className="text-sm text-[#2d4a3e]">
                 {selectedEleve.prenom}
                 {" — "}
-                {viewMode === "mois"
-                  ? "vue par mois"
-                  : viewMode === "matiere"
-                    ? "vue par matière"
-                    : "tests encodés"}
+                {printMonthId
+                  ? (BULLETIN_MONTHS.find((m) => m.id === printMonthId)?.label ?? "vue par mois")
+                  : viewMode === "mois"
+                    ? "vue par mois"
+                    : viewMode === "matiere"
+                      ? "vue par matière"
+                      : "tests encodés"}
               </p>
             ) : null}
           </div>
@@ -788,7 +819,9 @@ export default function BulletinPage() {
                 >
                   <span aria-hidden>🖨️</span>
                   {viewMode === "mois"
-                    ? "Imprimer (par mois)"
+                    ? focusedMonthId && focusedMonthId !== "all"
+                      ? `Imprimer (${BULLETIN_MONTHS.find((m) => m.id === focusedMonthId)?.label ?? "ce mois"})`
+                      : "Imprimer (par mois)"
                     : viewMode === "matiere"
                       ? "Imprimer (par matière)"
                       : "Imprimer (tests encodés)"}
@@ -928,6 +961,41 @@ export default function BulletinPage() {
                 </div>
               )}
 
+              {viewMode === "mois" && (
+                <div id="bulletin-month-nav" className="no-print mb-6 scroll-mt-4 space-y-3">
+                  <p className="text-[#2d4a3e]/80">
+                    Choisis le mois dans lequel tu veux travailler.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {BULLETIN_MONTHS.map((month) => (
+                      <button
+                        key={month.id}
+                        type="button"
+                        onClick={() => focusMonth(month.id)}
+                        className={`rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-sm transition ${
+                          focusedMonthId === month.id
+                            ? "border-[#4a7c5a] bg-[#4a7c5a] text-white"
+                            : "border-[#2d4a3e]/20 bg-white/90 text-[#2d4a3e] hover:border-[#4a7c5a]/50 hover:bg-[#a8d5ba]/20"
+                        }`}
+                      >
+                        {month.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => focusMonth("all")}
+                      className={`rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-sm transition ${
+                        focusedMonthId === "all"
+                          ? "border-[#4a7c5a] bg-[#4a7c5a] text-white"
+                          : "border-[#2d4a3e]/20 bg-white/90 text-[#2d4a3e] hover:border-[#4a7c5a]/50 hover:bg-[#a8d5ba]/20"
+                      }`}
+                    >
+                      Tous les mois
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Page 2+ impression : attendus / mois */}
               <div className="bulletin-page-attendus">
               {/* Édition des attendus (toggle) */}
@@ -985,13 +1053,7 @@ export default function BulletinPage() {
                                     type="button"
                                     onClick={async () => {
                                       moveAttendu(section.id, a.id, "up");
-                                      const nextSections = getSections();
-                                      setSectionsState(nextSections);
-                                      try {
-                                        await pushLocalBulletinSectionsTemplateToSupabase();
-                                      } catch (e) {
-                                        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-                                      }
+                                      await publishAttendus();
                                     }}
                                     className="text-xs text-[#2d4a3e]/70 hover:text-[#2d4a3e]"
                                     title="Monter"
@@ -1002,13 +1064,7 @@ export default function BulletinPage() {
                                     type="button"
                                     onClick={async () => {
                                       moveAttendu(section.id, a.id, "down");
-                                      const nextSections = getSections();
-                                      setSectionsState(nextSections);
-                                      try {
-                                        await pushLocalBulletinSectionsTemplateToSupabase();
-                                      } catch (e) {
-                                        console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-                                      }
+                                      await publishAttendus();
                                     }}
                                     className="text-xs text-[#2d4a3e]/70 hover:text-[#2d4a3e]"
                                     title="Descendre"
@@ -1034,13 +1090,7 @@ export default function BulletinPage() {
                                     onClick={async () => {
                                       if (window.confirm("Supprimer cet attendu ?")) {
                                         removeAttendu(section.id, a.id);
-                                        const nextSections = getSections();
-                                        setSectionsState(nextSections);
-                                        try {
-                                          await pushLocalBulletinSectionsTemplateToSupabase();
-                                        } catch (e) {
-                                          console.error("pushLocalBulletinSectionsTemplateToSupabase failed:", e);
-                                        }
+                                        await publishAttendus();
                                       }
                                     }}
                                   className="text-xs text-red-600"
@@ -1066,14 +1116,11 @@ export default function BulletinPage() {
                 </section>
               )}
 
-              {/* Vue par mois : comportement + matières + commentaire du mois + bouton Envoyer */}
-              {viewMode === "mois" && (
+              {/* Vue par mois : uniquement le mois choisi */}
+              {viewMode === "mois" && focusedMonthId !== null && (
                 <>
               {structuredMonths.map((month) => {
-                if (printMonthId && month.id !== printMonthId) {
-                  // En mode impression filtrée sur un mois, on n'affiche que ce mois.
-                  return null;
-                }
+                if (focusedMonthId !== "all" && month.id !== focusedMonthId) return null;
                 const monthSections: SectionAttendus[] = [];
                 for (const subject of month.subjects) {
                   if ("subparts" in subject && subject.subparts) {
@@ -1094,18 +1141,24 @@ export default function BulletinPage() {
                 return (
                   <div
                     key={month.id}
-                    className="mb-10 space-y-6 print-month-page"
+                    data-month={month.id}
+                    className={`mb-10 space-y-6 print-month-page${
+                      printMonthId && printMonthId !== month.id ? " print-month-hidden" : ""
+                    }`}
                   >
                     <h2 className="bulletin-month-title font-display text-xl text-[#2d4a3e]">
                       {month.label}
                     </h2>
 
-                    {/* Comportement (répété pour chaque mois) */}
+                    {/* Comportement propre à ce mois */}
                     {sectionComportement && (
                       <SectionTable
-                        section={sectionComportement}
-                        titleOverride="Comportement"
-                        bulletin={bulletin}
+                        section={{
+                          ...sectionComportement,
+                          id: comportementMoisSectionId(month.id),
+                        }}
+                        titleOverride={`Comportement — ${month.label}`}
+                        bulletin={bulletinAvecComportementDuMois(bulletin, month.id)}
                         selectedEleve={selectedEleve}
                         collapsedSections={collapsedSections}
                         setCollapsedSections={setCollapsedSections}
@@ -1212,13 +1265,9 @@ export default function BulletinPage() {
                         type="button"
                         onClick={() => {
                           setCollapsedSections(new Set());
+                          pendingPrintTitle.current = `Bulletin — ${selectedEleve.prenom} — ${month.label}`;
                           setPrintMonthId(month.id);
-                          const prevTitle = document.title;
-                          document.title = `Bulletin — ${selectedEleve.prenom} — ${month.label}`;
-                          setTimeout(() => {
-                            window.print();
-                            document.title = prevTitle;
-                          }, 300);
+                          setPrintRequest((n) => n + 1);
                         }}
                         className="rounded-xl border border-[#2d4a3e]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[#2d4a3e] shadow-sm transition hover:bg-[#2d4a3e]/5"
                       >
