@@ -43,6 +43,49 @@ const STORAGE_KEYS = {
   SECTION_COMMENTS: "bulletin-section-comments",
 } as const;
 
+const COMPORTEMENT_SECTION_ID = "comportement";
+
+/** Notes de comportement propres à un mois (août-septembre, octobre, …). */
+export function comportementMoisSectionId(monthId: string): string {
+  return `comportement-${monthId}`;
+}
+
+function copyLegacyComportementLine(
+  bulletin: BulletinEleve,
+  sectionId: string,
+  attenduId: string
+): void {
+  if (!sectionId.startsWith("comportement-")) return;
+  if (bulletin.sections[sectionId]?.[attenduId]) return;
+  const legacy = bulletin.sections[COMPORTEMENT_SECTION_ID]?.[attenduId];
+  if (!legacy) return;
+  if (!bulletin.sections[sectionId]) bulletin.sections[sectionId] = {};
+  bulletin.sections[sectionId][attenduId] = {
+    attenduId,
+    enfant: legacy.enfant ?? null,
+    enseignant: legacy.enseignant ?? null,
+    commentaire: legacy.commentaire ?? "",
+  };
+}
+
+/** Affiche le comportement du mois, en gardant l’ancienne note partagée tant que ce mois n’a pas la sienne. */
+export function bulletinAvecComportementDuMois(
+  bulletin: BulletinEleve | null,
+  monthId: string
+): BulletinEleve | null {
+  if (!bulletin) return null;
+  const id = comportementMoisSectionId(monthId);
+  const own = bulletin.sections[id] ?? {};
+  const legacy = bulletin.sections[COMPORTEMENT_SECTION_ID] ?? {};
+  return {
+    ...bulletin,
+    sections: {
+      ...bulletin.sections,
+      [id]: { ...legacy, ...own },
+    },
+  };
+}
+
 import { PROGRAMMATION_SECTIONS } from "./programmation-par-mois";
 
 const DEFAULT_SECTION_COMPORTEMENT: SectionAttendus = {
@@ -233,8 +276,16 @@ export function removeAttendu(sectionId: string, attenduId: string): void {
   setSections(next);
   const bulletins = getBulletins();
   for (const bid of Object.keys(bulletins)) {
-    const sec = bulletins[bid].sections[sectionId];
+    const eleveBulletin = bulletins[bid];
+    const sec = eleveBulletin.sections[sectionId];
     if (sec) delete sec[attenduId];
+    if (sectionId === COMPORTEMENT_SECTION_ID) {
+      for (const key of Object.keys(eleveBulletin.sections)) {
+        if (!key.startsWith("comportement-")) continue;
+        const monthSec = eleveBulletin.sections[key];
+        if (monthSec) delete monthSec[attenduId];
+      }
+    }
   }
   saveJson(STORAGE_KEYS.BULLETINS, bulletins);
 }
@@ -313,6 +364,7 @@ export function setEvaluation(
     bulletins[eleveId] = b;
   }
   if (!b.sections[sectionId]) b.sections[sectionId] = {};
+  copyLegacyComportementLine(b, sectionId, attenduId);
   let line = b.sections[sectionId][attenduId];
   if (!line) {
     line = { attenduId, enfant: null, enseignant: "acquis", commentaire: "" };
@@ -335,6 +387,7 @@ export function setCommentaire(
     bulletins[eleveId] = b;
   }
   if (!b.sections[sectionId]) b.sections[sectionId] = {};
+  copyLegacyComportementLine(b, sectionId, attenduId);
   let line = b.sections[sectionId][attenduId];
   if (!line) {
     line = { attenduId, enfant: null, enseignant: "acquis", commentaire: "" };

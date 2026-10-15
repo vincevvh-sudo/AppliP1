@@ -5,8 +5,7 @@
  * - les modifications d'attendus sont stockées dans Supabase (source de vérité),
  * - l'enseignant recharge ce gabarit au chargement,
  * - les prochains bulletins envoyés utilisent automatiquement la version à jour.
- *
- * NOTE : les bulletins déjà envoyés restent une "snapshot" (comportement accepté pour l'option A).
+ * - les bulletins déjà envoyés sont realignés sur ce gabarit (visages et commentaires conservés).
  */
 
 import { supabase } from "../../utils/supabase";
