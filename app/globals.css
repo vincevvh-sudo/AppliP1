@@ -55,6 +55,102 @@ body {
   display: none;
 }
 
+.bulletin-synthese-identite {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #2d4a3e;
+}
+.bulletin-synthese-prenom {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #2d4a3e;
+}
+.bulletin-synthese-maitre {
+  margin: 0.35rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #2d4a3e;
+}
+
+/* Feuille synthèse : grand cadre de notes, grand commentaire, signatures en bas. */
+.bulletin-synthese-sheet {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.85rem;
+}
+.bulletin-synthese-sheet > tbody > tr > td {
+  vertical-align: top;
+  padding: 0;
+}
+.bulletin-synthese-row-scores > td {
+  height: 48vh;
+}
+.bulletin-synthese-row-comment > td {
+  height: 34vh;
+}
+.bulletin-synthese {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.bulletin-synthese-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.bulletin-synthese table.bulletin-notes {
+  height: 100%;
+  width: 100%;
+  font-size: 1.2rem;
+}
+.bulletin-synthese table.bulletin-notes th,
+.bulletin-synthese table.bulletin-notes td {
+  padding: 0.55rem 0.7rem;
+}
+.bulletin-commentaire-synthese {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.bulletin-commentaire-synthese textarea {
+  font-size: 1.25rem;
+  line-height: 1.45;
+  min-height: 22vh;
+}
+.bulletin-commentaire-texte {
+  font-size: 1.25rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.bulletin-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  min-height: 6.5rem;
+}
+.bulletin-signature-slot {
+  border-top: 2px solid #2d4a3e;
+  padding-top: 0.35rem;
+}
+.bulletin-signature-slot p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2d4a3e;
+}
+.bulletin-signature-slot img {
+  display: block;
+  max-height: 4.5rem;
+  max-width: 16rem;
+  margin-top: 0.25rem;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .rdv-print-only {
   display: none;
 }
@@ -123,29 +219,148 @@ body {
     margin: 0 !important;
   }
 
-  .bulletin-synthese {
-    margin-bottom: 0.4rem !important;
-    border: 1px solid #ccc !important;
+  /* La page synthèse a son propre en-tête (prénom + classe). */
+  #bulletin-print-area:has(.bulletin-page-synthese) > .bulletin-print-header {
+    display: none !important;
   }
 
-  /* Page 1 : synthèse + commentaire → page suivante = attendus */
+  /* Page 1 : hauteurs fixes en mm pour l'impression. */
   .bulletin-page-synthese {
     break-after: page;
     page-break-after: always;
+    page-break-inside: avoid;
+    margin: 0 !important;
+  }
+  .bulletin-synthese-sheet {
+    width: 100% !important;
+    height: 272mm !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    table-layout: fixed;
+  }
+  .bulletin-synthese-row-identite { height: 20mm !important; }
+  .bulletin-synthese-row-scores { height: 124mm !important; }
+  .bulletin-synthese-row-comment { height: 100mm !important; }
+  .bulletin-synthese-row-sign { height: 28mm !important; }
+  .bulletin-synthese-sheet > tbody > tr > td {
+    height: inherit !important;
+    padding: 0 !important;
+    vertical-align: top !important;
+  }
+
+  .bulletin-synthese-identite {
+    margin: 0 0 2mm 0 !important;
+    padding: 0 0 2mm 0 !important;
+    border-bottom: 2px solid #1a1a1a;
+  }
+  .bulletin-synthese-prenom {
+    margin: 0 !important;
+    font-size: 26pt !important;
+    font-weight: 700 !important;
+    line-height: 1.05 !important;
+    color: #111 !important;
+  }
+  .bulletin-synthese-maitre {
+    margin: 1mm 0 0 !important;
+    font-size: 16pt !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    color: #111 !important;
+  }
+
+  .bulletin-synthese {
+    height: 122mm !important;
+    min-height: 122mm !important;
+    margin: 0 !important;
+    border: 1.5px solid #222 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 2mm 3mm !important;
+    box-sizing: border-box !important;
+  }
+  .bulletin-synthese h2 {
+    flex: 0 0 auto;
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    margin: 0 0 1.5mm 0 !important;
+    padding: 0 0 1.5mm 0 !important;
+    border-bottom: 1px solid #222 !important;
+  }
+  .bulletin-synthese-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+  .bulletin-synthese table.bulletin-notes {
+    height: 108mm !important;
+    width: 100% !important;
+    font-size: 14pt !important;
+  }
+  .bulletin-synthese table.bulletin-notes tr {
+    height: 10mm !important;
+  }
+  #bulletin-print-area .bulletin-synthese table.bulletin-notes th,
+  #bulletin-print-area .bulletin-synthese table.bulletin-notes td {
+    font-size: 14pt !important;
+    padding: 1.2mm 2mm !important;
+    line-height: 1.2 !important;
+    vertical-align: middle;
   }
 
   .bulletin-commentaire-synthese {
-    margin-top: 0.5rem !important;
+    height: 98mm !important;
+    min-height: 98mm !important;
+    margin: 0 !important;
+    border: 1.5px solid #222 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    padding: 2.5mm 3.5mm !important;
+    display: flex !important;
+    flex-direction: column;
+    box-sizing: border-box !important;
+    overflow: hidden;
   }
   .bulletin-commentaire-synthese h2,
   .bulletin-commentaire-synthese h3 {
-    font-size: 0.95rem !important;
-    margin: 0.25rem 0 !important;
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    margin: 0 0 2mm 0 !important;
   }
-  .bulletin-commentaire-synthese p {
-    font-size: 0.75rem !important;
-    line-height: 1.35 !important;
+  .bulletin-commentaire-synthese p,
+  .bulletin-commentaire-texte {
+    font-size: 16pt !important;
+    line-height: 1.4 !important;
     white-space: pre-wrap;
+    margin: 0;
+  }
+
+  .bulletin-signatures {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8mm;
+    height: 26mm !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
+  .bulletin-signature-slot {
+    border-top: 1.5px solid #111;
+    padding-top: 1mm;
+  }
+  .bulletin-signature-slot p {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    color: #111 !important;
+  }
+  .bulletin-signature-slot img {
+    max-height: 16mm !important;
+    max-width: 70mm !important;
+    margin-top: 0.5mm !important;
   }
 
   .print-month-page {
@@ -153,6 +368,16 @@ body {
     page-break-after: auto;
     margin: 0 0 0.5rem 0 !important;
     padding: 0 !important;
+  }
+
+  /* Le mois suivant commence sur une nouvelle page, jamais en bas de la précédente. */
+  .print-month-page:not(.print-month-hidden) + .print-month-page:not(.print-month-hidden) {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-month-hidden {
+    display: none !important;
   }
 
   .bulletin-month-title {
@@ -178,14 +403,14 @@ body {
     background: #fff !important;
   }
 
-  #bulletin-print-area table {
+  #bulletin-print-area .print-month-page table {
     font-size: 0.55rem !important;
     width: 100%;
     border-collapse: collapse;
   }
 
-  #bulletin-print-area td,
-  #bulletin-print-area th {
+  #bulletin-print-area .print-month-page td,
+  #bulletin-print-area .print-month-page th {
     padding-top: 0.05rem !important;
     padding-bottom: 0.05rem !important;
     padding-left: 0.15rem !important;
@@ -200,9 +425,6 @@ body {
   }
 
   .commentaire-mois-empty {
-    display: none !important;
-  }
-  .commentaire-synthese-empty-print h2 {
     display: none !important;
   }
   .comment-cell-empty-print {

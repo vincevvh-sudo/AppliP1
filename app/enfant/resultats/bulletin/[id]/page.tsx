@@ -11,6 +11,7 @@ import type {
   BulletinEnvoyeLigne,
 } from "../../../../data/bulletin-envoye-storage";
 import { formatNoteSurBarème } from "../../../../data/bulletin-synthese";
+import { SignaturesBulletin } from "../../../../components/bulletin/SignaturesBulletin";
 import { getEnfantSession } from "../../../../../utils/enfant-session";
 
 const IconLeaf = () => (
@@ -33,6 +34,8 @@ export default function EnfantBulletinViewPage() {
   const [bulletin, setBulletin] = useState<BulletinEnvoyeRow | null>(null);
   const [syntheseLive, setSyntheseLive] = useState<BulletinEnvoyeSyntheseRow[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [prenomEnfant, setPrenomEnfant] = useState("");
+  const [nomEnfant, setNomEnfant] = useState("");
 
   useEffect(() => {
     const session = getEnfantSession();
@@ -40,6 +43,8 @@ export default function EnfantBulletinViewPage() {
       router.replace("/enfant");
       return;
     }
+    setPrenomEnfant(session.prenom);
+    setNomEnfant(session.nom ?? "");
     if (!Number.isFinite(id)) {
       setLoading(false);
       return;
@@ -178,21 +183,38 @@ export default function EnfantBulletinViewPage() {
         id="bulletin-print-area"
         className="relative z-10 mx-auto max-w-4xl bg-white/95 px-6 py-8 shadow-lg print:bg-white print:shadow-none"
       >
-        <h1 className="font-display text-2xl text-[#2d4a3e]">
+        <h1 className="font-display text-2xl text-[#2d4a3e] no-print">
           Bulletin — {sectionTitle}
         </h1>
-        <p className="mt-1 text-sm text-[#2d4a3e]/60">Envoyé le {sentDate}</p>
+        <p className="mt-1 text-sm text-[#2d4a3e]/60 no-print">Envoyé le {sentDate}</p>
 
         {/* Page 1 : résultats scolaires (synthèse + commentaire) */}
         {hasPage1 && (
           <div className="bulletin-page-synthese mt-6">
-            {synthese.length > 0 && (
-              <section className="bulletin-synthese rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
-                <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
-                  Synthèse des évaluations
-                </h2>
-                <div className="overflow-x-auto px-4 pb-4 print:px-0">
-                  <table className="mt-2 w-full border-collapse text-sm">
+            <table className="bulletin-synthese-sheet" style={{ width: "100%", height: "270mm" }}>
+              <tbody>
+                <tr className="bulletin-synthese-row-identite" style={{ height: "18mm" }}>
+                  <td>
+                    <header className="bulletin-synthese-identite">
+                      <p className="bulletin-synthese-prenom font-display">
+                        {prenomEnfant}
+                        {nomEnfant ? ` ${nomEnfant}` : ""}
+                      </p>
+                      <p className="bulletin-synthese-maitre">
+                        1<sup>re</sup> primaire B — Monsieur Vincent
+                      </p>
+                    </header>
+                  </td>
+                </tr>
+                <tr className="bulletin-synthese-row-scores" style={{ height: "125mm" }}>
+                  <td>
+            <section className="bulletin-synthese rounded-xl border border-[#2d4a3e]/15 bg-white/50 overflow-hidden">
+              <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-xl text-[#2d4a3e]">
+                Synthèse des évaluations
+              </h2>
+              {synthese.length > 0 ? (
+                <div className="bulletin-synthese-table-wrap overflow-x-auto px-4 pb-4 print:px-0">
+                  <table className="bulletin-notes mt-2 w-full border-collapse">
                     <thead>
                       <tr className="border-b border-[#2d4a3e]/20">
                         <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
@@ -227,17 +249,29 @@ export default function EnfantBulletinViewPage() {
                     </tbody>
                   </table>
                 </div>
-              </section>
-            )}
-
-            {commentaireSynthese.trim() !== "" && (
-              <section className="bulletin-commentaire-synthese mt-6">
-                <h2 className="font-display text-lg text-[#2d4a3e]">Commentaire</h2>
-                <p className="mt-2 whitespace-pre-wrap text-[#2d4a3e]/90">
-                  {commentaireSynthese}
-                </p>
-              </section>
-            )}
+              ) : (
+                <p className="p-4 text-sm text-[#2d4a3e]/60">Aucune note encodée.</p>
+              )}
+            </section>
+                  </td>
+                </tr>
+                <tr className="bulletin-synthese-row-comment" style={{ height: "103mm" }}>
+                  <td>
+            <section className="bulletin-commentaire-synthese rounded-xl border border-[#2d4a3e]/15 bg-white/50 p-4">
+              <h2 className="font-display text-xl text-[#2d4a3e]">Commentaire</h2>
+              <p className="bulletin-commentaire-texte mt-2 text-[#2d4a3e]/90">
+                {commentaireSynthese}
+              </p>
+            </section>
+                  </td>
+                </tr>
+                <tr className="bulletin-synthese-row-sign" style={{ height: "24mm" }}>
+                  <td>
+                    <SignaturesBulletin />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
 

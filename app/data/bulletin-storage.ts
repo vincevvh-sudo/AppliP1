@@ -428,3 +428,25 @@ export function setSectionComment(
   all[eleveId][sectionId] = comment;
   saveJson(STORAGE_KEYS.SECTION_COMMENTS, all);
 }
+
+const SIGNATURE_ENSEIGNANT_KEY = "bulletin-signature-enseignant";
+
+/** Photo de signature de l’enseignant, une seule pour tous les bulletins. */
+export function getSignatureEnseignant(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(SIGNATURE_ENSEIGNANT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setSignatureEnseignant(dataUrl: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!dataUrl) localStorage.removeItem(SIGNATURE_ENSEIGNANT_KEY);
+    else localStorage.setItem(SIGNATURE_ENSEIGNANT_KEY, dataUrl);
+  } catch {
+    throw new Error("La photo est trop lourde pour être enregistrée.");
+  }
+}

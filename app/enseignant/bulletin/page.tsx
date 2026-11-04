@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ForetMagiqueBackground } from "../../components/MiyazakiDecor";
 import { FaceSelector } from "../../components/bulletin/FaceSelector";
 import { CommentaireAvecGemini } from "../../components/bulletin/CommentaireAvecGemini";
+import { SignaturesBulletin } from "../../components/bulletin/SignaturesBulletin";
 import {
   getElevesBulletin,
   updateEleveBulletin,
@@ -323,6 +324,13 @@ export default function BulletinPage() {
   }, []);
 
   const selectedEleve = eleves.find((e) => e.id === selectedId);
+  const classeEleve = selectedEleve
+    ? supabaseEleves.find(
+        (s) => String(s.id) === String(selectedEleve.supabaseEleveId ?? "")
+      )
+    : undefined;
+  const prenomEnfant = classeEleve?.prenom?.trim() || selectedEleve?.prenom || "";
+  const nomEnfant = classeEleve?.nom?.trim() || "";
   const bulletin = selectedId ? getBulletinEleve(selectedId) : null;
   // refresh forces re-read from storage after evaluation/commentaire change
   void refresh;
@@ -844,18 +852,38 @@ export default function BulletinPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-[#2d4a3e]/70">Prénom</p>
-                  <h1 className="font-display text-2xl text-[#2d4a3e]">
-                    {selectedEleve.prenom}
+                  <h1 className="font-display text-4xl font-bold leading-tight text-[#2d4a3e]">
+                    {prenomEnfant}
+                    {nomEnfant ? <span className="ml-3">{nomEnfant}</span> : null}
                   </h1>
+                  <p className="mt-1 text-xl font-bold text-[#2d4a3e]">
+                    1<sup>re</sup> primaire B — Monsieur Vincent
+                  </p>
                 </div>
               </div>
 
               {/* Page 1 impression : synthèse + commentaire — visible hors vue « contrôle » (les attendus) et en tête */}
               {selectedEleve.supabaseEleveId != null && viewMode !== "controle" && (
                 <div className="bulletin-page-synthese">
-                  <section className="bulletin-synthese mb-4 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
-                    <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-lg text-[#2d4a3e] print:border-0 print:px-0 print:py-1 print:text-sm">
+                  <table className="bulletin-synthese-sheet" style={{ width: "100%", height: "270mm" }}>
+                    <tbody>
+                      <tr className="bulletin-synthese-row-identite" style={{ height: "18mm" }}>
+                        <td>
+                          <header className="bulletin-synthese-identite print-only">
+                            <p className="bulletin-synthese-prenom font-display">
+                              {prenomEnfant}
+                              {nomEnfant ? ` ${nomEnfant}` : ""}
+                            </p>
+                            <p className="bulletin-synthese-maitre">
+                              1<sup>re</sup> primaire B — Monsieur Vincent
+                            </p>
+                          </header>
+                        </td>
+                      </tr>
+                      <tr className="bulletin-synthese-row-scores" style={{ height: "125mm" }}>
+                        <td>
+                  <section className="bulletin-synthese rounded-xl border border-[#2d4a3e]/15 bg-white/50 overflow-hidden">
+                    <h2 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-xl text-[#2d4a3e]">
                       Synthèse des évaluations
                     </h2>
                     <p className="no-print px-4 pt-2 text-xs text-[#2d4a3e]/70">
@@ -865,8 +893,8 @@ export default function BulletinPage() {
                     {loadingSynthese ? (
                       <p className="p-4 text-sm text-[#2d4a3e]/60">Chargement…</p>
                     ) : syntheseEval ? (
-                      <div className="overflow-x-auto px-4 pb-4">
-                        <table className="w-full border-collapse text-sm">
+                      <div className="bulletin-synthese-table-wrap overflow-x-auto px-4 pb-4">
+                        <table className="bulletin-notes w-full border-collapse">
                           <thead>
                             <tr className="border-b border-[#2d4a3e]/20">
                               <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
@@ -921,18 +949,15 @@ export default function BulletinPage() {
                       </p>
                     )}
                   </section>
-
-                  <section
-                    className={`bulletin-commentaire-synthese mb-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 p-4 ${
-                      getSectionComment(selectedEleve.id, "synthese-commentaire").trim() === ""
-                        ? "commentaire-synthese-empty-print"
-                        : ""
-                    }`}
-                  >
-                    <h2 className="mb-2 font-display text-lg text-[#2d4a3e] print:text-sm">
+                        </td>
+                      </tr>
+                      <tr className="bulletin-synthese-row-comment" style={{ height: "103mm" }}>
+                        <td>
+                  <section className="bulletin-commentaire-synthese rounded-xl border border-[#2d4a3e]/15 bg-white/50 p-4">
+                    <h2 className="mb-2 font-display text-xl text-[#2d4a3e]">
                       Commentaire
                     </h2>
-                    <div className="no-print">
+                    <div className="no-print min-h-0 flex-1">
                       <CommentaireAvecGemini
                         variant="month"
                         libelle={`Commentaire — synthèse des évaluations — ${selectedEleve.prenom}`}
@@ -948,16 +973,22 @@ export default function BulletinPage() {
                           )
                         }
                         placeholder="Dicte ou écris un commentaire sur les résultats scolaires…"
-                        rows={5}
+                        rows={8}
                       />
                     </div>
-                    {getSectionComment(selectedEleve.id, "synthese-commentaire").trim() !==
-                      "" && (
-                      <p className="print-only whitespace-pre-wrap text-[#2d4a3e]/90">
-                        {getSectionComment(selectedEleve.id, "synthese-commentaire")}
-                      </p>
-                    )}
+                    <p className="bulletin-commentaire-texte print-only text-[#2d4a3e]">
+                      {getSectionComment(selectedEleve.id, "synthese-commentaire")}
+                    </p>
                   </section>
+                        </td>
+                      </tr>
+                      <tr className="bulletin-synthese-row-sign" style={{ height: "24mm" }}>
+                        <td>
+                          <SignaturesBulletin allowUpload />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               )}
 
