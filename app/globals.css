@@ -224,29 +224,29 @@ body {
     display: none !important;
   }
 
-  /* Page 1 : hauteurs fixes en mm pour l'impression. */
+  /* Page 1 : les points gardent une demi-page ; commentaire et signatures suivent le texte. */
   .bulletin-page-synthese {
     break-after: page;
     page-break-after: always;
-    page-break-inside: avoid;
     margin: 0 !important;
   }
   .bulletin-synthese-sheet {
     width: 100% !important;
-    height: 272mm !important;
+    height: auto !important;
     border-collapse: collapse !important;
     border-spacing: 0 !important;
     table-layout: fixed;
   }
   .bulletin-synthese-row-identite { height: 20mm !important; }
   .bulletin-synthese-row-scores { height: 124mm !important; }
-  .bulletin-synthese-row-comment { height: 100mm !important; }
-  .bulletin-synthese-row-sign { height: 28mm !important; }
+  .bulletin-synthese-row-comment { height: auto !important; }
+  .bulletin-synthese-row-sign { height: auto !important; }
   .bulletin-synthese-sheet > tbody > tr > td {
-    height: inherit !important;
+    height: auto !important;
     padding: 0 !important;
     vertical-align: top !important;
   }
+  .bulletin-synthese-row-scores > td { height: 124mm !important; }
 
   .bulletin-synthese-identite {
     margin: 0 0 2mm 0 !important;
@@ -313,17 +313,16 @@ body {
   }
 
   .bulletin-commentaire-synthese {
-    height: 98mm !important;
-    min-height: 98mm !important;
-    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 0 4mm 0 !important;
     border: 1.5px solid #222 !important;
     border-radius: 0 !important;
     background: #fff !important;
     padding: 2.5mm 3.5mm !important;
-    display: flex !important;
-    flex-direction: column;
+    display: block !important;
     box-sizing: border-box !important;
-    overflow: hidden;
+    overflow: visible !important;
   }
   .bulletin-commentaire-synthese h2,
   .bulletin-commentaire-synthese h3 {
@@ -343,9 +342,11 @@ body {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
     gap: 8mm;
-    height: 26mm !important;
-    min-height: 0 !important;
+    height: auto !important;
+    min-height: 32mm !important;
     margin: 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .bulletin-signature-slot {
     border-top: 1.5px solid #111;
@@ -358,9 +359,13 @@ body {
     color: #111 !important;
   }
   .bulletin-signature-slot img {
-    max-height: 16mm !important;
-    max-width: 70mm !important;
-    margin-top: 0.5mm !important;
+    display: block !important;
+    height: auto !important;
+    max-height: 24mm !important;
+    max-width: 78mm !important;
+    margin-top: 1.5mm !important;
+    object-fit: contain !important;
+    object-position: left center !important;
   }
 
   .print-month-page {

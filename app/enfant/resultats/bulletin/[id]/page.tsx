@@ -191,7 +191,7 @@ export default function EnfantBulletinViewPage() {
         {/* Page 1 : résultats scolaires (synthèse + commentaire) */}
         {hasPage1 && (
           <div className="bulletin-page-synthese mt-6">
-            <table className="bulletin-synthese-sheet" style={{ width: "100%", height: "270mm" }}>
+            <table className="bulletin-synthese-sheet" style={{ width: "100%" }}>
               <tbody>
                 <tr className="bulletin-synthese-row-identite" style={{ height: "18mm" }}>
                   <td>
@@ -255,7 +255,7 @@ export default function EnfantBulletinViewPage() {
             </section>
                   </td>
                 </tr>
-                <tr className="bulletin-synthese-row-comment" style={{ height: "103mm" }}>
+                <tr className="bulletin-synthese-row-comment">
                   <td>
             <section className="bulletin-commentaire-synthese rounded-xl border border-[#2d4a3e]/15 bg-white/50 p-4">
               <h2 className="font-display text-xl text-[#2d4a3e]">Commentaire</h2>
@@ -265,7 +265,7 @@ export default function EnfantBulletinViewPage() {
             </section>
                   </td>
                 </tr>
-                <tr className="bulletin-synthese-row-sign" style={{ height: "24mm" }}>
+                <tr className="bulletin-synthese-row-sign">
                   <td>
                     <SignaturesBulletin />
                   </td>

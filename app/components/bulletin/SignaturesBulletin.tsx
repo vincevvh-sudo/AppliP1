@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  getSignatureEnseignant,
-  setSignatureEnseignant,
-} from "../../data/bulletin-storage";
+import { useState } from "react";
+import { setSignatureEnseignant } from "../../data/bulletin-storage";
 
 async function fileToSignatureDataUrl(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
@@ -25,14 +22,12 @@ async function fileToSignatureDataUrl(file: File): Promise<string> {
     : canvas.toDataURL("image/jpeg", 0.85);
 }
 
+const SIGNATURE_PAR_DEFAUT = "/bulletin/signature-enseignant.jpg";
+
 /** Bas de la feuille de synthèse : direction (à signer) et enseignant (photo enregistrée une fois). */
 export function SignaturesBulletin({ allowUpload = false }: { allowUpload?: boolean }) {
-  const [signature, setSignature] = useState<string | null>(null);
+  const [signature, setSignature] = useState<string>(SIGNATURE_PAR_DEFAUT);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSignature(getSignatureEnseignant());
-  }, []);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -48,7 +43,7 @@ export function SignaturesBulletin({ allowUpload = false }: { allowUpload?: bool
 
   const remove = () => {
     setSignatureEnseignant(null);
-    setSignature(null);
+    setSignature(SIGNATURE_PAR_DEFAUT);
   };
 
   return (
@@ -58,9 +53,7 @@ export function SignaturesBulletin({ allowUpload = false }: { allowUpload?: bool
       </div>
       <div className="bulletin-signature-slot">
         <p>Signature de l&apos;enseignant</p>
-        {signature ? (
-          <img src={signature} alt="Signature de l'enseignant" />
-        ) : null}
+        <img src={signature} alt="Signature de l'enseignant" />
         {allowUpload && (
           <div className="no-print mt-2 flex flex-wrap items-center gap-2">
             <label className="cursor-pointer rounded-lg bg-[#4a7c5a] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#3d6b4d]">
@@ -76,7 +69,7 @@ export function SignaturesBulletin({ allowUpload = false }: { allowUpload?: bool
                 }}
               />
             </label>
-            {signature && (
+            {signature !== SIGNATURE_PAR_DEFAUT && (
               <button
                 type="button"
                 onClick={remove}
