@@ -88,27 +88,11 @@ export function bulletinAvecComportementDuMois(
 
 import { PROGRAMMATION_SECTIONS } from "./programmation-par-mois";
 
-const DEFAULT_SECTION_COMPORTEMENT: SectionAttendus = {
-  id: "comportement",
-  titre: "Mon comportement",
-  attendus: [
-    { id: "c1", libelle: "Je suis ordonné." },
-    { id: "c2", libelle: "Je travaille dans le temps accordé." },
-    { id: "c3", libelle: "Je m'applique dans mon travail." },
-    { id: "c4", libelle: "Je participe aux activités de la classe." },
-    { id: "c5", libelle: "J'ose m'exprimer pour poser une question intéressante et pour donner mon avis." },
-    { id: "c6", libelle: "Je respecte les règles." },
-    { id: "c7", libelle: "Je sais jouer et travailler avec les copains." },
-    { id: "c8", libelle: "Je travaille régulièrement à la maison." },
-    { id: "c9", libelle: "Autonomie." },
-    { id: "c10", libelle: "Soin donné aux travaux." },
-  ],
-};
+function sansComportement(sections: SectionAttendus[]): SectionAttendus[] {
+  return sections.filter((s) => s.id !== COMPORTEMENT_SECTION_ID);
+}
 
-const DEFAULT_SECTIONS: SectionAttendus[] = [
-  DEFAULT_SECTION_COMPORTEMENT,
-  ...PROGRAMMATION_SECTIONS,
-];
+const DEFAULT_SECTIONS: SectionAttendus[] = [...PROGRAMMATION_SECTIONS];
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -213,7 +197,11 @@ export function getSections(): SectionAttendus[] {
     return DEFAULT_SECTIONS;
   }
 
-  return stored;
+  const cleaned = sansComportement(stored);
+  if (cleaned.length !== stored.length) {
+    saveJson(STORAGE_KEYS.SECTIONS, cleaned);
+  }
+  return cleaned;
 }
 
 /** Ajoute les sections « Programmation par mois » si elles ne sont pas déjà présentes (pour les utilisateurs existants). */
@@ -227,7 +215,7 @@ export function addProgrammationSectionsIfMissing(): boolean {
 }
 
 export function setSections(sections: SectionAttendus[]): void {
-  saveJson(STORAGE_KEYS.SECTIONS, sections);
+  saveJson(STORAGE_KEYS.SECTIONS, sansComportement(sections));
 }
 
 export function updateSection(sectionId: string, updates: Partial<SectionAttendus>): void {

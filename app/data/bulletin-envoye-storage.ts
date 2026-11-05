@@ -201,7 +201,7 @@ export function attendusEnvoyesDepuisGabarit(
   sectionId: string,
   sections: SectionAttendus[],
   previousAttendus: BulletinEnvoyeLigne[],
-  previousComportement: BulletinEnvoyeLigne[]
+  _previousComportement: BulletinEnvoyeLigne[]
 ): { attendus: BulletinEnvoyeLigne[]; comportement: BulletinEnvoyeLigne[] } | null {
   const month = BULLETIN_MONTHS.find((m) => sectionId === `mois-${m.id}`);
   if (!month) return null;
@@ -215,14 +215,7 @@ export function attendusEnvoyesDepuisGabarit(
     }
   }
 
-  const comportementSection = sections.find((s) => s.id === "comportement");
-  const comportement = comportementSection
-    ? comportementSection.attendus.map((attendu) =>
-        matchLigne(previousComportement, attendu.libelle, true)
-      )
-    : previousComportement;
-
-  return { attendus, comportement };
+  return { attendus, comportement: [] };
 }
 
 /**

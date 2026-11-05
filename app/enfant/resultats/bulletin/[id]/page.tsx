@@ -124,9 +124,6 @@ export default function EnfantBulletinViewPage() {
   }
   if (typeof data !== "object" || data === null) data = {};
 
-  const comportement = (
-    Array.isArray(data.comportement) ? data.comportement : []
-  ) as BulletinEnvoyeLigne[];
   const attendus = (Array.isArray(data.attendus) ? data.attendus : []) as BulletinEnvoyeLigne[];
   const syntheseSnapshot = (
     Array.isArray(data.synthese) ? data.synthese : []
@@ -277,44 +274,6 @@ export default function EnfantBulletinViewPage() {
 
         {/* Page 2+ : attendus scolaires */}
         <div className={hasPage1 ? "bulletin-page-attendus" : "mt-6"}>
-          {comportement.length > 0 && (
-            <section className="mt-2">
-              <h2 className="font-display text-lg text-[#2d4a3e]">Mon comportement</h2>
-              <table className="mt-2 w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[#2d4a3e]/20">
-                    <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">
-                      Comportement
-                    </th>
-                    <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                      Enfant
-                    </th>
-                    <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                      Enseignant
-                    </th>
-                    <th className="pb-2 pl-4 text-left font-medium text-[#2d4a3e]">
-                      Commentaire
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comportement.map((line, i) => (
-                    <tr key={i} className="border-b border-[#2d4a3e]/10 align-top">
-                      <td className="py-2 pr-4 text-[#2d4a3e]">{line.libelle}</td>
-                      <td className="py-2 px-2 text-center">{faceLabel(line.enfant)}</td>
-                      <td className="py-2 px-2 text-center">
-                        {faceLabel(line.enseignant)}
-                      </td>
-                      <td className="py-2 pl-4 text-[#2d4a3e]/90">
-                        {line.commentaire || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
           {attendus.length > 0 && (
             <section className="mt-8">
               <h2 className="font-display text-lg text-[#2d4a3e]">

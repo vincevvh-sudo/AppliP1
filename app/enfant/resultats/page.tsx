@@ -98,7 +98,7 @@ export default function EnfantResultatsPage() {
               Mes bulletins
             </h2>
             <p className="mt-1 text-[#2d4a3e]/85">
-              Bulletins du mois envoyés par ton enseignant (comportement, attendus et commentaire). Tu peux les ouvrir et les enregistrer en PDF.
+              Bulletins du mois envoyés par ton enseignant (français, mathématiques, éveil et commentaire). Tu peux les ouvrir et les enregistrer en PDF.
             </p>
             <ul className="mt-4 space-y-3">
               {bulletins.map((b) => {

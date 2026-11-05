@@ -72,7 +72,7 @@ const CARDS: {
   external?: boolean;
 }[] = [
   { href: "/enseignant/eleves", icon: IconUsers, title: "Élèves", desc: "Gérer la liste des élèves et leurs codes", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
-  { href: "/enseignant/bulletin", icon: IconClipboard, title: "Bulletin", desc: "Bulletins et comportement (attendus, commentaires)", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
+  { href: "/enseignant/bulletin", icon: IconClipboard, title: "Bulletin", desc: "Français, mathématiques, éveil et commentaires", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
   { href: "/enseignant/comportement", icon: IconComportement, title: "Comportement", desc: "Feuilles à compléter et à imprimer pour chaque enfant", color: "bg-[#b7e4c7]/80", hoverColor: "hover:bg-[#b7e4c7]" },
   { href: "/enseignant/sons", icon: IconBook, title: "Français", desc: "Partager les sons et exercices aux enfants", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
   { href: "/enseignant/maths", icon: IconMaths, title: "Mathématiques", desc: "Exercices et progressions en mathématiques", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },

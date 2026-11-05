@@ -67,7 +67,7 @@ export async function syncBulletinSectionsTemplateToLocalStorage(): Promise<Sect
   const globalSections = await loadBulletinSectionsTemplate();
   if (globalSections) {
     setSections(globalSections);
-    return globalSections;
+    return getSections();
   }
 
   const localSections = getSections();

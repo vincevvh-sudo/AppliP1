@@ -23,8 +23,6 @@ import {
   setCommentaire,
   getSectionComment,
   setSectionComment,
-  comportementMoisSectionId,
-  bulletinAvecComportementDuMois,
   type EleveBulletin,
   type SectionAttendus,
   type NiveauAcquisition,
@@ -463,8 +461,6 @@ export default function BulletinPage() {
     setMonthJump((n) => n + 1);
   };
 
-  const sectionComportement = sections.find((s) => s.id === "comportement");
-
   const sectionsById = new Map(sections.map((s) => [s.id, s]));
 
   const structuredMonths = BULLETIN_MONTHS.map((month) => {
@@ -517,19 +513,6 @@ export default function BulletinPage() {
       monthLabel: string,
       monthSections: SectionAttendus[]
     ): BulletinEnvoyeData => {
-      const comportementBulletin = bulletinAvecComportementDuMois(bulletin, monthId);
-      const comportementId = comportementMoisSectionId(monthId);
-      const comportement: BulletinEnvoyeLigne[] = sectionComportement
-        ? sectionComportement.attendus.map((a) => {
-            const line = comportementBulletin?.sections[comportementId]?.[a.id];
-            return {
-              libelle: a.libelle,
-              enfant: line?.enfant ?? null,
-              enseignant: line?.enseignant ?? "acquis",
-              commentaire: line?.commentaire ?? "",
-            };
-          })
-        : [];
       const attendus: BulletinEnvoyeLigne[] = [];
       for (const section of monthSections) {
         for (const a of section.attendus) {
@@ -560,11 +543,11 @@ export default function BulletinPage() {
               P3: syntheseEval[cat.id].P3,
             }))
           : undefined,
-        comportement,
+        comportement: [],
         attendus,
       };
     },
-    [bulletin, sectionComportement, selectedEleve, syntheseEval]
+    [bulletin, selectedEleve, syntheseEval]
   );
 
   const handleEnvoyerBulletinMois = async (
@@ -1035,7 +1018,7 @@ export default function BulletinPage() {
                   <h3 className="font-display text-base text-[#2d4a3e]">
                     Gérer les attendus
                   </h3>
-                  {sections.map((section) => (
+                  {sections.filter((section) => section.id !== "comportement").map((section) => (
                     <div key={section.id} className="mt-3">
                       <p className="text-sm font-medium text-[#2d4a3e]/80">
                         {section.titre}
@@ -1180,24 +1163,6 @@ export default function BulletinPage() {
                     <h2 className="bulletin-month-title font-display text-xl text-[#2d4a3e]">
                       {month.label}
                     </h2>
-
-                    {/* Comportement propre à ce mois */}
-                    {sectionComportement && (
-                      <SectionTable
-                        section={{
-                          ...sectionComportement,
-                          id: comportementMoisSectionId(month.id),
-                        }}
-                        titleOverride={`Comportement — ${month.label}`}
-                        bulletin={bulletinAvecComportementDuMois(bulletin, month.id)}
-                        selectedEleve={selectedEleve}
-                        collapsedSections={collapsedSections}
-                        setCollapsedSections={setCollapsedSections}
-                        handleSetEvaluation={handleSetEvaluation}
-                        handleSetCommentaire={handleSetCommentaire}
-                        showEnfantColumn
-                      />
-                    )}
 
                     {/* Matières : un seul titre court (pas de doublon mois / sous-partie) */}
                     {month.subjects.map((subject) => (
