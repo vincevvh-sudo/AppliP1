@@ -38,6 +38,14 @@ const IconClipboard = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
   </svg>
 );
+const IconComportement = () => (
+  <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" strokeWidth={2} />
+    <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+    <path strokeLinecap="round" strokeWidth={2} d="M8.5 14.5c.8 1.4 2 2 3.5 2s2.7-.6 3.5-2" />
+  </svg>
+);
 const IconMaths = () => (
   <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -65,6 +73,7 @@ const CARDS: {
 }[] = [
   { href: "/enseignant/eleves", icon: IconUsers, title: "Élèves", desc: "Gérer la liste des élèves et leurs codes", color: "bg-[#b8d4e8]/80", hoverColor: "hover:bg-[#b8d4e8]" },
   { href: "/enseignant/bulletin", icon: IconClipboard, title: "Bulletin", desc: "Bulletins et comportement (attendus, commentaires)", color: "bg-[#e8b4d4]/80", hoverColor: "hover:bg-[#e8b4d4]" },
+  { href: "/enseignant/comportement", icon: IconComportement, title: "Comportement", desc: "Feuilles à compléter et à imprimer pour chaque enfant", color: "bg-[#b7e4c7]/80", hoverColor: "hover:bg-[#b7e4c7]" },
   { href: "/enseignant/sons", icon: IconBook, title: "Français", desc: "Partager les sons et exercices aux enfants", color: "bg-[#a8d5ba]/80", hoverColor: "hover:bg-[#a8d5ba]" },
   { href: "/enseignant/maths", icon: IconMaths, title: "Mathématiques", desc: "Exercices et progressions en mathématiques", color: "bg-[#c4a8e8]/80", hoverColor: "hover:bg-[#c4a8e8]" },
   { href: "/rendez-vous", icon: IconCalendar, title: "Agenda & Rendez-vous", desc: "Créneaux parents + semainier (leçons, devoirs, à savoir)", color: "bg-[#ffd4a3]/80", hoverColor: "hover:bg-[#ffd4a3]" },
