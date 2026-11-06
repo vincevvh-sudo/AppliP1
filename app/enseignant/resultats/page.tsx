@@ -15,7 +15,7 @@ import {
   isFluenceNiveauId,
   sonIdFromFluenceNiveauId,
 } from "../../data/fluence-partage";
-import { formatPointsResultat, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
+import { formatNoteSurDix, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@ function ResultatSingleCard({
           </span>
         ) : (
           <span className={`font-semibold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-            {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
+            {formatNoteSurDix(r.points, r.points_max)}
           </span>
         )}
         <span className="text-xs text-[#2d4a3e]/60">{formatDate(r.created_at)}</span>
@@ -287,7 +287,7 @@ function ResultatSingleCard({
             <li key={i} className="flex justify-between gap-2">
               <span>{ex.titre}</span>
               <span className="font-medium tabular-nums text-[#2d4a3e]">
-                {formatPointsResultat(ex.points)} / {formatPointsResultat(ex.pointsMax)}
+                {formatNoteSurDix(ex.points, ex.pointsMax)}
                 {ex.duree_secondes != null && (
                   <span className="ml-1 text-[#2d4a3e]/70">(en {ex.duree_secondes} s)</span>
                 )}

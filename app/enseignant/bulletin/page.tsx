@@ -46,6 +46,7 @@ import { supabase } from "../../../utils/supabase";
 import type { EleveRow } from "../../../utils/supabase";
 import { getResultatsByEleve, type ResultatRow } from "../../data/resultats-storage";
 import {
+  formatNoteSurDix,
   formatResultatDate,
   getResultatMatiere,
   getResultatTitre,
@@ -1427,9 +1428,7 @@ export default function BulletinPage() {
                             const key = r.id ?? `${r.son_id}-${r.niveau_id}-${r.created_at}-${idx}`;
                             const note = isAbsenceResultat(r)
                               ? "Absent"
-                              : r.points_max != null && r.points_max > 0
-                                ? `${r.points} / ${r.points_max}`
-                                : String(r.points ?? "—");
+                              : formatNoteSurDix(r.points ?? 0, r.points_max);
                             const source = getResultatSourceLabel(r);
                             return (
                               <tr

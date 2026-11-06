@@ -130,6 +130,7 @@ export function formatNoteSurBarème(
   maxPoints: number
 ): string {
   if (periodData.pointsMax <= 0) return "—";
-  const note = Math.round((periodData.points / periodData.pointsMax) * maxPoints);
-  return `${Math.min(note, maxPoints)} / ${maxPoints}`;
+  const note = Math.min(Math.round((periodData.points / periodData.pointsMax) * maxPoints), maxPoints);
+  if (maxPoints === 10) return String(note);
+  return `${note} / ${maxPoints}`;
 }

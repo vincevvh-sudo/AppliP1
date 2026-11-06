@@ -130,6 +130,14 @@ export function formatPointsResultat(n: number): string {
   return String(n).replace(".", ",");
 }
 
+/** Les notes sur 10 s'affichent sans le « / 10 » : 7, pas 7 / 10. */
+export function formatNoteSurDix(points: number, pointsMax: number | null | undefined): string {
+  const note = formatPointsResultat(points);
+  if (pointsMax == null || pointsMax === 10) return note;
+  if (pointsMax <= 0) return note;
+  return `${note} / ${formatPointsResultat(pointsMax)}`;
+}
+
 export function formatResultatDate(s: string | undefined): string {
   if (!s) return "";
   const d = new Date(s);

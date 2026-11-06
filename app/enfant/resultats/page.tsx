@@ -9,7 +9,7 @@ import { getBulletinsByEleve } from "../../data/bulletin-envoye-storage";
 import { getEnfantSession } from "../../../utils/enfant-session";
 import type { ResultatRow } from "../../data/resultats-storage";
 import type { BulletinEnvoyeRow } from "../../data/bulletin-envoye-storage";
-import { formatPointsResultat, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
+import { formatNoteSurDix, getResultatLabelComplet, isAbsenceResultat } from "../../data/resultats-labels";
 import { useMarkEnfantSectionSeen } from "../../hooks/useMarkEnfantSectionSeen";
 
 const IconLeaf = () => (
@@ -172,7 +172,7 @@ export default function EnfantResultatsPage() {
                       </span>
                     ) : (
                       <span className={`text-xl font-bold ${r.reussi ? "text-[#4a7c5a]" : "text-[#c45c4a]"}`}>
-                        {formatPointsResultat(r.points)} / {formatPointsResultat(r.points_max)}
+                        {formatNoteSurDix(r.points, r.points_max)}
                       </span>
                     )}
                   </div>
@@ -182,7 +182,7 @@ export default function EnfantResultatsPage() {
                         <li key={i} className="flex justify-between gap-2">
                           <span>{ex.titre}</span>
                           <span className="font-medium tabular-nums text-[#2d4a3e]">
-                            {formatPointsResultat(ex.points)} / {formatPointsResultat(ex.pointsMax)}
+                            {formatNoteSurDix(ex.points, ex.pointsMax)}
                           </span>
                         </li>
                       ))}
