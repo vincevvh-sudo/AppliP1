@@ -1461,39 +1461,6 @@ export default function BulletinPage() {
                       </table>
                     </div>
                   )}
-
-                  {syntheseEval && (
-                    <section className="mt-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
-                      <h3 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-base text-[#2d4a3e]">
-                        Synthèse — {PERIODES_TESTS.find((p) => p.id === periodeTests)?.label}
-                      </h3>
-                      <div className="overflow-x-auto px-4 pb-4 pt-2">
-                        <table className="w-full border-collapse text-sm">
-                          <thead>
-                            <tr className="border-b border-[#2d4a3e]/20">
-                              <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">Partie</th>
-                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
-                                {PERIODES_TESTS.find((p) => p.id === periodeTests)?.label}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {BULLETIN_SYNTHESE_CATEGORIES.map((cat) => (
-                              <tr key={cat.id} className="border-b border-[#2d4a3e]/10">
-                                <td className="py-2 pr-4 text-[#2d4a3e]">{cat.label}</td>
-                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                  {formatNoteSurBarème(
-                                    syntheseEval[cat.id][periodeTests],
-                                    cat.maxPoints
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  )}
                 </div>
               )}
               </div>
