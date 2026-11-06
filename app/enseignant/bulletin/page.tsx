@@ -1418,7 +1418,7 @@ export default function BulletinPage() {
                             <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Titre</th>
                             <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Matière</th>
                             <th className="px-4 py-3 text-center font-semibold text-[#2d4a3e]">Note</th>
-                            <th className="px-4 py-3 text-left font-semibold text-[#2d4a3e]">Source</th>
+                            <th className="no-print px-4 py-3 text-left font-semibold text-[#2d4a3e]">Source</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1447,7 +1447,7 @@ export default function BulletinPage() {
                                 <td className="px-4 py-3 text-center font-semibold tabular-nums text-[#2d6b3e]">
                                   {note}
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="no-print px-4 py-3">
                                   <span
                                     className="rounded-full bg-[#b8d4e8]/70 px-2.5 py-0.5 text-xs font-medium text-[#2d4a3e]"
                                   >
