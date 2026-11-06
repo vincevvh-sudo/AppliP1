@@ -54,11 +54,19 @@ import {
 import {
   computeSyntheseBulletin,
   isTeacherEncodedResultat,
+  getPeriodFromDate,
   getResultatSourceLabel,
   BULLETIN_SYNTHESE_CATEGORIES,
   formatNoteSurBarème,
+  type PeriodId,
   type SyntheseBulletin,
 } from "../../data/bulletin-synthese";
+
+const PERIODES_TESTS: { id: PeriodId; label: string }[] = [
+  { id: "P1", label: "Août, septembre, octobre" },
+  { id: "P2", label: "Novembre, décembre, janvier, février" },
+  { id: "P3", label: "Mars, avril, mai, juin" },
+];
 
 const IconLeaf = () => (
   <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -264,6 +272,9 @@ export default function BulletinPage() {
   const [syntheseEval, setSyntheseEval] = useState<SyntheseBulletin | null>(null);
   const [loadingSynthese, setLoadingSynthese] = useState(false);
   const [resultatsEleve, setResultatsEleve] = useState<ResultatRow[]>([]);
+  const [periodeTests, setPeriodeTests] = useState<PeriodId>(() =>
+    getPeriodFromDate(new Date().toISOString())
+  );
 
   const publishAttendus = useCallback(async (nextSections?: SectionAttendus[]) => {
     const sectionsToPublish = nextSections ?? getSections();
@@ -430,12 +441,13 @@ export default function BulletinPage() {
     if (!selectedEleve) return;
     setCollapsedSections(new Set());
     const prevTitle = document.title;
+    const periodeLabel = PERIODES_TESTS.find((p) => p.id === periodeTests)?.label ?? "tests encodés";
     const vueLabel =
       viewMode === "mois"
         ? "par mois"
         : viewMode === "matiere"
           ? "par matière"
-          : "tests encodés";
+          : periodeLabel;
     document.title = `Bulletin — ${selectedEleve.prenom} (${vueLabel})`;
     setTimeout(() => {
       window.print();
@@ -746,7 +758,7 @@ export default function BulletinPage() {
                     ? "vue par mois"
                     : viewMode === "matiere"
                       ? "vue par matière"
-                      : "tests encodés"}
+                      : (PERIODES_TESTS.find((p) => p.id === periodeTests)?.label ?? "tests encodés")}
               </p>
             ) : null}
           </div>
@@ -815,7 +827,7 @@ export default function BulletinPage() {
                       : "Imprimer (par mois)"
                     : viewMode === "matiere"
                       ? "Imprimer (par matière)"
-                      : "Imprimer (tests encodés)"}
+                      : `Imprimer (${PERIODES_TESTS.find((p) => p.id === periodeTests)?.label ?? "cette période"})`}
                 </button>
               </div>
 
@@ -1360,12 +1372,30 @@ export default function BulletinPage() {
                 <div className="space-y-4">
                   <div>
                     <h2 className="font-display text-xl text-[#2d4a3e]">
-                      Tests encodés — {selectedEleve.prenom}
+                      Tests encodés — {selectedEleve.prenom} —{" "}
+                      {PERIODES_TESTS.find((p) => p.id === periodeTests)?.label}
                     </h2>
-                    <p className="mt-1 text-sm text-[#2d4a3e]/75">
-                      Uniquement les points que tu encodes. Les exercices faits à la maison
-                      n&apos;apparaissent pas.
+                    <p className="no-print mt-1 text-sm text-[#2d4a3e]/75">
+                      Choisis une période, puis imprime. Seuls les tests de cette période
+                      sortent sur la feuille.
                     </p>
+                  </div>
+
+                  <div className="no-print flex flex-wrap gap-2">
+                    {PERIODES_TESTS.map((periode) => (
+                      <button
+                        key={periode.id}
+                        type="button"
+                        onClick={() => setPeriodeTests(periode.id)}
+                        className={`rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-sm transition ${
+                          periodeTests === periode.id
+                            ? "border-[#4a7c5a] bg-[#4a7c5a] text-white"
+                            : "border-[#2d4a3e]/20 bg-white/90 text-[#2d4a3e] hover:border-[#4a7c5a]/50 hover:bg-[#a8d5ba]/20"
+                        }`}
+                      >
+                        {periode.label}
+                      </button>
+                    ))}
                   </div>
 
                   {selectedEleve.supabaseEleveId == null ? (
@@ -1374,9 +1404,9 @@ export default function BulletinPage() {
                     </p>
                   ) : loadingSynthese ? (
                     <p className="text-sm text-[#2d4a3e]/60">Chargement des contrôles…</p>
-                  ) : resultatsEleve.length === 0 ? (
+                  ) : resultatsEleve.filter((r) => getPeriodFromDate(r.created_at) === periodeTests).length === 0 ? (
                     <p className="rounded-xl bg-white/80 px-4 py-6 text-sm text-[#2d4a3e]/70">
-                      Aucun contrôle encodé pour le moment.
+                      Aucun test encodé pour cette période.
                     </p>
                   ) : (
                     <div className="overflow-x-auto rounded-2xl border border-[#2d4a3e]/10 bg-white/95 shadow">
@@ -1391,7 +1421,9 @@ export default function BulletinPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {resultatsEleve.map((r, idx) => {
+                          {resultatsEleve
+                            .filter((r) => getPeriodFromDate(r.created_at) === periodeTests)
+                            .map((r, idx) => {
                             const key = r.id ?? `${r.son_id}-${r.niveau_id}-${r.created_at}-${idx}`;
                             const note = isAbsenceResultat(r)
                               ? "Absent"
@@ -1434,16 +1466,16 @@ export default function BulletinPage() {
                   {syntheseEval && (
                     <section className="mt-6 rounded-xl border border-[#2d4a3e]/10 bg-white/50 overflow-hidden">
                       <h3 className="border-b border-[#2d4a3e]/10 px-4 py-3 font-display text-base text-[#2d4a3e]">
-                        Synthèse par période (P1 / P2 / P3)
+                        Synthèse — {PERIODES_TESTS.find((p) => p.id === periodeTests)?.label}
                       </h3>
                       <div className="overflow-x-auto px-4 pb-4 pt-2">
                         <table className="w-full border-collapse text-sm">
                           <thead>
                             <tr className="border-b border-[#2d4a3e]/20">
                               <th className="pb-2 pr-4 text-left font-medium text-[#2d4a3e]">Partie</th>
-                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P1</th>
-                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P2</th>
-                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">P3</th>
+                              <th className="pb-2 px-2 text-center font-medium text-[#2d4a3e]">
+                                {PERIODES_TESTS.find((p) => p.id === periodeTests)?.label}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1451,13 +1483,10 @@ export default function BulletinPage() {
                               <tr key={cat.id} className="border-b border-[#2d4a3e]/10">
                                 <td className="py-2 pr-4 text-[#2d4a3e]">{cat.label}</td>
                                 <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                  {formatNoteSurBarème(syntheseEval[cat.id].P1, cat.maxPoints)}
-                                </td>
-                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                  {formatNoteSurBarème(syntheseEval[cat.id].P2, cat.maxPoints)}
-                                </td>
-                                <td className="py-2 px-2 text-center text-[#2d4a3e]/90">
-                                  {formatNoteSurBarème(syntheseEval[cat.id].P3, cat.maxPoints)}
+                                  {formatNoteSurBarème(
+                                    syntheseEval[cat.id][periodeTests],
+                                    cat.maxPoints
+                                  )}
                                 </td>
                               </tr>
                             ))}
