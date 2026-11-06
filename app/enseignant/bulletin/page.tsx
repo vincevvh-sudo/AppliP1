@@ -1369,7 +1369,7 @@ export default function BulletinPage() {
 
               {/* Vue par contrôle : uniquement les notes encodées par l’enseignant */}
               {viewMode === "controle" && (
-                <div className="space-y-4">
+                <div className="bulletin-tests-periode space-y-4">
                   <div>
                     <h2 className="font-display text-xl text-[#2d4a3e]">
                       Tests encodés — {selectedEleve.prenom} —{" "}

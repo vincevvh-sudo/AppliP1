@@ -237,8 +237,8 @@ body {
     border-spacing: 0 !important;
     table-layout: fixed;
   }
-  .bulletin-synthese-row-identite { height: 20mm !important; }
-  .bulletin-synthese-row-scores { height: 124mm !important; }
+  .bulletin-synthese-row-identite { height: auto !important; }
+  .bulletin-synthese-row-scores { height: auto !important; }
   .bulletin-synthese-row-comment { height: auto !important; }
   .bulletin-synthese-row-sign { height: auto !important; }
   .bulletin-synthese-sheet > tbody > tr > td {
@@ -246,7 +246,7 @@ body {
     padding: 0 !important;
     vertical-align: top !important;
   }
-  .bulletin-synthese-row-scores > td { height: 124mm !important; }
+  .bulletin-synthese-row-scores > td { height: auto !important; }
 
   .bulletin-synthese-identite {
     margin: 0 0 2mm 0 !important;
@@ -269,46 +269,42 @@ body {
   }
 
   .bulletin-synthese {
-    height: 122mm !important;
-    min-height: 122mm !important;
-    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 0 3mm 0 !important;
     border: 1.5px solid #222 !important;
     border-radius: 0 !important;
     background: #fff !important;
-    display: flex !important;
-    flex-direction: column;
-    overflow: hidden;
+    display: block !important;
+    overflow: visible;
     padding: 2mm 3mm !important;
     box-sizing: border-box !important;
   }
   .bulletin-synthese h2 {
-    flex: 0 0 auto;
     font-size: 13pt !important;
     font-weight: 700 !important;
-    margin: 0 0 1.5mm 0 !important;
-    padding: 0 0 1.5mm 0 !important;
+    margin: 0 0 1mm 0 !important;
+    padding: 0 0 1mm 0 !important;
     border-bottom: 1px solid #222 !important;
   }
   .bulletin-synthese-table-wrap {
-    flex: 1 1 auto;
-    min-height: 0;
     height: auto !important;
     padding: 0 !important;
-    overflow: hidden;
+    overflow: visible;
   }
   .bulletin-synthese table.bulletin-notes {
-    height: 108mm !important;
+    height: auto !important;
     width: 100% !important;
     font-size: 14pt !important;
   }
   .bulletin-synthese table.bulletin-notes tr {
-    height: 10mm !important;
+    height: auto !important;
   }
   #bulletin-print-area .bulletin-synthese table.bulletin-notes th,
   #bulletin-print-area .bulletin-synthese table.bulletin-notes td {
     font-size: 14pt !important;
-    padding: 1.2mm 2mm !important;
-    line-height: 1.2 !important;
+    padding: 0.6mm 2mm !important;
+    line-height: 1.15 !important;
     vertical-align: middle;
   }
 
@@ -333,7 +329,7 @@ body {
   .bulletin-commentaire-synthese p,
   .bulletin-commentaire-texte {
     font-size: 16pt !important;
-    line-height: 1.4 !important;
+    line-height: 1.2 !important;
     white-space: pre-wrap;
     margin: 0;
   }
@@ -341,9 +337,9 @@ body {
   .bulletin-signatures {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
-    gap: 8mm;
+    gap: 6mm;
     height: auto !important;
-    min-height: 32mm !important;
+    min-height: 24mm !important;
     margin: 0 !important;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -442,5 +438,39 @@ body {
     height: 0.95rem !important;
     width: 0.95rem !important;
     font-size: 0.7rem !important;
+  }
+
+  /* Tests d'une période : mêmes caractères, lignes serrées, pour tenir sur 2 pages. */
+  .bulletin-tests-periode {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .bulletin-tests-periode > * {
+    margin-top: 0 !important;
+    margin-bottom: 2mm !important;
+  }
+  .bulletin-tests-periode h2,
+  .bulletin-tests-periode h3 {
+    font-size: 13pt !important;
+    line-height: 1.15 !important;
+    margin: 0 0 1.5mm 0 !important;
+    padding: 0 0 1mm 0 !important;
+  }
+  .bulletin-tests-periode table {
+    font-size: 11pt !important;
+    border-collapse: collapse;
+  }
+  .bulletin-tests-periode th,
+  .bulletin-tests-periode td {
+    font-size: 11pt !important;
+    line-height: 1.15 !important;
+    padding: 0.45mm 1.6mm !important;
+    vertical-align: middle;
+  }
+  .bulletin-tests-periode section {
+    margin: 1.5mm 0 0 !important;
+    padding: 1.5mm 2mm !important;
+    break-inside: auto;
+    page-break-inside: auto;
   }
 }
